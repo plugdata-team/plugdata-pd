@@ -24,6 +24,7 @@
 #endif
 
 static t_symbol *class_loadsym;     /* name under which an extern is invoked */
+static t_symbol *class_prefixsym;   /* plugdata variable for setting a prefix to load many objects under */
 static void pd_defaultfloat(t_pd *x, t_float f);
 static void pd_defaultlist(t_pd *x, t_symbol *s, int argc, t_atom *argv);
 t_pd pd_objectmaker;    /* factory for creating "object" boxes */
@@ -479,19 +480,20 @@ t_class *class_new(t_symbol *s, t_newmethod newmethod, t_method freemethod,
                                 class_loadsym,
                                 vec[0], vec[1], vec[2], vec[3], vec[4], vec[5]);
             }
-            // plugdata modification: it's very useful for us to just set loadstring to "else" when loading all else objects
-            // Sure hope this doesn't cause any problems!
-            else if(!strcmp(s->s_name, loadstring + (l2 - l1))) {
-                char* full_path = t_getbytes(l1 + l2 + 2);
-                strncpy(full_path, loadstring,  l2);
-                full_path[l2] = '/';
-                strncpy(full_path + l2 + 1, s->s_name, l1);
-                full_path[l1 + l2 + 1] = '\0';
-                
-                class_addmethod(pd_objectmaker, (t_method)newmethod,
-                                gensym(full_path),
-                                vec[0], vec[1], vec[2], vec[3], vec[4], vec[5]);
-            }
+        }
+        
+        // plugdata modification: it's very useful for us to just set loadstring to "else" when loading all else objects
+        if (s && class_prefixsym)
+        {
+            char* full_path = t_getbytes(l1 + l2 + 2);
+            strncpy(full_path, loadstring,  l2);
+            full_path[l2] = '/';
+            strncpy(full_path + l2 + 1, s->s_name, l1);
+            full_path[l1 + l2 + 1] = '\0';
+            
+            class_addmethod(pd_objectmaker, (t_method)newmethod,
+                            gensym(full_path),
+                            vec[0], vec[1], vec[2], vec[3], vec[4], vec[5]);
         }
     }
     c = (t_class *)t_getbytes(sizeof(*c));
@@ -942,9 +944,9 @@ void new_anything(void *dummy, t_symbol *s, int argc, t_atom *argv)
     pd_globalunlock();
 }
 
-void set_class_loadsym(t_symbol* dir)
+void set_class_prefix(t_symbol* dir)
 {
-    class_loadsym = dir;
+    class_prefixsym = dir;
 }
 
 /* This is externally available, but note that it might later disappear; the
