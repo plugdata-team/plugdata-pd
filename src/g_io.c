@@ -469,13 +469,13 @@ void voutlet_dspprolog(struct _voutlet *x, t_signal **parentsigs,
 static void voutlet_dsp(t_voutlet *x, t_signal **sp)
 {
     if (!x->x_buf) return;
-    if (x->x_borrowed)
+    if (x->x_borrowed && x->x_parentsignal)
     {
             /* if we're just going to make the signal available on the
             parent patch, hand it off to the parent signal. */
         signal_setborrowed(*x->x_parentsignal, sp[0]);
     }
-    else
+    else if(x->x_parentsignal)
     {
         signal_setchansout(x->x_parentsignal, sp[0]->s_nchans);
         if (x->x_justcopyout)
