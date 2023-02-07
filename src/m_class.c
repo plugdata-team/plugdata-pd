@@ -493,6 +493,8 @@ t_class *class_new(t_symbol *s, t_newmethod newmethod, t_method freemethod,
             class_addmethod(pd_objectmaker, (t_method)newmethod,
                             gensym(full_path),
                             vec[0], vec[1], vec[2], vec[3], vec[4], vec[5]);
+            
+            freebytes(full_path, size);
         }
     }
     c = (t_class *)t_getbytes(sizeof(*c));
