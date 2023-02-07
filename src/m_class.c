@@ -485,11 +485,10 @@ t_class *class_new(t_symbol *s, t_newmethod newmethod, t_method freemethod,
         // plugdata modification: it's very useful for us to just set loadstring to "else" when loading all else objects
         if (s && class_prefixsym)
         {
-            char* full_path = t_getbytes(l1 + l2 + 2);
-            strncpy(full_path, loadstring,  l2);
-            full_path[l2] = '/';
-            strncpy(full_path + l2 + 1, s->s_name, l1);
-            full_path[l1 + l2 + 1] = '\0';
+            const char *loadstring = class_prefixsym->s_name;
+            size_t size = strlen(s->s_name) + strlen(loadstring) + 2;
+            char* full_path = t_getbytes(size);
+            snprintf(full_path, size, "%s/%s", loadstring, s->s_name);
             
             class_addmethod(pd_objectmaker, (t_method)newmethod,
                             gensym(full_path),
