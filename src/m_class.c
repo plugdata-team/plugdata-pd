@@ -133,7 +133,8 @@ static void class_addmethodtolist(t_class *c, t_methodentry **methodlist,
         if (c == pd_objectmaker)
             logpost(NULL, PD_VERBOSE, "warning: class '%s' overwritten; old one renamed '%s'",
                 sel->s_name, nbuf);
-        else logpost(NULL, PD_VERBOSE, "warning: old method '%s' for class '%s' renamed '%s'",
+        else
+            logpost(NULL, PD_VERBOSE, "warning: old method '%s' for class '%s' renamed '%s'",
             sel->s_name, c->c_name->s_name, nbuf);
     }
     (*methodlist) = t_resizebytes((*methodlist),
@@ -473,10 +474,24 @@ t_class *class_new(t_symbol *s, t_newmethod newmethod, t_method freemethod,
                 too. */
             const char *loadstring = class_loadsym->s_name;
             size_t l1 = strlen(s->s_name), l2 = strlen(loadstring);
-            if (l2 > l1 && !strcmp(s->s_name, loadstring + (l2 - l1)))
+            if (l2 > l1 && !strcmp(s->s_name, loadstring + (l2 - l1))) {
                 class_addmethod(pd_objectmaker, (t_method)newmethod,
-                    class_loadsym,
-                    vec[0], vec[1], vec[2], vec[3], vec[4], vec[5]);
+                                class_loadsym,
+                                vec[0], vec[1], vec[2], vec[3], vec[4], vec[5]);
+            }
+            // plugdata modification: it's very useful for us to just set loadstring to "else" when loading all else objects
+            // Sure hope this doesn't cause any problems!
+            else if(!strcmp(s->s_name, loadstring + (l2 - l1))) {
+                char* full_path = t_getbytes(l1 + l2 + 2);
+                strncpy(full_path, loadstring,  l2);
+                full_path[l2] = '/';
+                strncpy(full_path + l2 + 1, s->s_name, l1);
+                full_path[l1 + l2 + 1] = '\0';
+                
+                class_addmethod(pd_objectmaker, (t_method)newmethod,
+                                gensym(full_path),
+                                vec[0], vec[1], vec[2], vec[3], vec[4], vec[5]);
+            }
         }
     }
     c = (t_class *)t_getbytes(sizeof(*c));
@@ -925,6 +940,11 @@ void new_anything(void *dummy, t_symbol *s, int argc, t_atom *argv)
     }
     class_loadsym = 0;
     pd_globalunlock();
+}
+
+void set_class_loadsym(t_symbol* dir)
+{
+    class_loadsym = dir;
 }
 
 /* This is externally available, but note that it might later disappear; the
