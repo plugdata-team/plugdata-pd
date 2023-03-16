@@ -13,7 +13,8 @@ extern "C" {
 #define PD_BUGFIX_VERSION 2
 #define PD_TEST_VERSION "test1"
 
-#define PD_PLUGDATA_VERSION "0.7.0"
+#define PD_PLUGDATA_VERSION "0.7.1"
+#define PD_FLAVOR "plugdata"
 
 extern int pd_compatibilitylevel;   /* e.g., 43 for pd 0.43 compatibility */
 
