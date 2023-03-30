@@ -1502,7 +1502,8 @@ void glob_exit(void* dummy, t_float status)
         sys_closesocket(INTER->i_guisock);
         sys_rmpollfn(INTER->i_guisock);
     }
-    exit((int)status);
+    // Let plugdata handle exit message
+    //exit((int)status);
 }
 void glob_quit(void* dummy)
 {
