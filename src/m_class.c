@@ -671,12 +671,10 @@ void class_addmethod(t_class *c, t_method fn, t_symbol *sel,
                 (c->c_name)?(c->c_name->s_name):"<anon>", sel?(sel->s_name):"<nomethod>");
         argvec[nargs] = 0;
 #ifdef PDINSTANCE
-        for (i = 0; i < pd_ninstances; i++)
-        {
-            class_addmethodtolist(c, &c->c_methods[i], c->c_nmethod,
-                (t_gotfn)fn, sel?dogensym(sel->s_name, 0, pd_instances[i]):0,
-                    argvec, pd_instances[i]);
-        }
+        int instance = pd_this->pd_instanceno;
+        class_addmethodtolist(c, &c->c_methods[instance], c->c_nmethod,
+            (t_gotfn)fn, sel?dogensym(sel->s_name, 0, pd_instances[instance]):0,
+                argvec, pd_this);
 #else
         class_addmethodtolist(c, &c->c_methods, c->c_nmethod,
             (t_gotfn)fn, sel, argvec, &pd_maininstance);
