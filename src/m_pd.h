@@ -941,9 +941,8 @@ EXTERN void pdinstance_free(t_pdinstance *x);
 #endif
 
 #ifdef PDINSTANCE
-extern PERTHREAD t_pdinstance *pd_this;
-EXTERN t_pdinstance **pd_instances;
-EXTERN int pd_ninstances;
+EXTERN t_pdinstance* pd_get_instance();
+#define pd_this pd_get_instance()
 #else
 #define pd_this (&pd_maininstance)
 #endif /* PDINSTANCE */

@@ -6,6 +6,20 @@
 #include "m_imp.h"
 #include "g_canvas.h"   /* just for LB_LOAD */
 
+
+
+#if PDINSTANCE
+extern PERTHREAD t_pdinstance *pd_this_instance;
+EXTERN t_pdinstance **pd_instances;
+EXTERN int pd_ninstances;
+
+t_pdinstance* pd_get_instance()
+{
+    return pd_this_instance;
+};
+
+#endif
+
     /* FIXME no out-of-memory testing yet! */
 
 t_pd *pd_new(t_class *c)
