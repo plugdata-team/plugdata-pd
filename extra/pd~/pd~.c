@@ -100,7 +100,7 @@ static t_class *pd_tilde_class;
 #define ARCHDLLEXT(prefix)
 #endif
 
-
+#ifndef PDINSTANCE
 static const char *pd_tilde_dllextent[] = {
 #if defined(__linux__) || defined(__FreeBSD_kernel__) || defined(__GNU__) || \
     defined(__FreeBSD__)
@@ -123,6 +123,29 @@ static const char *pd_tilde_dllextent[] = {
     ".so",
 #endif
     0};
+#else
+static const char *pd_tilde_dllextent[] = {
+#if defined(__linux__) || defined(__FreeBSD_kernel__) || defined(__GNU__) || \
+    defined(__FreeBSD__)
+    ARCHDLLEXT(".l_m_")
+    ".pd_m_linux",
+    "multi.so",
+#elif defined(__APPLE__)
+    ".d_m_fat",
+    ARCHDLLEXT(".d_m_")
+    ".pd_m_darwin",
+    "multi.so",
+#elif defined(__OPENBSD__)
+    ARCHDLLEXT(".o_m_")
+    ".pd_openbsd_m",
+    "multi.so",
+#elif defined(_WIN32) || defined(__CYGWIN__)
+    ARCHDLLEXT(".m_m_")
+    "multi.dll",
+#else
+    "multi.so",
+#endif
+#endif
 
 #include "binarymsg.c"
 
