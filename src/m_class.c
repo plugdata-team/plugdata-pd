@@ -36,7 +36,7 @@ void plugdata_forward_message(void *x, t_symbol *s, int argc, t_atom *argv);
 
 #ifdef PDINSTANCE
 static t_class *class_list = 0;
-PERTHREAD t_pdinstance *pd_this = NULL;
+PERTHREAD t_pdinstance *pd_this_inst = NULL;
 t_pdinstance **pd_instances;
 int pd_ninstances;
 #else
@@ -96,7 +96,7 @@ static t_pdinstance *pdinstance_init(t_pdinstance *x)
     dogensym("x",         &x->pd_s_x,        x);
     dogensym("y",         &x->pd_s_y,        x);
     dogensym("",          &x->pd_s_,         x);
-    pd_this = x;
+    pd_set_instance(x);
 #else
     dogensym("pointer",   &s_pointer,  x);
     dogensym("float",     &s_float,    x);
@@ -150,7 +150,7 @@ static void class_addmethodtolist(t_class *c, t_methodentry **methodlist,
 #ifdef PDINSTANCE
 EXTERN void pd_setinstance(t_pdinstance *x)
 {
-    pd_this = x;
+    pd_set_instance(x);
 }
 
 static void pdinstance_renumber(void)
@@ -168,7 +168,7 @@ EXTERN t_pdinstance *pdinstance_new(void)
     t_pdinstance *x = (t_pdinstance *)getbytes(sizeof(t_pdinstance));
     t_class *c;
     int i;
-    pd_this = x;
+    pd_set_instance(x);
     s_inter_newpdinstance();
     pdinstance_init(x);
     sys_lock();
@@ -280,7 +280,7 @@ void mess_init(void)
     if (pd_objectmaker)
         return;
 #ifdef PDINSTANCE
-    pd_this = &pd_maininstance;
+    pd_set_instance(&pd_maininstance);
 #endif
     s_inter_newpdinstance();
     sys_lock();

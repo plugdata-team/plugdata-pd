@@ -10,13 +10,16 @@
 
 #if PDINSTANCE
 extern PERTHREAD t_pdinstance *pd_this_instance;
-EXTERN t_pdinstance **pd_instances;
-EXTERN int pd_ninstances;
 
 t_pdinstance* pd_get_instance()
 {
     return pd_this_instance;
 };
+
+void pd_set_instance(t_pdinstance* instance)
+{
+    pd_this_instance = instance;
+}
 
 #endif
 

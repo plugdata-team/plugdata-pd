@@ -126,7 +126,7 @@ static const char *pd_tilde_dllextent[] = {
 #else
 static const char *pd_tilde_dllextent[] = {
 #if defined(__linux__) || defined(__FreeBSD_kernel__) || defined(__GNU__) || \
-    defined(__FreeBSD__)
+defined(__FreeBSD__)
     ARCHDLLEXT(".l_m_")
     ".pd_m_linux",
     "multi.so",
@@ -145,6 +145,7 @@ static const char *pd_tilde_dllextent[] = {
 #else
     "multi.so",
 #endif
+    0};
 #endif
 
 #include "binarymsg.c"
