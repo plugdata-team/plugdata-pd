@@ -9,7 +9,7 @@
 
 
 #if PDINSTANCE
-extern PERTHREAD t_pdinstance *pd_this_instance;
+PERTHREAD t_pdinstance *pd_this_instance;
 
 t_pdinstance* pd_get_instance()
 {
