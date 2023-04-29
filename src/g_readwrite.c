@@ -661,7 +661,7 @@ typedef void (*t_zoomfn)(void *x, t_floatarg arg1);
 
     /* save to a binbuf, called recursively; cf. canvas_savetofile() which
     saves the document, and is only called on root canvases. */
-static void canvas_saveto(t_canvas *x, t_binbuf *b)
+void canvas_saveto(t_canvas *x, t_binbuf *b)
 {
     t_gobj *y;
     t_linetraverser t;
@@ -751,7 +751,7 @@ static void canvas_collecttemplatesfor(t_canvas *x, int *ntemplatesp,
 }
 
     /* save the templates needed by a canvas to a binbuf. */
-static void canvas_savetemplatesto(t_canvas *x, t_binbuf *b, int wholething)
+void canvas_savetemplatesto(t_canvas *x, t_binbuf *b, int wholething)
 {
     t_symbol **templatevec = getbytes(0);
     int i, ntemplates = 0;
