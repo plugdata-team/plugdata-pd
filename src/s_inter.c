@@ -141,6 +141,10 @@ struct _instanceinter {
     pd_gui_callback gui_callback;
     pd_message_callback message_callback;
     void* callback_target;
+    
+    void* lock;
+    void(*lock_fn)(void*);
+    void(*unlock_fn)(void*);
 };
 
 void register_gui_triggers(t_pdinstance* instance, void* target, pd_gui_callback gui_callback, pd_message_callback message_callback)
@@ -1574,6 +1578,7 @@ void s_inter_newpdinstance(void)
     INTER->i_havegui = 0;
 
     INTER->callback_target = NULL;
+    INTER->lock = NULL;
 }
 
 void s_inter_free(t_instanceinter* inter)
@@ -1600,6 +1605,13 @@ static pthread_rwlock_t sys_rwlock = PTHREAD_RWLOCK_INITIALIZER;
 static pthread_mutex_t sys_mutex = PTHREAD_MUTEX_INITIALIZER;
 #    endif /* PDINSTANCE */
 #endif     /* PDTHREADS */
+
+void set_instance_lock(const void* lock, void(*lock_func)(void*), void(*unlock_func)(void*))
+{
+    INTER->lock = (void*)lock;
+    INTER->lock_fn = lock_func;
+    INTER->unlock_fn = unlock_func;
+}
 
 #if PDTHREADS
 
@@ -1637,10 +1649,16 @@ static int amlocked;
  is defined as per-thread storage. */
 void sys_lock(void)
 {
+    if(INTER && INTER->lock) {
+        INTER->lock_fn(INTER->lock);
+        pd_this->pd_islocked++;
+    }
+    
+    /*
 #    ifdef PDINSTANCE
     pthread_mutex_lock(&INTER->i_mutex);
     pthread_rwlock_rdlock(&sys_rwlock);
-    pd_this->pd_islocked = 1;
+
 #    else
 #if TEST_LOCKING
     if (amlocked)
@@ -1649,11 +1667,16 @@ void sys_lock(void)
 #endif
 
     pthread_mutex_lock(&sys_mutex);
-#endif
+#endif */
 }
 
 void sys_unlock(void)
 {
+    if(INTER && INTER->lock) {
+        INTER->unlock_fn(INTER->lock);
+        pd_this->pd_islocked--;
+    }
+    /*
 #    ifdef PDINSTANCE
     pd_this->pd_islocked = 0;
     pthread_rwlock_unlock(&sys_rwlock);
@@ -1665,7 +1688,7 @@ void sys_unlock(void)
     amlocked = 0;
 #endif
     pthread_mutex_unlock(&sys_mutex);
-#    endif
+#    endif */
 }
 
 int sys_trylock(void)
