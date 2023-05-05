@@ -1654,21 +1654,6 @@ void sys_lock(void)
     }
     
     pd_this->pd_islocked++;
-    
-    /*
-#    ifdef PDINSTANCE
-    pthread_mutex_lock(&INTER->i_mutex);
-    pthread_rwlock_rdlock(&sys_rwlock);
-
-#    else
-#if TEST_LOCKING
-    if (amlocked)
-        bug("duplicate lock");
-    amlocked = 1;
-#endif
-
-    pthread_mutex_lock(&sys_mutex);
-#endif */
 }
 
 void sys_unlock(void)
@@ -1678,19 +1663,6 @@ void sys_unlock(void)
     }
     
     pd_this->pd_islocked--;
-    /*
-#    ifdef PDINSTANCE
-    pd_this->pd_islocked = 0;
-    pthread_rwlock_unlock(&sys_rwlock);
-    pthread_mutex_unlock(&INTER->i_mutex);
-#    else
-#if TEST_LOCKING
-    if (!amlocked)
-        bug("duplicate unlock");
-    amlocked = 0;
-#endif
-    pthread_mutex_unlock(&sys_mutex);
-#    endif */
 }
 
 int sys_trylock(void)
