@@ -1651,8 +1651,9 @@ void sys_lock(void)
 {
     if(INTER && INTER->lock) {
         INTER->lock_fn(INTER->lock);
-        pd_this->pd_islocked++;
     }
+    
+    pd_this->pd_islocked++;
     
     /*
 #    ifdef PDINSTANCE
@@ -1674,8 +1675,9 @@ void sys_unlock(void)
 {
     if(INTER && INTER->lock) {
         INTER->unlock_fn(INTER->lock);
-        pd_this->pd_islocked--;
     }
+    
+    pd_this->pd_islocked--;
     /*
 #    ifdef PDINSTANCE
     pd_this->pd_islocked = 0;
