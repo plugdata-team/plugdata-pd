@@ -1626,8 +1626,10 @@ void set_instance_lock(const void* lock, void(*lock_func)(void*), void(*unlock_f
 void pd_globallock(void)
 {
 #    ifdef PDINSTANCE
-    if (!pd_this->pd_islocked)
-        bug("pd_globallock");
+    // Skip this check now because it's not thread safe, and not worth locking for
+    //if (!pd_this->pd_islocked)
+    //    bug("pd_globallock");
+    
     pthread_rwlock_unlock(&sys_rwlock);
     pthread_rwlock_wrlock(&sys_rwlock);
 #    endif /* PDINSTANCE */
@@ -1653,7 +1655,10 @@ void sys_lock(void)
         INTER->lock_fn(INTER->lock);
     }
     
+    pthread_mutex_lock(&INTER->i_mutex);
     pd_this->pd_islocked++;
+    pthread_mutex_unlock(&INTER->i_mutex);
+    
 }
 
 void sys_unlock(void)
@@ -1662,7 +1667,9 @@ void sys_unlock(void)
         INTER->unlock_fn(INTER->lock);
     }
     
+    pthread_mutex_lock(&INTER->i_mutex);
     pd_this->pd_islocked--;
+    pthread_mutex_unlock(&INTER->i_mutex);
 }
 
 // not used anywhere!

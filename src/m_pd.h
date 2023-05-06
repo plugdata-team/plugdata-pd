@@ -9,7 +9,6 @@ extern "C" {
 #endif
 
 
-
 #define PD_MAJOR_VERSION 0
 #define PD_MINOR_VERSION 53
 #define PD_BUGFIX_VERSION 2
@@ -67,13 +66,6 @@ extern int pd_compatibilitylevel;   /* e.g., 43 for pd 0.43 compatibility */
 
 #if !defined(_SIZE_T) && !defined(_SIZE_T_)
 #include <stddef.h>     /* just for size_t -- how lame! */
-#endif
-
-#ifndef __cplusplus
-# include <stdatomic.h>
-#else
-# include <atomic>
-# define _Atomic(X) std::atomic< X >
 #endif
 
 /* Microsoft Visual Studio is not C99, but since VS2015 has included most C99 headers:
@@ -926,7 +918,7 @@ struct _pdinstance
     t_symbol  pd_s_;
 #endif
 #if PDTHREADS
-    _Atomic int pd_islocked;
+    int pd_islocked;
 #endif
 };
 #define t_pdinstance struct _pdinstance
