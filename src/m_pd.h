@@ -8,6 +8,8 @@
 extern "C" {
 #endif
 
+
+
 #define PD_MAJOR_VERSION 0
 #define PD_MINOR_VERSION 53
 #define PD_BUGFIX_VERSION 2
@@ -66,6 +68,8 @@ extern int pd_compatibilitylevel;   /* e.g., 43 for pd 0.43 compatibility */
 #if !defined(_SIZE_T) && !defined(_SIZE_T_)
 #include <stddef.h>     /* just for size_t -- how lame! */
 #endif
+
+#include <stdatomic.h>
 
 /* Microsoft Visual Studio is not C99, but since VS2015 has included most C99 headers:
    https://docs.microsoft.com/en-us/previous-versions/hh409293(v=vs.140)#c-runtime-library
