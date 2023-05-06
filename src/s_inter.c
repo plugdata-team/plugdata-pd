@@ -1659,10 +1659,18 @@ void sys_lock(void)
     pd_this->pd_islocked++;
     pthread_mutex_unlock(&INTER->i_mutex);
     
+#ifdef PDINSTANCE
+    pthread_rwlock_rdlock(&sys_rwlock);
+#endif
+    
 }
 
 void sys_unlock(void)
 {
+#ifdef PDINSTANCE
+    pthread_rwlock_unlock(&sys_rwlock);
+#endif
+    
     if(INTER && INTER->lock) {
         INTER->unlock_fn(INTER->lock);
     }
