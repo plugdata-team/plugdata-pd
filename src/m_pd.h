@@ -69,7 +69,12 @@ extern int pd_compatibilitylevel;   /* e.g., 43 for pd 0.43 compatibility */
 #include <stddef.h>     /* just for size_t -- how lame! */
 #endif
 
-#include <stdatomic.h>
+#ifndef __cplusplus
+# include <stdatomic.h>
+#else
+# include <atomic>
+# define _Atomic(X) std::atomic< X >
+#endif
 
 /* Microsoft Visual Studio is not C99, but since VS2015 has included most C99 headers:
    https://docs.microsoft.com/en-us/previous-versions/hh409293(v=vs.140)#c-runtime-library
