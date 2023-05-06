@@ -917,7 +917,7 @@ struct _pdinstance
     t_symbol  pd_s_;
 #endif
 #if PDTHREADS
-    int pd_islocked;
+    _Atomic int pd_islocked;
 #endif
 };
 #define t_pdinstance struct _pdinstance

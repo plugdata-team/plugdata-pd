@@ -1665,22 +1665,10 @@ void sys_unlock(void)
     pd_this->pd_islocked--;
 }
 
+// not used anywhere!
 int sys_trylock(void)
 {
-#    ifdef PDINSTANCE
-    int ret;
-    if (!(ret = pthread_mutex_trylock(&INTER->i_mutex))) {
-        if (!(ret = pthread_rwlock_tryrdlock(&sys_rwlock)))
-            return (0);
-        else {
-            pthread_mutex_unlock(&INTER->i_mutex);
-            return (ret);
-        }
-    } else
-        return (ret);
-#    else
-    return pthread_mutex_trylock(&sys_mutex);
-#    endif
+    return 1;
 }
 
 #else /* PDTHREADS */
