@@ -6,6 +6,8 @@
 #include "m_imp.h"
 #include "g_canvas.h"   /* just for LB_LOAD */
 
+extern void increment_pd_refcount(t_pd* ptr);
+extern int decrement_pd_refcount(t_pd* ptr);
 
 
 #if PDINSTANCE
@@ -39,11 +41,18 @@ t_pd *pd_new(t_class *c)
         ((t_object *)x)->ob_inlet = 0;
         ((t_object *)x)->ob_outlet = 0;
     }
+    
+    increment_pd_refcount(x);
+    
     return (x);
 }
 
 void pd_free(t_pd *x)
 {
+    int should_be_deleted = decrement_pd_refcount(x);
+    
+    if(!should_be_deleted) return;
+    
     t_class *c = *x;
     if (c->c_freemethod) (*(t_gotfn)(c->c_freemethod))(x);
     if (c->c_patchable)
