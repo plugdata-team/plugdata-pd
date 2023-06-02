@@ -162,7 +162,8 @@ void register_gui_triggers(t_pdinstance* instance, void* target, pd_gui_callback
 
 void clear_weak_references(t_pd* ptr)
 {
-    pd_this->pd_inter->clear_references_fn(pd_this->pd_inter->callback_target, ptr);
+    if(pd_this->pd_inter->callback_target) { pd_this->pd_inter->clear_references_fn(pd_this->pd_inter->callback_target, ptr);
+    }
 }
 
 extern int sys_guisetportnumber;
