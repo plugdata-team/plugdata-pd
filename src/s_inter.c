@@ -145,7 +145,7 @@ struct _instanceinter {
     void* lock;
     void(*lock_fn)(void*);
     void(*unlock_fn)(void*);
-    void(*clear_references_fn)(void*);
+    void(*clear_references_fn)(void*, t_pd*);
 };
 
 void register_gui_triggers(t_pdinstance* instance, void* target, pd_gui_callback gui_callback, pd_message_callback message_callback)
@@ -162,7 +162,7 @@ void register_gui_triggers(t_pdinstance* instance, void* target, pd_gui_callback
 
 void clear_weak_references(t_pd* ptr)
 {
-    pd_this->pd_inter->clear_references_fn(ptr);
+    pd_this->pd_inter->clear_references_fn(pd_this->pd_inter->callback_target, ptr);
 }
 
 extern int sys_guisetportnumber;
