@@ -159,6 +159,10 @@ void register_gui_triggers(t_pdinstance* instance, void* target, pd_gui_callback
     instance->pd_inter->callback_target = target;
 }
 
+void* get_plugdata_instance()
+{
+    return pd_this->pd_inter->callback_target;
+}
 
 extern int sys_guisetportnumber;
 extern int sys_addhist(int phase);
