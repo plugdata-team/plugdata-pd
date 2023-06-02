@@ -145,6 +145,7 @@ struct _instanceinter {
     void* lock;
     void(*lock_fn)(void*);
     void(*unlock_fn)(void*);
+    void(*clear_references_fn)(void*);
 };
 
 void register_gui_triggers(t_pdinstance* instance, void* target, pd_gui_callback gui_callback, pd_message_callback message_callback)
@@ -159,9 +160,9 @@ void register_gui_triggers(t_pdinstance* instance, void* target, pd_gui_callback
     instance->pd_inter->callback_target = target;
 }
 
-void* get_plugdata_instance()
+void clear_weak_references(t_pd* ptr)
 {
-    return pd_this->pd_inter->callback_target;
+    pd_this->pd_inter->clear_references_fn(ptr);
 }
 
 extern int sys_guisetportnumber;
@@ -1610,11 +1611,12 @@ static pthread_mutex_t sys_mutex = PTHREAD_MUTEX_INITIALIZER;
 #    endif /* PDINSTANCE */
 #endif     /* PDTHREADS */
 
-void set_instance_lock(const void* lock, void(*lock_func)(void*), void(*unlock_func)(void*))
+void set_instance_lock(const void* lock, void(*lock_func)(void*), void(*unlock_func)(void*), void(*clear_references_func)(void*, t_pd*))
 {
     INTER->lock = (void*)lock;
     INTER->lock_fn = lock_func;
     INTER->unlock_fn = unlock_func;
+    INTER->clear_references_fn = clear_references_func;
 }
 
 #if PDTHREADS
