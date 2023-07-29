@@ -1606,7 +1606,7 @@ void s_inter_freepdinstance(void)
 
 #if PDTHREADS
 #    ifdef PDINSTANCE
-static pthread_mutex_t sys_mutex = PTHREAD_MUTEX_INITIALIZER;
+static pthread_rwlock_t sys_rwlock = PTHREAD_RWLOCK_INITIALIZER;
 #    else  /* PDINSTANCE */
 static pthread_mutex_t sys_mutex = PTHREAD_MUTEX_INITIALIZER;
 #    endif /* PDINSTANCE */
@@ -1636,14 +1636,17 @@ void pd_globallock(void)
     // Skip this check now because it's not thread safe, and not worth locking for
     //if (!pd_this->pd_islocked)
     //    bug("pd_globallock");
-    pthread_mutex_lock(&sys_mutex);
+    
+    pthread_rwlock_unlock(&sys_rwlock);
+    pthread_rwlock_wrlock(&sys_rwlock);
 #    endif /* PDINSTANCE */
 }
 
 void pd_globalunlock(void)
 {
 #    ifdef PDINSTANCE
-    pthread_mutex_unlock(&sys_mutex);
+    pthread_rwlock_unlock(&sys_rwlock);
+    pthread_rwlock_rdlock(&sys_rwlock);
 #    endif /* PDINSTANCE */
 }
 
@@ -1662,11 +1665,19 @@ void sys_lock(void)
     pthread_mutex_lock(&INTER->i_mutex);
     pd_this->pd_islocked++;
     pthread_mutex_unlock(&INTER->i_mutex);
-        
+    
+#ifdef PDINSTANCE
+    pthread_rwlock_rdlock(&sys_rwlock);
+#endif
+    
 }
 
 void sys_unlock(void)
 {
+#ifdef PDINSTANCE
+    pthread_rwlock_unlock(&sys_rwlock);
+#endif
+    
     if(INTER && INTER->lock) {
         INTER->unlock_fn(INTER->lock);
     }
