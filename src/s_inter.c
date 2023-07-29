@@ -132,9 +132,6 @@ struct _instanceinter {
     LARGE_INTEGER i_inittime;
     double i_freq;
 #endif
-#if PDTHREADS
-    pthread_mutex_t i_mutex;
-#endif
 
     unsigned char i_recvbuf[NET_MAXPACKETSIZE];
 
@@ -145,6 +142,7 @@ struct _instanceinter {
     void* lock;
     void(*lock_fn)(void*);
     void(*unlock_fn)(void*);
+    
     void(*clear_references_fn)(void*, t_pd*);
 };
 
@@ -1575,7 +1573,6 @@ void s_inter_newpdinstance(void)
 {
     INTER = getbytes(sizeof(*INTER));
 #if PDTHREADS
-    pthread_mutex_init(&INTER->i_mutex, NULL);
     pd_this->pd_islocked = 0;
 #endif
 #ifdef _WIN32
@@ -1612,12 +1609,29 @@ static pthread_mutex_t sys_mutex = PTHREAD_MUTEX_INITIALIZER;
 #    endif /* PDINSTANCE */
 #endif     /* PDTHREADS */
 
-void set_instance_lock(const void* lock, void(*lock_func)(void*), void(*unlock_func)(void*), void(*clear_references_func)(void*, t_pd*))
+void set_free_callback(void(*free_callback)(void*, t_pd*))
+{
+    INTER->clear_references_fn = free_callback;
+}
+
+static void(*global_read_lock)() = NULL;
+static void(*global_read_unlock)() = NULL;
+static void(*global_write_lock)() = NULL;
+static void(*global_write_unlock)() = NULL;
+
+void set_global_lock(void(*instance_read_lock_func)(), void(*instance_read_unlock_func)(), void(*instance_write_lock_func)(), void(*instance_write_unlock_func)())
+{
+    global_read_lock = instance_read_lock_func;
+    global_read_unlock = instance_read_unlock_func;
+    global_write_lock = instance_write_lock_func;
+    global_write_unlock = instance_write_unlock_func;
+}
+
+void set_lock(const void* lock, void(*lock_func)(void*), void(*unlock_func)(void*))
 {
     INTER->lock = (void*)lock;
     INTER->lock_fn = lock_func;
     INTER->unlock_fn = unlock_func;
-    INTER->clear_references_fn = clear_references_func;
 }
 
 #if PDTHREADS
@@ -1636,17 +1650,15 @@ void pd_globallock(void)
     // Skip this check now because it's not thread safe, and not worth locking for
     //if (!pd_this->pd_islocked)
     //    bug("pd_globallock");
-    
-    pthread_rwlock_unlock(&sys_rwlock);
-    pthread_rwlock_wrlock(&sys_rwlock);
+
+    global_write_lock();
 #    endif /* PDINSTANCE */
 }
 
 void pd_globalunlock(void)
 {
 #    ifdef PDINSTANCE
-    pthread_rwlock_unlock(&sys_rwlock);
-    pthread_rwlock_rdlock(&sys_rwlock);
+    global_write_unlock();
 #    endif /* PDINSTANCE */
 }
 
@@ -1662,12 +1674,10 @@ void sys_lock(void)
         INTER->lock_fn(INTER->lock);
     }
     
-    pthread_mutex_lock(&INTER->i_mutex);
     pd_this->pd_islocked++;
-    pthread_mutex_unlock(&INTER->i_mutex);
     
 #ifdef PDINSTANCE
-    pthread_rwlock_rdlock(&sys_rwlock);
+    global_read_lock();
 #endif
     
 }
@@ -1675,16 +1685,14 @@ void sys_lock(void)
 void sys_unlock(void)
 {
 #ifdef PDINSTANCE
-    pthread_rwlock_unlock(&sys_rwlock);
+    global_read_unlock();
 #endif
+    
+    pd_this->pd_islocked--;
     
     if(INTER && INTER->lock) {
         INTER->unlock_fn(INTER->lock);
     }
-    
-    pthread_mutex_lock(&INTER->i_mutex);
-    pd_this->pd_islocked--;
-    pthread_mutex_unlock(&INTER->i_mutex);
 }
 
 // not used anywhere!
