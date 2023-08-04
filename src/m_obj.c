@@ -10,17 +10,14 @@ behavior for "gobjs" appears at the end of this file.  */
 #include "m_imp.h"
 #include <string.h>
 
-#ifdef _WIN32
-# include <malloc.h> /* MSVC or mingw on windows */
-#elif defined(__linux__) || defined(__APPLE__) || defined(HAVE_ALLOCA_H)
-# include <alloca.h> /* linux, mac, mingw, cygwin */
-#endif
-#ifdef _MSC_VER
-#define snprintf _snprintf
-#endif
+#include "m_private_utils.h"
 
-#ifdef _MSC_VER
-#define snprintf _snprintf
+#if defined(_MSC_VER)
+#define INLINE __forceinline
+#elif defined(__GNUC__)
+#define INLINE inline __attribute__((always_inline))
+#else
+#define INLINE inline
 #endif
 
 void plugdata_forward_message(void* x, t_symbol *s, int argc, t_atom *argv);
@@ -190,7 +187,7 @@ static void inlet_anything(t_inlet *x, t_symbol *s, int argc, t_atom *argv)
     {
         /* the "symto" field is undefined for signal inlets, so we don't
          attempt to translate the selector, just forward the original msg. */
-        
+
         if (x->i_symfrom == &s_signal)
             typedmess(x->i_dest, s, argc, argv);
         else
@@ -355,6 +352,7 @@ int backtracer_tracing;
 t_class *backtracer_class;
 
 static PERTHREAD int stackcount = 0; /* iteration counter */
+static PERTHREAD int overflow = 0;
 #define STACKITER 1000 /* maximum iterations allowed */
 
 static PERTHREAD int outlet_eventno;
@@ -363,11 +361,26 @@ static PERTHREAD int outlet_eventno;
     messages so that  the outlet functions can check to prevent stack overflow]
     from message recursion.  Also count message initiations. */
 
+static INLINE int stackcount_add(void)
+{
+        /* set overflow flag to prevent any further messaging */
+    if (++stackcount >= STACKITER)
+        overflow = 1;
+    return !overflow;
+}
+
+static INLINE void stackcount_release(void)
+{
+        /* once the stack is completely unwound, we can clear the overflow flag */
+    if (--stackcount == 0)
+        overflow = 0;
+}
+
 void outlet_setstacklim(void)
 {
     t_msgstack *m;
     while ((m = backtracer_stack))
-        backtracer_stack = m->m_next; t_freebytes(m, sizeof (*m));
+        backtracer_stack = m->m_next, t_freebytes(m, sizeof (*m));
     stackcount = 0;
     outlet_eventno++;
 }
@@ -559,21 +572,21 @@ static void outlet_stackerror(t_outlet *x)
 void outlet_bang(t_outlet *x)
 {
     t_outconnect *oc;
-    if(++stackcount >= STACKITER)
+    if(!stackcount_add())
         outlet_stackerror(x);
     else
         for (oc = x->o_connections; oc; oc = oc->oc_next) {
             if(plugdata_debugging_enabled()) plugdata_forward_message(oc, gensym("bang"), 0, NULL);
             pd_bang(oc->oc_to);
         }
-    --stackcount;
+    stackcount_release();
 }
 
 void outlet_pointer(t_outlet *x, t_gpointer *gp)
 {
     t_outconnect *oc;
     t_gpointer gpointer;
-    if(++stackcount >= STACKITER)
+    if(!stackcount_add())
         outlet_stackerror(x);
     else
     {
@@ -583,13 +596,13 @@ void outlet_pointer(t_outlet *x, t_gpointer *gp)
             pd_pointer(oc->oc_to, &gpointer);
         }
     }
-    --stackcount;
+    stackcount_release();
 }
 
 void outlet_float(t_outlet *x, t_float f)
 {
     t_outconnect *oc;
-    if(++stackcount >= STACKITER)
+    if(!stackcount_add())
         outlet_stackerror(x);
     else
         for (oc = x->o_connections; oc; oc = oc->oc_next) {
@@ -600,13 +613,13 @@ void outlet_float(t_outlet *x, t_float f)
             }
             pd_float(oc->oc_to, f);
         }
-    --stackcount;
+    stackcount_release();
 }
 
 void outlet_symbol(t_outlet *x, t_symbol *s)
 {
     t_outconnect *oc;
-    if(++stackcount >= STACKITER)
+    if(!stackcount_add())
         outlet_stackerror(x);
     else
         for (oc = x->o_connections; oc; oc = oc->oc_next) {
@@ -617,33 +630,33 @@ void outlet_symbol(t_outlet *x, t_symbol *s)
             }
             pd_symbol(oc->oc_to, s);
         }
-    --stackcount;
+    stackcount_release();
 }
 
 void outlet_list(t_outlet *x, t_symbol *s, int argc, t_atom *argv)
 {
     t_outconnect *oc;
-    if(++stackcount >= STACKITER)
+    if(!stackcount_add())
         outlet_stackerror(x);
     else
         for (oc = x->o_connections; oc; oc = oc->oc_next) {
             if(plugdata_debugging_enabled()) plugdata_forward_message(oc, s, argc, argv);
             pd_list(oc->oc_to, s, argc, argv);
         }
-    --stackcount;
+    stackcount_release();
 }
 
 void outlet_anything(t_outlet *x, t_symbol *s, int argc, t_atom *argv)
 {
     t_outconnect *oc;
-    if(++stackcount >= STACKITER)
+    if(!stackcount_add())
         outlet_stackerror(x);
     else
         for (oc = x->o_connections; oc; oc = oc->oc_next) {
             if(plugdata_debugging_enabled()) plugdata_forward_message(oc, s, argc, argv);
             typedmess(oc->oc_to, s, argc, argv);
         }
-    --stackcount;
+    stackcount_release();
 }
 
     /* get the outlet's declared symbol */
@@ -925,14 +938,22 @@ int obj_issignaloutlet(const t_object *x, int m)
     return (o2 && (o2->o_sym == &s_signal));
 }
 
+    /* return a pointer to a scalar holding the inlet's value.  If we
+    can't find a value, return a pointer to a fixed location holding zero.
+    This should only happen for a left-hand signal inlet for which no
+    "MAINSIGNALIN" has been provided, in which case the object won't
+    promote scalars correctly.  Nonetheless we provide it so that at least
+    such a badly written object won't crash Pd. */
 t_float *obj_findsignalscalar(const t_object *x, int m)
 {
     t_inlet *i;
+    static float obj_scalarzero = 0;
     if (x->ob_pd->c_firstin && x->ob_pd->c_floatsignalin)
     {
         if (!m--)
             return (x->ob_pd->c_floatsignalin > 0 ?
-                (t_float *)(((char *)x) + x->ob_pd->c_floatsignalin) : 0);
+                (t_float *)(((char *)x) + x->ob_pd->c_floatsignalin) :
+                    &obj_scalarzero);
     }
     for (i = x->ob_inlet; i; i = i->i_next)
         if (i->i_symfrom == &s_signal)
@@ -940,7 +961,7 @@ t_float *obj_findsignalscalar(const t_object *x, int m)
         if (m-- == 0)
             return (&i->i_un.iu_floatsignalvalue);
     }
-    return (0);
+    return (&obj_scalarzero);   /* this should never happen but OK wtf. */
 }
 
 /* and these are only used in g_io.c... */
