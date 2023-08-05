@@ -936,7 +936,13 @@ void new_anything(void *dummy, t_symbol *s, int argc, t_atom *argv)
     }
     pd_this->pd_newest = 0;
     class_loadsym = s;
-    pd_globallock();
+    
+    // This lock causes deadlocks...
+    // TODO: this is not very thread-safe, though is shouldn't be too horrible
+    // I should fix this though
+    
+    //pd_globallock();
+    
     if (sys_load_lib(canvas_getcurrent(), s->s_name))
     {
         tryingalready++;
@@ -945,7 +951,7 @@ void new_anything(void *dummy, t_symbol *s, int argc, t_atom *argv)
         return;
     }
     class_loadsym = 0;
-    pd_globalunlock();
+    //pd_globalunlock();
 }
 
 void set_class_prefix(t_symbol* dir)
