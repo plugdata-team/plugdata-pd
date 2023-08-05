@@ -67,6 +67,10 @@
         ((nmemb) < (maxnmemb) || (freebytes((array), (nmemb) * sizeof(type)), 0)))
 #endif /* !DONT_USE_ALLOCA */
 
+// TODO: temp to make MSVC Windows compile
+#ifdef _MSC_VER
+#define alloca malloc
+#endif
 
 /* --------------------------- endianness helpers --------------------- */
 #ifdef HAVE_MACHINE_ENDIAN_H
