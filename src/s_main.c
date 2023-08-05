@@ -1571,12 +1571,12 @@ t_symbol *sys_decodedialog(t_symbol *s)
 /* start the generic preference window */
 void sys_gui_preferences(void);
 void sys_gui_audiopreferences(void);
-void sys_gui_midipreferences(void);
+//void sys_gui_midipreferences(void);
 void glob_start_preference_dialog(t_pd *dummy, t_symbol*s)
 {
     sys_gui_preferences();
     sys_gui_audiopreferences();
-    sys_gui_midipreferences();
+    //sys_gui_midipreferences();
     pdgui_vmess("::dialog_preferences::create", "");
 }
 
