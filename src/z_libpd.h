@@ -225,7 +225,7 @@ EXTERN int libpd_exists(const char *recv);
 /// print receive hook signature, s is the string to be printed
 /// note: default behavior returns individual words and spaces:
 ///     line "hello 123" is received in 4 parts -> "hello", " ", "123\n"
-typedef void (*t_libpd_printhook)(const char *s);
+typedef void (*t_libpd_printhook)(void*, const char *s);
 
 /// bang receive hook signature, recv is the source receiver name
 typedef void (*t_libpd_banghook)(const char *recv);
