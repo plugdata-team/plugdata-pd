@@ -317,7 +317,8 @@ struct _outconnect
 {
     struct _outconnect *oc_next;
     t_pd *oc_to;
-    t_symbol* outconnect_path_data;
+    t_symbol* oc_path_data;
+    int oc_nchs;
 };
 
 struct _outlet
@@ -710,7 +711,8 @@ doit:
     oc = (t_outconnect *)t_getbytes(sizeof(*oc));
     oc->oc_next = 0;
     oc->oc_to = to;
-    oc->outconnect_path_data = gensym("empty");
+    oc->oc_nchs = 0;
+    oc->oc_path_data = gensym("empty");
         /* append it to the end of the list */
         /* LATER we might cache the last "oc" to make this faster. */
     if ((oc2 = *ochead))
@@ -1039,10 +1041,22 @@ void obj_init(void)
 
 t_symbol* outconnect_get_path_data(t_outconnect* oc)
 {
-    return oc->outconnect_path_data;
+    return oc->oc_path_data;
 }
 
 void outconnect_set_path_data(t_outconnect* oc, t_symbol* newsym)
 {
-    oc->outconnect_path_data = newsym;
+    oc->oc_path_data = newsym;
+}
+
+// Only for internal use in Pd!
+void outconnect_set_num_channels(t_outconnect* oc, int nch)
+{
+    oc->oc_nchs = nch;
+}
+
+// Only for internal use in Pd!
+int outconnect_get_num_channels(t_outconnect* oc)
+{
+    return oc->oc_nchs;
 }

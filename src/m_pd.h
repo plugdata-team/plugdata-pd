@@ -435,6 +435,9 @@ EXTERN t_object *pd_checkobject(t_pd *x);
 EXTERN t_symbol* outconnect_get_path_data(t_outconnect* oc);
 EXTERN void outconnect_set_path_data(t_outconnect* oc, t_symbol* newsym);
 
+EXTERN int outconnect_get_num_channels(t_outconnect* oc);
+EXTERN void outconnect_set_num_channels(t_outconnect* oc, int nch);
+
 /* -------------------- canvases -------------- */
 
 EXTERN void glob_setfilename(void *dummy, t_symbol *name, t_symbol *dir);

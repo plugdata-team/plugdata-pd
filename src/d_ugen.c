@@ -610,6 +610,7 @@ typedef struct _sigoutconnect
     t_ugenbox *oc_who;
     int oc_inno;
     struct _sigoutconnect *oc_next;
+    t_outconnect* oc_origin;
 } t_sigoutconnect;
 
 typedef struct _sigoutlet
@@ -762,7 +763,7 @@ void ugen_add(t_dspcontext *dc, t_object *obj)
 
     /* and then this to make all the connections. */
 void ugen_connect(t_dspcontext *dc, t_object *x1, int outno, t_object *x2,
-    int inno)
+    int inno, t_outconnect* oc_original)
 {
     t_ugenbox *u1, *u2;
     t_sigoutlet *uout;
@@ -803,6 +804,7 @@ void ugen_connect(t_dspcontext *dc, t_object *x1, int outno, t_object *x2,
     uout->o_connections = oc;
     oc->oc_who = u2;
     oc->oc_inno = siginno;
+    oc->oc_origin = oc_original;
         /* update inlet and outlet counts  */
     uout->o_nconnect++;
     uin->i_nconnect++;
@@ -1009,6 +1011,11 @@ static void ugen_doit(t_dspcontext *dc, t_ugenbox *u)
             }
             else uin->i_signal = s1;
             uin->i_ngot++;
+            
+            // modification for plugdata:
+            // store the number of channels on the outconnect so that we can read it from the GUI
+            outconnect_set_num_channels(oc->oc_origin, s1->s_nchans);
+            
                 /* if we didn't fill this inlet don't bother yet */
             if (uin->i_ngot < uin->i_nconnect)
                 goto notyet;
@@ -1016,7 +1023,8 @@ static void ugen_doit(t_dspcontext *dc, t_ugenbox *u)
             if (u2->u_nin > 1)
             {
                 for (uin = u2->u_in, n = u2->u_nin; n--; uin++)
-                    if (uin->i_ngot < uin->i_nconnect) goto notyet;
+                    if (uin->i_ngot < uin->i_nconnect)
+                        goto notyet;
             }
                 /* so now we can schedule the ugen.  */
             ugen_doit(dc, u2);

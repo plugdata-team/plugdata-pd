@@ -1334,7 +1334,7 @@ t_dspcontext *ugen_start_graph(int toplevel, t_signal **sp,
     int ninlets, int noutlets);
 void ugen_add(t_dspcontext *dc, t_object *x);
 void ugen_connect(t_dspcontext *dc, t_object *x1, int outno,
-    t_object *x2, int inno);
+    t_object *x2, int inno, t_outconnect* oc_original);
 void ugen_done_graph(t_dspcontext *dc);
 
     /* schedule one canvas for DSP.  This is called below for all "root"
@@ -1377,7 +1377,7 @@ void canvas_dodsp(t_canvas *x, int toplevel, t_signal **sp)
     linetraverser_start(&t, x);
     while ((oc = linetraverser_next(&t)))
         if (obj_issignaloutlet(t.tr_ob, t.tr_outno))
-            ugen_connect(dc, t.tr_ob, t.tr_outno, t.tr_ob2, t.tr_inno);
+            ugen_connect(dc, t.tr_ob, t.tr_outno, t.tr_ob2, t.tr_inno, oc);
 
         /* finally, sort them and add them to the DSP chain */
     ugen_done_graph(dc);
