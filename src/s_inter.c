@@ -1861,6 +1861,7 @@ void plugdata_gui_message(const char* message, va_list args)
         return;
     }
 
+    
     if (strncmp(message, "pdtk_savepanel", strlen("pdtk_savepanel")) == 0) {
 
         char const* snd = va_arg(args, char const*);
@@ -1924,6 +1925,53 @@ void plugdata_gui_message(const char* message, va_list args)
         
         pd_this->pd_inter->gui_callback(INTER->callback_target, "elsepanel", 3, atoms);
     }
+    else if (strncmp(message, "editor_open", strlen("editor_open")) == 0) {
+        if(strncmp(message, "editor_open .%lx %dx%d {%s: %s} %d", strlen("editor_open .%lx %dx%d {%s: %s} %d")) == 0)
+        {
+            unsigned long ptr = va_arg(args, unsigned long);
+            int width = va_arg(args, int);
+            int height = va_arg(args, int);
+            char const* owner = va_arg(args, char const*);
+            char const* title = va_arg(args, char const*);
+            int has_callback = va_arg(args, int);
+            
+            t_atom atoms[6];
+            SETPOINTER(atoms, ptr);
+            SETFLOAT(atoms + 1, width);
+            SETFLOAT(atoms + 2, height);
+            SETSYMBOL(atoms + 3, gensym(owner));
+            SETSYMBOL(atoms + 4, gensym(title));
+            SETFLOAT(atoms + 5, has_callback);
+            pd_this->pd_inter->gui_callback(INTER->callback_target, "cyclone_editor", 6, atoms);
+        }
+        else {
+            
+            unsigned long ptr = va_arg(args, unsigned long);
+            int width = va_arg(args, int);
+            int height = va_arg(args, int);
+            char const* title = va_arg(args, char const*);
+            int has_callback = va_arg(args, int);
+            
+            t_atom atoms[5];
+            SETPOINTER(atoms, ptr);
+            SETFLOAT(atoms + 1, width);
+            SETFLOAT(atoms + 2, height);
+            SETSYMBOL(atoms + 3, gensym(title));
+            SETFLOAT(atoms + 4, has_callback);
+            pd_this->pd_inter->gui_callback(INTER->callback_target, "cyclone_editor", 5, atoms);
+        }
+    }
+    else if (strncmp(message, "editor_append", strlen("editor_append")) == 0) {
+        unsigned long ptr = va_arg(args, unsigned long);
+        char const* text = va_arg(args, char const*);
+        
+        t_atom atoms[2];
+        SETPOINTER(atoms, ptr);
+        SETSYMBOL(atoms + 1, gensym(text));
+        pd_this->pd_inter->gui_callback(INTER->callback_target, "cyclone_editor_append", 2, atoms);
+    }
+    
+    
 }
 
 void plugdata_forward_message(void* x, t_symbol *s, int argc, t_atom *argv)
