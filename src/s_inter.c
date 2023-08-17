@@ -815,38 +815,14 @@ int sys_havegui(void)
 
 void sys_vgui(char const* fmt, ...)
 {
-    // This call causes a circular loop, so ignore it
-    if (strncmp(fmt, "pdtk_canvas_raise", strlen("pdtk_canvas_raise")) == 0) {
-        return;
-    }
+    va_list args;
+    va_start(args, fmt);
+    //char const* snd = va_arg(args, char const*);
+    
+    plugdata_gui_message(fmt, args);
 
-    if (strncmp(fmt, "pdtk_savepanel", strlen("pdtk_savepanel")) == 0) {
-
-        va_list args;
-        va_start(args, fmt);
-
-        char const* symbol = va_arg(args, char const*);
-        char const* path = va_arg(args, char const*);
-
-        create_panel(0, path, symbol);
-    }
-    if (strncmp(fmt, "pdtk_openpanel", strlen("pdtk_openpanel")) == 0) {
-        va_list args;
-        va_start(args, fmt);
-
-        char const* symbol = va_arg(args, char const*);
-        char const* path = va_arg(args, char const*);
-
-        create_panel(1, path, symbol);
-    }
-
-    if (strncmp(fmt, "::pd_menucommands::menu_openfile", strlen("::pd_menucommands::menu_openfile")) == 0) {
-        va_list args;
-        va_start(args, fmt);
-        const char* str = va_arg(args, const char*);
-        trigger_open_file(str);
-        va_end(args);
-    }
+    // Clean up both va_lists
+    va_end(args);
 }
 
 void sys_gui(char const* s)
@@ -1872,31 +1848,81 @@ void pd_globalunlock(void) { }
 void update_gui()
 {
     if (INTER && INTER->callback_target && INTER->gui_callback) {
-        pd_this->pd_inter->gui_callback(INTER->callback_target, "repaint", NULL, NULL, NULL);
+        pd_this->pd_inter->gui_callback(INTER->callback_target, "repaint", 0, NULL);
     }
 }
 
-void create_panel(int openpanel, char const* path, char const* snd)
+void plugdata_gui_message(const char* message, va_list args)
 {
-    if (INTER && INTER->callback_target && INTER->gui_callback) {
-        
-        t_atom args[3];
-        SETFLOAT(args, openpanel);
-        SETSYMBOL(args + 1, gensym(path));
-        SETSYMBOL(args + 2, gensym(snd));
-        
-        pd_this->pd_inter->gui_callback(INTER->callback_target, "openpanel", args, args + 1, args + 2);
+    if(!message) return;
+    
+    // This call causes a circular loop, so ignore it
+    if (strncmp(message, "pdtk_canvas_raise", strlen("pdtk_canvas_raise")) == 0) {
+        return;
     }
-}
 
+    if (strncmp(message, "pdtk_savepanel", strlen("pdtk_savepanel")) == 0) {
 
-void trigger_open_file(const char* file) {
-    if(INTER && INTER->callback_target && INTER->gui_callback) {
+        char const* snd = va_arg(args, char const*);
+        char const* path = va_arg(args, char const*);
         
-        t_atom args;
-        SETSYMBOL(&args, gensym(file));
+        t_atom atoms[3];
+        SETFLOAT(atoms, 0);
+        SETSYMBOL(atoms + 1, gensym(snd));
+        SETSYMBOL(atoms + 2, gensym(path));
         
-        INTER->gui_callback(INTER->callback_target, "openfile", &args, NULL, NULL);
+        pd_this->pd_inter->gui_callback(INTER->callback_target, "openpanel", 3, atoms);
+    }
+    else if (strncmp(message, "pdtk_openpanel", strlen("pdtk_openpanel")) == 0) {
+        char const* snd = va_arg(args, char const*);
+        char const* path = va_arg(args, char const*);
+        
+        t_atom atoms[3];
+        SETFLOAT(atoms, 1);
+        SETSYMBOL(atoms + 1, gensym(snd));
+        SETSYMBOL(atoms + 2, gensym(path));
+        
+        pd_this->pd_inter->gui_callback(INTER->callback_target, "openpanel", 3, atoms);
+    }
+    else if (strncmp(message, "::pd_menucommands::menu_openfile", strlen("::pd_menucommands::menu_openfile")) == 0) {
+        const char* file = va_arg(args, const char*);
+        
+        t_atom atoms;
+        SETSYMBOL(&atoms, gensym(file));
+        INTER->gui_callback(INTER->callback_target, "openfile", 1, &atoms);
+    }
+    else if (strncmp(message, "openfile_open", strlen("openfile_open")) == 0) {
+        const char* filename = va_arg(args, const char*);
+        const char* dir = va_arg(args, const char*);
+        
+        t_atom atoms[2];
+        SETSYMBOL(atoms, gensym(filename));
+        SETSYMBOL(atoms + 1, gensym(dir));
+        
+        INTER->gui_callback(INTER->callback_target, "openfile", 2, &atoms);
+    }
+    // These are tcl/tk functions ELSE defines for spawning a file browser
+    else if (strncmp(message, "panel_save", strlen("panel_save")) == 0) {
+        char const* snd = va_arg(args, char const*);
+        char const* path = va_arg(args, char const*);
+                
+        t_atom atoms[3];
+        SETFLOAT(atoms, 0);
+        SETSYMBOL(atoms + 1, gensym(snd));
+        SETSYMBOL(atoms + 2, gensym(path));
+        
+        pd_this->pd_inter->gui_callback(INTER->callback_target, "elsepanel", 3, atoms);
+    }
+    else if (strncmp(message, "panel_open", strlen("panel_open")) == 0) {
+        char const* snd = va_arg(args, char const*);
+        char const* path = va_arg(args, char const*);
+        
+        t_atom atoms[3];
+        SETFLOAT(atoms, 1);
+        SETSYMBOL(atoms + 1, gensym(snd));
+        SETSYMBOL(atoms + 2, gensym(path));
+        
+        pd_this->pd_inter->gui_callback(INTER->callback_target, "elsepanel", 3, atoms);
     }
 }
 
