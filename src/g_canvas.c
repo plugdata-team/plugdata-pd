@@ -1251,7 +1251,7 @@ static void *subcanvas_new(t_symbol *s)
     return (x);
 }
 
-static void canvas_click(t_canvas *x,
+void canvas_click(t_canvas *x,
     t_floatarg xpos, t_floatarg ypos,
         t_floatarg shift, t_floatarg ctrl, t_floatarg alt)
 {
