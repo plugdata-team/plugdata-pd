@@ -14,6 +14,8 @@
 static int totalmem = 0;
 #endif
 
+extern void clear_weak_references(void* ptr);
+
 void *getbytes(size_t nbytes)
 {
     void *ret;
@@ -73,6 +75,8 @@ void freebytes(void *fatso, size_t nbytes)
 #ifdef DEBUGMEM
     totalmem -= nbytes;
 #endif
+    
+    clear_weak_references(fatso);
     free(fatso);
 }
 

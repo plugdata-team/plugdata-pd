@@ -6,7 +6,7 @@
 #include "m_imp.h"
 #include "g_canvas.h"   /* just for LB_LOAD */
 
-extern void clear_weak_references(t_pd* ptr);
+extern void clear_weak_references(void* ptr);
 
 
 #if PDINSTANCE
