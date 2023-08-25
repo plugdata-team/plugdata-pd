@@ -1878,13 +1878,15 @@ void plugdata_gui_message(const char* message, va_list args)
     else if (strncmp(message, "pdtk_openpanel", strlen("pdtk_openpanel")) == 0) {
         char const* snd = va_arg(args, char const*);
         char const* path = va_arg(args, char const*);
+        int mode = va_arg(args, int);
         
-        t_atom atoms[3];
+        t_atom atoms[4];
         SETFLOAT(atoms, 1);
         SETSYMBOL(atoms + 1, gensym(snd));
         SETSYMBOL(atoms + 2, gensym(path));
+        SETFLOAT(atoms + 3, mode);
         
-        pd_this->pd_inter->gui_callback(INTER->callback_target, "openpanel", 3, atoms);
+        pd_this->pd_inter->gui_callback(INTER->callback_target, "openpanel", 4, atoms);
     }
     else if (strncmp(message, "::pd_menucommands::menu_openfile", strlen("::pd_menucommands::menu_openfile")) == 0) {
         const char* file = va_arg(args, const char*);
