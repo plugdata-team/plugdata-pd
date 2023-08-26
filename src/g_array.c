@@ -539,8 +539,7 @@ static void garray_arrayviewlist_close(t_garray *x)
 
 static void garray_free(t_garray *x)
 {
-    t_pd *x2;
-        sys_unqueuegui(&x->x_gobj);
+    sys_unqueuegui(&x->x_gobj);
     /* jsarlo { */
     if (x->x_listviewing)
     {
@@ -549,9 +548,13 @@ static void garray_free(t_garray *x)
     /* } jsarlo */
     pdgui_stub_deleteforkey(x);
     pd_unbind(&x->x_gobj.g_pd, x->x_realname);
-        /* just in case we're still bound to #A from loading... */
-    while ((x2 = pd_findbyclass(gensym("#A"), garray_class)))
-        pd_unbind(x2, gensym("#A"));
+    
+    /* just in case we're still bound to #A from loading... */
+     if(gensym("#A")->s_thing == &x->x_gobj.g_pd)
+     {
+         pd_unbind(&x->x_gobj.g_pd, gensym("#A"));
+     }
+    
     pd_free(&x->x_scalar->sc_gobj.g_pd);
 }
 
