@@ -3693,9 +3693,19 @@ static t_binbuf *canvas_docopy(t_canvas *x)
         if (glist_isselected(x, &t.tr_ob->ob_g)
             && glist_isselected(x, &t.tr_ob2->ob_g))
         {
-            binbuf_addv(b, "ssiiiis;", gensym("#X"), gensym("connect"),
-                glist_selectionindex(x, &t.tr_ob->ob_g, 1), t.tr_outno,
-                glist_selectionindex(x, &t.tr_ob2->ob_g, 1), t.tr_inno, t.outconnect_path_info);
+            if(t.outconnect_path_info == gensym("empty"))
+            {
+                binbuf_addv(b, "ssiiii;", gensym("#X"), gensym("connect"),
+                    glist_selectionindex(x, &t.tr_ob->ob_g, 1), t.tr_outno,
+                    glist_selectionindex(x, &t.tr_ob2->ob_g, 1), t.tr_inno);
+            }
+            else {
+                binbuf_addv(b, "ssiiiis;", gensym("#X"), gensym("connect"),
+                    glist_selectionindex(x, &t.tr_ob->ob_g, 1), t.tr_outno,
+                    glist_selectionindex(x, &t.tr_ob2->ob_g, 1), t.tr_inno, t.outconnect_path_info);
+            }
+            
+
         }
     }
     return (b);
