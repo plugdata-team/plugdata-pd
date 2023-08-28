@@ -943,12 +943,6 @@ void sys_pretendguibytes(int n)
 
 void sys_queuegui(void* client, t_glist* glist, t_guicallbackfn f)
 {
-    t_pd* c_pd = (t_pd*)client;
-    
-    // redraw scalar
-    if (c_pd && !strcmp((*c_pd)->c_name->s_name, "scalar")) {
-        update_gui();
-    }
 }
 
 void sys_unqueuegui(void* client)
@@ -1844,14 +1838,6 @@ void pd_globallock(void)
 }
 void pd_globalunlock(void) { }
 #endif /* PDTHREADS */
-
-
-void update_gui()
-{
-    if (INTER && INTER->callback_target && INTER->gui_callback) {
-        pd_this->pd_inter->gui_callback(INTER->callback_target, "repaint", 0, NULL);
-    }
-}
 
 void plugdata_gui_message(const char* message, va_list args)
 {
