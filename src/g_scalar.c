@@ -509,6 +509,7 @@ static void scalar_vis(t_gobj *z, t_glist *owner, int vis)
         scalar_drawselectrect(x, owner, 1);
     }
     sys_unqueuegui(x);
+    plugdata_forward_message(x, gensym("redraw"), 0, NULL);
 }
 
 static void scalar_doredraw(t_gobj *client, t_glist *glist)
