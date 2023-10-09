@@ -21,6 +21,12 @@ void pd_set_instance(t_pdinstance* instance)
 {
     pd_this_instance = instance;
 }
+#else
+
+t_pdinstance* pd_get_instance()
+{
+    return pd_this;
+};
 
 #endif
 

@@ -506,6 +506,8 @@ EXTERN void libpd_set_verbose(int verbose);
 /// get the verbose print state: 0 or 1
 EXTERN int libpd_get_verbose(void);
 
+EXTERN void* libpd_get_class_methods(t_class* o);
+
 #ifdef __cplusplus
 }
 #endif

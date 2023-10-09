@@ -35,24 +35,10 @@
 #endif
 
 // forward declares
-void pd_init(void);
 int sys_startgui(const char *libdir);
 void sys_stopgui(void);
 int sys_pollgui(void);
 
-// (optional) setup functions for built-in "extra" externals
-#ifdef LIBPD_EXTRA
-  void bob_tilde_setup(void);
-  void bonk_tilde_setup(void);
-  void choice_setup(void);
-  void fiddle_tilde_setup(void);
-  void loop_tilde_setup(void);
-  void lrshift_tilde_setup(void);
-  void pd_tilde_setup(void);
-  void pique_setup(void);
-  void sigmund_tilde_setup(void);
-  void stdout_setup(void);
-#endif
 
 static PERTHREAD t_atom *s_argv = NULL;
 static PERTHREAD t_atom *s_curr = NULL;
@@ -66,47 +52,7 @@ static void *get_object(const char *s) {
 
 // this is called instead of sys_main() to start things
 int libpd_init(void) {
-  static int s_initialized = 0;
-  if (s_initialized) return -1; // only allow init once (for now)
-  s_initialized = 1;
-  signal(SIGFPE, SIG_IGN);
-  libpd_start_message(32); // allocate array for message assembly
-  sys_externalschedlib = 0;
-  sys_printtostderr = 0;
-  sys_usestdpath = 0; // don't use pd_extrapath, only sys_searchpath
-  sys_debuglevel = 0;
-  sys_noloadbang = 0;
-  sys_hipriority = 0;
-  sys_nmidiin = 0;
-  sys_nmidiout = 0;
-#ifdef HAVE_SCHED_TICK_ARG
-  sys_time = 0;
-#endif
-  pd_init();
-  STUFF->st_soundin = NULL;
-  STUFF->st_soundout = NULL;
-  STUFF->st_schedblocksize = DEFDACBLKSIZE;
-  sys_init_fdpoll();
-  libpdreceive_setup();
-  STUFF->st_searchpath = NULL;
-  sys_libdir = gensym("");
-  post("pd %d.%d.%d%s", PD_MAJOR_VERSION, PD_MINOR_VERSION,
-    PD_BUGFIX_VERSION, PD_TEST_VERSION);
-#ifdef LIBPD_EXTRA
-  bob_tilde_setup();
-  bonk_tilde_setup();
-  choice_setup();
-  fiddle_tilde_setup();
-  loop_tilde_setup();
-  lrshift_tilde_setup();
-  pd_tilde_setup();
-  pique_setup();
-  sigmund_tilde_setup();
-  stdout_setup();
-#endif
-#ifndef LIBPD_NO_NUMERIC
-  setlocale(LC_NUMERIC, "C");
-#endif
+
   return 0;
 }
 
@@ -398,52 +344,6 @@ int libpd_message(const char *recv, const char *msg, int argc, t_atom *argv) {
   return 0;
 }
 
-void *libpd_bind(const char *recv) {
-  t_symbol *x;
-  sys_lock();
-  x = gensym(recv);
-  sys_unlock();
-  return libpdreceive_new(x);
-}
-
-void libpd_unbind(void *p) {
-  sys_lock();
-  pd_free((t_pd *)p);
-  sys_unlock();
-}
-
-int libpd_exists(const char *recv) {
-  int retval;
-  sys_lock();
-  retval = (get_object(recv) != NULL);
-  sys_unlock();
-  return retval;
-}
-
-void libpd_set_printhook(const t_libpd_printhook hook) {
-  sys_printhook = (t_printhook) hook;
-}
-
-void libpd_set_banghook(const t_libpd_banghook hook) {
-  libpd_banghook = hook;
-}
-
-void libpd_set_floathook(const t_libpd_floathook hook) {
-  libpd_floathook = hook;
-}
-
-void libpd_set_symbolhook(const t_libpd_symbolhook hook) {
-  libpd_symbolhook = hook;
-}
-
-void libpd_set_listhook(const t_libpd_listhook hook) {
-  libpd_listhook = hook;
-}
-
-void libpd_set_messagehook(const t_libpd_messagehook hook) {
-  libpd_messagehook = hook;
-}
-
 int libpd_is_float(t_atom *a) {
   return (a)->a_type == A_FLOAT;
 }
@@ -556,33 +456,6 @@ int libpd_sysrealtime(int port, int byte) {
   return 0;
 }
 
-void libpd_set_noteonhook(const t_libpd_noteonhook hook) {
-  libpd_noteonhook = hook;
-}
-
-void libpd_set_controlchangehook(const t_libpd_controlchangehook hook) {
-  libpd_controlchangehook = hook;
-}
-
-void libpd_set_programchangehook(const t_libpd_programchangehook hook) {
-  libpd_programchangehook = hook;
-}
-
-void libpd_set_pitchbendhook(const t_libpd_pitchbendhook hook) {
-  libpd_pitchbendhook = hook;
-}
-
-void libpd_set_aftertouchhook(const t_libpd_aftertouchhook hook) {
-  libpd_aftertouchhook = hook;
-}
-
-void libpd_set_polyaftertouchhook(const t_libpd_polyaftertouchhook hook) {
-  libpd_polyaftertouchhook = hook;
-}
-
-void libpd_set_midibytehook(const t_libpd_midibytehook hook) {
-  libpd_midibytehook = hook;
-}
 
 int libpd_start_gui(const char *path) {
   int retval;
@@ -630,6 +503,15 @@ t_pdinstance *libpd_this_instance(void) {
   return pd_this;
 }
 
+void* libpd_get_class_methods(t_class* o)
+{
+#ifdef PDINSTANCE
+   return o->c_methods[pd_this->pd_instanceno];
+#else
+   return o->c_methods;
+#endif
+}
+
 t_pdinstance *libpd_get_instance(int index) {
 #ifdef PDINSTANCE
   if(index < 0 || index >= pd_ninstances) {return 0;}
@@ -649,7 +531,7 @@ int libpd_num_instances(void) {
 
 void libpd_set_verbose(int verbose) {
   if (verbose < 0) verbose = 0;
-  sys_verbose = verbose;
+  
 }
 
 int libpd_get_verbose(void) {
