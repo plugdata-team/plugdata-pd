@@ -379,7 +379,7 @@ struct _parentwidgetbehavior
 EXTERN void canvas_setcursor(t_glist *x, unsigned int cursornum);
 
 extern t_canvas *canvas_whichfind;  /* last canvas we did a find in */
-extern t_class *vinlet_class, *voutlet_class;
+EXTERN t_class *vinlet_class, *voutlet_class;
 extern int glist_valid;         /* incremented when pointers might be stale */
 
 #define PLOTSTYLE_POINTS 0     /* plotting styles for arrays */
@@ -457,7 +457,7 @@ EXTERN void text_drawborder(t_text *x, t_glist *glist, const char *tag,
 EXTERN void text_eraseborder(t_text *x, t_glist *glist, const char *tag);
 EXTERN int text_xpix(t_text *x, t_glist *glist);
 EXTERN int text_ypix(t_text *x, t_glist *glist);
-extern const t_widgetbehavior text_widgetbehavior;
+EXTERN const t_widgetbehavior text_widgetbehavior;
 
 /* -------------------- functions on rtexts ------------------------- */
 #define RTEXT_DOWN 1

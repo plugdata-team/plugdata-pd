@@ -35,10 +35,21 @@
 #endif
 
 // forward declares
+void pd_init(void);
 int sys_startgui(const char *libdir);
 void sys_stopgui(void);
 int sys_pollgui(void);
 
+void bob_tilde_setup(void);
+void bonk_tilde_setup(void);
+void choice_setup(void);
+void fiddle_tilde_setup(void);
+void loop_tilde_setup(void);
+void lrshift_tilde_setup(void);
+void pd_tilde_setup(void);
+void pique_setup(void);
+void sigmund_tilde_setup(void);
+void stdout_setup(void);
 
 static PERTHREAD t_atom *s_argv = NULL;
 static PERTHREAD t_atom *s_curr = NULL;
@@ -52,9 +63,51 @@ static void *get_object(const char *s) {
 
 // this is called instead of sys_main() to start things
 int libpd_init(void) {
+  static int s_initialized = 0;
+  if (s_initialized) return -1; // only allow init once (for now)
+  s_initialized = 1;
+  signal(SIGFPE, SIG_IGN);
+  libpd_start_message(32); // allocate array for message assembly
+  sys_externalschedlib = 0;
+  sys_printtostderr = 0;
+  sys_usestdpath = 0; // don't use pd_extrapath, only sys_searchpath
+  sys_debuglevel = 0;
+  sys_noloadbang = 0;
+  sys_hipriority = 0;
+  sys_nmidiin = 0;
+  sys_nmidiout = 0;
+#ifdef HAVE_SCHED_TICK_ARG
+  sys_time = 0;
+#endif
+  pd_init();
+  STUFF->st_soundin = NULL;
+  STUFF->st_soundout = NULL;
+  STUFF->st_schedblocksize = DEFDACBLKSIZE;
+  sys_init_fdpoll();
+  libpdreceive_setup();
+  STUFF->st_searchpath = NULL;
+  sys_libdir = gensym("");
+  post("pd %d.%d.%d%s", PD_MAJOR_VERSION, PD_MINOR_VERSION,
+    PD_BUGFIX_VERSION, PD_TEST_VERSION);
+#ifdef LIBPD_EXTRA
+  bob_tilde_setup();
+  bonk_tilde_setup();
+  choice_setup();
+  fiddle_tilde_setup();
+  loop_tilde_setup();
+  lrshift_tilde_setup();
+  pd_tilde_setup();
+  pique_setup();
+  sigmund_tilde_setup();
+  stdout_setup();
+#endif
+#ifndef LIBPD_NO_NUMERIC
+  setlocale(LC_NUMERIC, "C");
+#endif
 
   return 0;
 }
+
 
 void libpd_clear_search_path(void) {
   sys_lock();
@@ -454,6 +507,38 @@ int libpd_sysrealtime(int port, int byte) {
   inmidi_realtimein(port, byte);
   sys_unlock();
   return 0;
+}
+
+void libpd_set_printhook(const t_libpd_printhook hook) {
+  sys_printhook = (t_printhook) hook;
+}
+
+void libpd_set_noteonhook(const t_libpd_noteonhook hook) {
+  libpd_noteonhook = hook;
+}
+
+void libpd_set_controlchangehook(const t_libpd_controlchangehook hook) {
+  libpd_controlchangehook = hook;
+}
+
+void libpd_set_programchangehook(const t_libpd_programchangehook hook) {
+  libpd_programchangehook = hook;
+}
+
+void libpd_set_pitchbendhook(const t_libpd_pitchbendhook hook) {
+  libpd_pitchbendhook = hook;
+}
+
+void libpd_set_aftertouchhook(const t_libpd_aftertouchhook hook) {
+  libpd_aftertouchhook = hook;
+}
+
+void libpd_set_polyaftertouchhook(const t_libpd_polyaftertouchhook hook) {
+  libpd_polyaftertouchhook = hook;
+}
+
+void libpd_set_midibytehook(const t_libpd_midibytehook hook) {
+  libpd_midibytehook = hook;
 }
 
 
