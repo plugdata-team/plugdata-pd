@@ -8,6 +8,8 @@
 #include "g_canvas.h"
 #include <math.h>
 
+void plugdata_forward_message(void *x, t_symbol *s, int argc, t_atom *argv);
+
 /* jsarlo { */
 #define ARRAYPAGESIZE 1000  /* this should match the page size in u_main.tk */
 /* } jsarlo */
@@ -565,6 +567,7 @@ void array_redraw(t_array *a, t_glist *glist)
     while (a->a_gp.gp_stub->gs_which == GP_ARRAY)
         a = a->a_gp.gp_stub->gs_un.gs_array;
     scalar_redraw(a->a_gp.gp_un.gp_scalar, glist);
+    plugdata_forward_message(glist, gensym("redraw"), 0, NULL);
 }
 
     /* routine to get screen coordinates of a point in an array */
@@ -773,6 +776,8 @@ static void garray_doredraw(t_gobj *client, t_glist *glist)
 
 void garray_redraw(t_garray *x)
 {
+    plugdata_forward_message(x->x_glist, gensym("redraw"), 0, NULL);
+    
     if (glist_isvisible(x->x_glist))
         sys_queuegui(&x->x_gobj, x->x_glist, garray_doredraw);
     /* jsarlo { */
