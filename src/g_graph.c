@@ -196,7 +196,7 @@ void glist_grab(t_glist *x, t_gobj *y, t_glistmotionfn motionfn,
 
 t_canvas *glist_getcanvas(t_glist *x)
 {
-    while (x->gl_owner && !x->gl_isclone && x->gl_isgraph)
+    while (x->gl_owner && !x->gl_isclone && !x->gl_havewindow && x->gl_isgraph)
             x = x->gl_owner;
     return((t_canvas *)x);
 }
