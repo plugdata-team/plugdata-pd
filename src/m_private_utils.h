@@ -93,8 +93,8 @@
 # define LITTLE_ENDIAN _LITTLE_ENDIAN
 #endif
 
-#ifdef _MSC_VER
-/* _MSVC lacks BYTE_ORDER and LITTLE_ENDIAN */
+#ifdef _MSC_VER || __APPLE__
+/* _MSVC and macOS lack BYTE_ORDER and LITTLE_ENDIAN */
 # if !defined(LITTLE_ENDIAN)
 #  define LITTLE_ENDIAN 0x0001
 # endif
