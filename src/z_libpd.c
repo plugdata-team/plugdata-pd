@@ -422,14 +422,14 @@ t_atom *libpd_next_atom(t_atom *a) {
 #define CHECK_RANGE_7BIT(v) if (v < 0 || v > 0x7f) return -1;
 #define CHECK_RANGE_8BIT(v) if (v < 0 || v > 0xff) return -1;
 #define PORT (channel >> 4)
-#define CHANNEL (channel & 0x0f)
+#define IN_CHANNEL (channel & 0x0f)
 
 int libpd_noteon(int channel, int pitch, int velocity) {
   CHECK_CHANNEL
   CHECK_RANGE_7BIT(pitch)
   CHECK_RANGE_7BIT(velocity)
   sys_lock();
-  inmidi_noteon(PORT, CHANNEL, pitch, velocity);
+  inmidi_noteon(PORT, IN_CHANNEL, pitch, velocity);
   sys_unlock();
   return 0;
 }
@@ -439,7 +439,7 @@ int libpd_controlchange(int channel, int controller, int value) {
   CHECK_RANGE_7BIT(controller)
   CHECK_RANGE_7BIT(value)
   sys_lock();
-  inmidi_controlchange(PORT, CHANNEL, controller, value);
+  inmidi_controlchange(PORT, IN_CHANNEL, controller, value);
   sys_unlock();
   return 0;
 }
@@ -448,7 +448,7 @@ int libpd_programchange(int channel, int value) {
   CHECK_CHANNEL
   CHECK_RANGE_7BIT(value)
   sys_lock();
-  inmidi_programchange(PORT, CHANNEL, value);
+  inmidi_programchange(PORT, IN_CHANNEL, value);
   sys_unlock();
   return 0;
 }
@@ -458,7 +458,7 @@ int libpd_pitchbend(int channel, int value) {
   CHECK_CHANNEL
   if (value < -8192 || value > 8191) return -1;
   sys_lock();
-  inmidi_pitchbend(PORT, CHANNEL, value + 8192);
+  inmidi_pitchbend(PORT, IN_CHANNEL, value + 8192);
   sys_unlock();
   return 0;
 }
@@ -467,7 +467,7 @@ int libpd_aftertouch(int channel, int value) {
   CHECK_CHANNEL
   CHECK_RANGE_7BIT(value)
   sys_lock();
-  inmidi_aftertouch(PORT, CHANNEL, value);
+  inmidi_aftertouch(PORT, IN_CHANNEL, value);
   sys_unlock();
   return 0;
 }
@@ -477,7 +477,7 @@ int libpd_polyaftertouch(int channel, int pitch, int value) {
   CHECK_RANGE_7BIT(pitch)
   CHECK_RANGE_7BIT(value)
   sys_lock();
-  inmidi_polyaftertouch(PORT, CHANNEL, pitch, value);
+  inmidi_polyaftertouch(PORT, IN_CHANNEL, pitch, value);
   sys_unlock();
   return 0;
 }
@@ -630,42 +630,42 @@ int libpd_get_verbose(void) {
 #define CLAMP12BIT(x) CLAMP(x, 0, 0x0fff)
 #define CLAMP14BIT(x) CLAMP(x, 0, 0x3fff)
 
-#define CHANNEL ((CLAMP12BIT(port) << 4) | CLAMP4BIT(channel))
+#define OUT_CHANNEL ((CLAMP12BIT(port) << 4) | CLAMP4BIT(channel))
 
 void outmidi_noteon(int port, int channel, int pitch, int velo)
 {
     if (libpd_noteonhook)
-        libpd_noteonhook(CHANNEL, CLAMP7BIT(pitch), CLAMP7BIT(velo));
+        libpd_noteonhook(OUT_CHANNEL, CLAMP7BIT(pitch), CLAMP7BIT(velo));
 }
 
 void outmidi_controlchange(int port, int channel, int ctl, int value)
 {
     if (libpd_controlchangehook)
-        libpd_controlchangehook(CHANNEL, CLAMP7BIT(ctl), CLAMP7BIT(value));
+        libpd_controlchangehook(OUT_CHANNEL, CLAMP7BIT(ctl), CLAMP7BIT(value));
 }
 
 void outmidi_programchange(int port, int channel, int value)
 {
     if (libpd_programchangehook)
-        libpd_programchangehook(CHANNEL, CLAMP7BIT(value));
+        libpd_programchangehook(OUT_CHANNEL, CLAMP7BIT(value));
 }
 
 void outmidi_pitchbend(int port, int channel, int value)
 {
     if (libpd_pitchbendhook)
-        libpd_pitchbendhook(CHANNEL, CLAMP14BIT(value) - 8192); // remove offset
+        libpd_pitchbendhook(OUT_CHANNEL, CLAMP14BIT(value) - 8192); // remove offset
 }
 
 void outmidi_aftertouch(int port, int channel, int value)
 {
     if (libpd_aftertouchhook)
-        libpd_aftertouchhook(CHANNEL, CLAMP7BIT(value));
+        libpd_aftertouchhook(OUT_CHANNEL, CLAMP7BIT(value));
 }
 
 void outmidi_polyaftertouch(int port, int channel, int pitch, int value)
 {
     if (libpd_polyaftertouchhook)
-        libpd_polyaftertouchhook(CHANNEL, CLAMP7BIT(pitch), CLAMP7BIT(value));
+        libpd_polyaftertouchhook(OUT_CHANNEL, CLAMP7BIT(pitch), CLAMP7BIT(value));
 }
 
 void outmidi_byte(int port, int value)
