@@ -674,6 +674,11 @@ void outmidi_byte(int port, int value)
         libpd_midibytehook(CLAMP12BIT(port), CLAMP8BIT(value));
 }
 
+void sys_putmidibyte(int port, int value)
+{
+    outmidi_byte(port, value);
+}
+
 /* tell Pd GUI that our list of MIDI APIs is empty */
 void sys_get_midi_apis(char* buf)
 {
