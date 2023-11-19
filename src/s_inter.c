@@ -1882,7 +1882,6 @@ void plugdata_gui_message(const char* message, va_list args)
         return;
     }
 
-    
     if (strncmp(message, "pdtk_savepanel", strlen("pdtk_savepanel")) == 0) {
 
         char const* snd = va_arg(args, char const*);
