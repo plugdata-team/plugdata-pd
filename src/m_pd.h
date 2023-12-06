@@ -434,10 +434,6 @@ EXTERN t_object *pd_checkobject(t_pd *x);
 
 EXTERN t_symbol* outconnect_get_path_data(t_outconnect* oc);
 EXTERN void outconnect_set_path_data(t_outconnect* oc, t_symbol* newsym);
-
-EXTERN int outconnect_get_num_channels(t_outconnect* oc);
-EXTERN void outconnect_set_num_channels(t_outconnect* oc, int nch);
-
 /* -------------------- canvases -------------- */
 
 EXTERN void glob_setfilename(void *dummy, t_symbol *name, t_symbol *dir);
@@ -687,6 +683,10 @@ EXTERN void mayer_realifft(int n, t_sample *real);
 EXTERN float *cos_table;
 #define LOGCOSTABSIZE 9
 #define COSTABSIZE (1<<LOGCOSTABSIZE)
+
+// Connection DSP manipulation for plugdata
+EXTERN t_signal* outconnect_get_signal(t_outconnect* oc);
+EXTERN void outconnect_set_signal(t_outconnect* oc, t_signal* signal);
 
 EXTERN int canvas_suspend_dsp(void);
 EXTERN void canvas_resume_dsp(int oldstate);

@@ -418,8 +418,10 @@ static void signal_cleanup(void)
     while ((sig = THIS->u_signals))
     {
         THIS->u_signals = sig->s_nextused;
+        
         if (!sig->s_isborrowed && !sig->s_isscalar)
             t_freebytes(sig->s_vec, sig->s_nalloc * sizeof (*sig->s_vec));
+        
         t_freebytes(sig, sizeof *sig);
     }
     for (i = 0; i <= MAXLOGSIG; i++)
@@ -547,6 +549,7 @@ t_signal *signal_new(int length, int nchans, t_float sr, t_sample *scalarptr)
     ret->s_overlap = 0;
     ret->s_refcount = 0;
     ret->s_borrowedfrom = 0;
+    
     if (THIS->u_loud) post("new %lx: %lx", ret, ret->s_vec);
     return (ret);
 }
@@ -989,8 +992,16 @@ static void ugen_doit(t_dspcontext *dc, t_ugenbox *u)
     for (uout = u->u_out, i = u->u_nout; i--; uout++)
     {
         s1 = uout->o_signal;
+                
         for (oc = uout->o_connections; oc; oc = oc->oc_next)
         {
+            /* modification for plugdata:
+               store the signal on the outconnect so that we can read it from the GUI
+               this is used for for connection debugging and mc channel detection 
+               it will also increment the refcount to ensure the signal doesn't get reused until we're done with it
+             */
+            outconnect_set_signal(oc->oc_origin, s1);
+            
             u2 = oc->oc_who;
             uin = &u2->u_in[oc->oc_inno];
                 /* if there's already someone here, sum the two */
@@ -1024,11 +1035,6 @@ static void ugen_doit(t_dspcontext *dc, t_ugenbox *u)
             }
             else uin->i_signal = s1;
             uin->i_ngot++;
-            
-            // modification for plugdata:
-            // store the number of channels on the outconnect so that we can read it from the GUI
-            outconnect_set_num_channels(oc->oc_origin, s1->s_nchans);
-            
                 /* if we didn't fill this inlet don't bother yet */
             if (uin->i_ngot < uin->i_nconnect)
                 goto notyet;
@@ -1039,6 +1045,7 @@ static void ugen_doit(t_dspcontext *dc, t_ugenbox *u)
                     if (uin->i_ngot < uin->i_nconnect)
                         goto notyet;
             }
+            
                 /* so now we can schedule the ugen.  */
             ugen_doit(dc, u2);
         notyet: ;

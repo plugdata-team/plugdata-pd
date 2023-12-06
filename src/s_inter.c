@@ -157,6 +157,9 @@ struct _instanceinter {
     void(*lock_fn)(void*);
     void(*unlock_fn)(void*);
     void(*clear_references_fn)(void*, void*);
+    void(*register_reference_fn)(void*, void*, void*);
+    void(*unregister_reference_fn)(void*, void*, void*);
+    int(*is_reference_valid_fn)(void*);
 };
 
 void register_gui_triggers(t_pdinstance* instance, void* target, pd_gui_callback gui_callback, pd_message_callback message_callback)
@@ -169,6 +172,29 @@ void register_gui_triggers(t_pdinstance* instance, void* target, pd_gui_callback
     instance->pd_inter->gui_callback = gui_callback;
     instance->pd_inter->message_callback = message_callback;
     instance->pd_inter->callback_target = target;
+}
+
+int is_reference_valid(void* ptr)
+{
+    if(pd_this->pd_inter->callback_target) {
+        return pd_this->pd_inter->is_reference_valid_fn(ptr);
+    }
+    
+    return 1;
+}
+
+void register_weak_reference(void* ptr, void* weak_reference)
+{
+    if(pd_this->pd_inter->callback_target) {
+        pd_this->pd_inter->register_reference_fn(pd_this->pd_inter->callback_target, ptr, weak_reference);
+    }
+}
+
+void unregister_weak_reference(void* ptr, void* weak_reference)
+{
+    if(pd_this->pd_inter->callback_target) {
+        pd_this->pd_inter->unregister_reference_fn(pd_this->pd_inter->callback_target, ptr, weak_reference);
+    }
 }
 
 void clear_weak_references(void* ptr)
@@ -1763,12 +1789,19 @@ static pthread_mutex_t sys_mutex = PTHREAD_MUTEX_INITIALIZER;
 #    endif /* PDINSTANCE */
 #endif     /* PDTHREADS */
 
-void set_instance_lock(const void* lock, void(*lock_func)(void*), void(*unlock_func)(void*), void(*clear_references_func)(void*, void*))
+void setup_lock(const void* lock, void(*lock_func)(void*), void(*unlock_func)(void*))
 {
     INTER->lock = (void*)lock;
     INTER->lock_fn = lock_func;
     INTER->unlock_fn = unlock_func;
+}
+
+void setup_weakreferences(void(*clear_references_func)(void*, void*), void(*register_reference_func)(void*, void*, void*), void(*unregister_reference_func)(void*, void*, void*), int(*is_reference_valid_func)(void*))
+{
     INTER->clear_references_fn = clear_references_func;
+    INTER->is_reference_valid_fn = is_reference_valid_func;
+    INTER->register_reference_fn = register_reference_func;
+    INTER->unregister_reference_fn = unregister_reference_func;
 }
 
 #if PDTHREADS

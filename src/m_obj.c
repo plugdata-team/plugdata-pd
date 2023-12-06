@@ -20,6 +20,9 @@ behavior for "gobjs" appears at the end of this file.  */
 #define INLINE inline
 #endif
 
+void register_weak_reference(void* ptr, void* weak_reference);
+void unregister_weak_reference(void* ptr, void* weak_reference);
+int is_reference_valid(void* ptr);
 void plugdata_forward_message(void* x, t_symbol *s, int argc, t_atom *argv);
 int plugdata_debugging_enabled();
 
@@ -312,13 +315,13 @@ void obj_list(t_object *x, t_symbol *s, int argc, t_atom *argv)
 
 /* --------------------------- outlets ------------------------------ */
 
-
 struct _outconnect
 {
     struct _outconnect *oc_next;
     t_pd *oc_to;
     t_symbol* oc_path_data;
-    int oc_nchs;
+    t_signal* oc_signal;
+    void* oc_signal_reference;
 };
 
 struct _outlet
@@ -711,7 +714,7 @@ doit:
     oc = (t_outconnect *)t_getbytes(sizeof(*oc));
     oc->oc_next = 0;
     oc->oc_to = to;
-    oc->oc_nchs = 0;
+    oc->oc_signal = NULL;
     oc->oc_path_data = gensym("empty");
         /* append it to the end of the list */
         /* LATER we might cache the last "oc" to make this faster. */
@@ -754,6 +757,10 @@ doit:
     if (oc->oc_to == to)
     {
         *ochead = oc->oc_next;
+        if(oc->oc_signal)  {
+            if(is_reference_valid(oc->oc_signal_reference)) oc->oc_signal->s_refcount--;
+            unregister_weak_reference(oc->oc_signal, &oc->oc_signal_reference);
+        }
         freebytes(oc, sizeof(*oc));
         goto done;
     }
@@ -762,6 +769,10 @@ doit:
         if (oc2->oc_to == to)
         {
             oc->oc_next = oc2->oc_next;
+            if(oc2->oc_signal)  {
+                if(is_reference_valid(oc->oc_signal_reference)) oc->oc_signal->s_refcount--;
+                unregister_weak_reference(oc2->oc_signal, &oc2->oc_signal_reference);
+            }
             freebytes(oc2, sizeof(*oc2));
             goto done;
         }
@@ -1049,14 +1060,26 @@ void outconnect_set_path_data(t_outconnect* oc, t_symbol* newsym)
     oc->oc_path_data = newsym;
 }
 
-// Only for internal use in Pd!
-void outconnect_set_num_channels(t_outconnect* oc, int nch)
+/* only for internal use in Pd! */
+void outconnect_set_signal(t_outconnect* oc, t_signal* signal)
 {
-    oc->oc_nchs = nch;
+    if(oc->oc_signal)
+    {
+        if(is_reference_valid(oc->oc_signal_reference)) oc->oc_signal->s_refcount--;
+        unregister_weak_reference(oc->oc_signal, &oc->oc_signal_reference);
+    }
+
+    register_weak_reference(signal, &oc->oc_signal_reference);
+    oc->oc_signal = signal;
+    signal->s_refcount++; // This signal can't be reused until the connection is deleted!
 }
 
-// Only for internal use in Pd!
-int outconnect_get_num_channels(t_outconnect* oc)
+t_signal* outconnect_get_signal(t_outconnect* oc)
 {
-    return oc->oc_nchs;
+    if(oc->oc_signal && is_reference_valid(oc->oc_signal_reference))
+    {
+        return oc->oc_signal;
+    }
+    
+    return NULL;
 }
