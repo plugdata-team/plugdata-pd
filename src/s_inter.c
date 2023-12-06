@@ -2036,7 +2036,13 @@ void plugdata_forward_message(void* x, t_symbol *s, int argc, t_atom *argv)
     }
 }
 
+static int enable_debugging = 1;
 
 int plugdata_debugging_enabled() {
-    return 1;
+    return enable_debugging;
+}
+
+void set_plugdata_debugging_enabled(int enabled_debugging)
+{
+    enable_debugging = enabled_debugging;
 }

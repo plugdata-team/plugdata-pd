@@ -13,3 +13,6 @@ void setup_weakreferences(void(*clear_references_func)(void*, void*), void(*regi
 void plugdata_gui_message(const char* message, va_list args);
 
 void plugdata_forward_message(void *x, t_symbol *s, int argc, t_atom *argv);
+
+int plugdata_debugging_enabled();
+void set_plugdata_debugging_enabled(int enabled_debugging);

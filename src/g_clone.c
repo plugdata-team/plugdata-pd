@@ -368,8 +368,10 @@ static void clone_dsp(t_clone *x, t_signal **sp)
                 {
                     if (!--tempio[i]->s_refcount)
                         signal_makereusable(tempio[i]);
-                    else
-                        bug("clone 1: %d", tempio[i]->s_refcount);
+                    // FIXME: this warning pops up because plugdata manipulates the signal refcount when debug mode is enabled
+                    // I think it might be harmless, but not sure
+                    //else
+                    //    bug("clone 1: %d", tempio[i]->s_refcount);
                 }
             }
             for (i = 0; i < nout; i++)

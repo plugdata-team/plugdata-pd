@@ -22,6 +22,7 @@ extern t_class *vinlet_class, *voutlet_class, *canvas_class, *text_class;
 EXTERN_STRUCT _vinlet;
 EXTERN_STRUCT _voutlet;
 
+int plugdata_debugging_enabled();
 void vinlet_dspprolog(struct _vinlet *x, t_signal **parentsigs,
     int myvecsize, int phase, int period, int frequency,
     int downsample, int upsample,  int reblock, int switched);
@@ -1000,7 +1001,9 @@ static void ugen_doit(t_dspcontext *dc, t_ugenbox *u)
                this is used for for connection debugging and mc channel detection 
                it will also increment the refcount to ensure the signal doesn't get reused until we're done with it
              */
-            outconnect_set_signal(oc->oc_origin, s1);
+            if(plugdata_debugging_enabled()) {
+                outconnect_set_signal(oc->oc_origin, s1);
+            }
             
             u2 = oc->oc_who;
             uin = &u2->u_in[oc->oc_inno];
