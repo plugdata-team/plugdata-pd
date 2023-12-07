@@ -25,7 +25,7 @@ void unregister_weak_reference(void* ptr, void* weak_reference);
 int is_reference_valid(void* ptr);
 void plugdata_forward_message(void* x, t_symbol *s, int argc, t_atom *argv);
 int plugdata_debugging_enabled();
-
+void signal_makereusable(t_signal *sig);
 void set_plugdata_debugging_enabled(int enabled_debugging);
 
 union inletunion
@@ -760,8 +760,7 @@ doit:
     {
         *ochead = oc->oc_next;
         if(oc->oc_signal)  {
-            if(is_reference_valid(oc->oc_signal_reference)) oc->oc_signal->s_refcount--;
-            unregister_weak_reference(oc->oc_signal, &oc->oc_signal_reference);
+            outconnect_unset_signal(oc);
         }
         freebytes(oc, sizeof(*oc));
         goto done;
@@ -772,8 +771,7 @@ doit:
         {
             oc->oc_next = oc2->oc_next;
             if(oc2->oc_signal)  {
-                if(is_reference_valid(oc->oc_signal_reference)) oc->oc_signal->s_refcount--;
-                unregister_weak_reference(oc2->oc_signal, &oc2->oc_signal_reference);
+                outconnect_unset_signal(oc);
             }
             freebytes(oc2, sizeof(*oc2));
             goto done;
@@ -1067,13 +1065,23 @@ void outconnect_set_signal(t_outconnect* oc, t_signal* signal)
 {
     if(oc->oc_signal)
     {
-        if(is_reference_valid(oc->oc_signal_reference)) oc->oc_signal->s_refcount--;
-        unregister_weak_reference(oc->oc_signal, &oc->oc_signal_reference);
+        outconnect_unset_signal(oc);
     }
 
     register_weak_reference(signal, &oc->oc_signal_reference);
     oc->oc_signal = signal;
     signal->s_refcount++; // This signal can't be reused until the connection is deleted!
+}
+
+void outconnect_unset_signal(t_outconnect* oc)
+{
+    if(is_reference_valid(oc->oc_signal_reference)) {
+        oc->oc_signal->s_refcount--;
+        if(oc->oc_signal->s_refcount == 0) signal_makereusable(oc->oc_signal);
+    }
+    unregister_weak_reference(oc->oc_signal, &oc->oc_signal_reference);
+    oc->oc_signal = NULL;
+    oc->oc_signal_reference = NULL;
 }
 
 t_signal* outconnect_get_signal(t_outconnect* oc)

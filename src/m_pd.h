@@ -687,6 +687,7 @@ EXTERN float *cos_table;
 // Connection DSP manipulation for plugdata
 EXTERN t_signal* outconnect_get_signal(t_outconnect* oc);
 EXTERN void outconnect_set_signal(t_outconnect* oc, t_signal* signal);
+EXTERN void outconnect_unset_signal(t_outconnect* oc);
 
 EXTERN int canvas_suspend_dsp(void);
 EXTERN void canvas_resume_dsp(int oldstate);
