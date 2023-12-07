@@ -487,8 +487,10 @@ int sys_load_lib(t_canvas *canvas, const char *classname)
     data.canvas = canvas;
     data.ok = 0;
 
-    if (sys_onloadlist(classname))
+    if (sys_onloadlist(classname)) {
+        canvas_resume_dsp(dspstate);
         return (1); /* if lib is already loaded, dismiss. */
+    }
 
         /* if classname is absolute, try this first */
     if (sys_isabsolutepath(classname))
@@ -497,8 +499,10 @@ int sys_load_lib(t_canvas *canvas, const char *classname)
                LATER avoid code duplication */
         char dirbuf[MAXPDSTRING], *z = strrchr(classname, '/');
         int dirlen;
-        if (!z)
+        if (!z) {
+            canvas_resume_dsp(dspstate);
             return (0);
+        }
         dirlen = (int)(z - classname);
         if (dirlen > MAXPDSTRING-1)
             dirlen = MAXPDSTRING-1;
