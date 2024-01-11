@@ -1075,7 +1075,7 @@ void outconnect_set_signal(t_outconnect* oc, t_signal* signal)
 
 void outconnect_unset_signal(t_outconnect* oc)
 {
-    if(is_reference_valid(oc->oc_signal_reference)) {
+    if(oc->oc_signal && is_reference_valid(oc->oc_signal_reference)) {
         oc->oc_signal->s_refcount--;
         if(oc->oc_signal->s_refcount == 0) signal_makereusable(oc->oc_signal);
     }

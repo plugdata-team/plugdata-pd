@@ -1004,7 +1004,11 @@ static void ugen_doit(t_dspcontext *dc, t_ugenbox *u)
             if(plugdata_debugging_enabled()) {
                 outconnect_set_signal(oc->oc_origin, s1);
             }
-            
+            else {
+                // Make sure signal are made reusable after disabling debugging
+                outconnect_unset_signal(oc->oc_origin);
+            }
+
             u2 = oc->oc_who;
             uin = &u2->u_in[oc->oc_inno];
                 /* if there's already someone here, sum the two */
