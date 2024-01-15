@@ -955,6 +955,11 @@ void new_anything(void *dummy, t_symbol *s, int argc, t_atom *argv)
     //pd_globalunlock();
 }
 
+void clear_class_loadsym()
+{
+    class_loadsym = 0;
+}
+
 void set_class_prefix(t_symbol* dir)
 {
     class_prefixsym = dir;
