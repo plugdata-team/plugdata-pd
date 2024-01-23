@@ -429,6 +429,28 @@ static void pd_defaultlist(t_pd *x, t_symbol *s, int argc, t_atom *argv)
     argument form, one for the multiple one; see select_setup() to find out
     how this is handled.  */
 
+struct _gem_class
+{
+    t_symbol* sym;
+    t_newmethod newmethod;
+    t_atomtype vec[6];
+};
+
+struct _gem_class* gem_classlist;
+int gem_classlist_size = 0;
+
+
+void make_gem_classes_global()
+{
+    for(int i = 0; i < gem_classlist_size; i++)
+    {
+        struct _gem_class* c = gem_classlist + i;
+        class_addmethod(pd_objectmaker, (t_method)c->newmethod, c->sym,
+                        c->vec[0], c->vec[1], c->vec[2], c->vec[3], c->vec[4], c->vec[5]);
+    }
+}
+
+
 extern void text_save(t_gobj *z, t_binbuf *b);
 
 t_class *class_new(t_symbol *s, t_newmethod newmethod, t_method freemethod,
@@ -463,9 +485,24 @@ t_class *class_new(t_symbol *s, t_newmethod newmethod, t_method freemethod,
 
     if (pd_objectmaker && newmethod)
     {
+        // don't add gem objects into global namespace
+        if(class_prefixsym != gensym("Gem")) {
             /* add a "new" method by the name specified by the object */
-        class_addmethod(pd_objectmaker, (t_method)newmethod, s,
-            vec[0], vec[1], vec[2], vec[3], vec[4], vec[5]);
+            class_addmethod(pd_objectmaker, (t_method)newmethod, s,
+                            vec[0], vec[1], vec[2], vec[3], vec[4], vec[5]);
+        }
+        else {
+            // plugdata modification:
+            // gem shouldn't run in global namespace
+            // but since we are not loading it from an externals file, we need this hack to allow declaring gem as a lib
+            gem_classlist = resizebytes(gem_classlist, gem_classlist_size * sizeof(struct _gem_class), (gem_classlist_size+1) * sizeof(struct _gem_class));
+            struct _gem_class gem_entry;
+            gem_entry.sym = s;
+            gem_entry.newmethod = newmethod;
+            memcpy(gem_entry.vec, vec, sizeof(t_atomtype) * 6);
+            gem_classlist[gem_classlist_size] = gem_entry;
+            gem_classlist_size++;
+        }
         if (s && class_loadsym && !zgetfn(&pd_objectmaker, class_loadsym))
         {
                 /* if we're loading an extern it might have been invoked by a

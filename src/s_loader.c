@@ -480,12 +480,20 @@ int sys_loadlib_iter(const char *path, struct _loadlib_data *data)
     return (ok == 0);
 }
 
+void make_gem_classes_global();
+
 int sys_load_lib(t_canvas *canvas, const char *classname)
 {
     int dspstate = canvas_suspend_dsp();
     struct _loadlib_data data;
     data.canvas = canvas;
     data.ok = 0;
+    
+    if(!strcmp(classname, "Gem"))
+    {
+        make_gem_classes_global();
+        return;
+    }
 
     if (sys_onloadlist(classname)) {
         canvas_resume_dsp(dspstate);
