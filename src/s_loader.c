@@ -492,7 +492,7 @@ int sys_load_lib(t_canvas *canvas, const char *classname)
     if(!strcmp(classname, "Gem"))
     {
         make_gem_classes_global();
-        return;
+        return (1);
     }
 
     if (sys_onloadlist(classname)) {
