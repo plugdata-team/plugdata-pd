@@ -436,9 +436,27 @@ struct _gem_class
     t_atomtype vec[6];
 };
 
+// TODO: make this instance safe
 struct _gem_class* gem_classlist;
 int gem_classlist_size = 0;
+int gem_is_global = 0;
 
+int is_gem_object(const char* sym)
+{
+    if(!strncmp(sym, "Gem/", 4)) return 1;
+    else if(!gem_is_global) return 0;
+    
+    for(int i = 0; i < gem_classlist_size; i++)
+    {
+        struct _gem_class* c = gem_classlist + i;
+        if(!strcmp(sym, c->sym->s_name))
+        {
+            return 1;
+        }
+    }
+    
+    return 0;
+}
 
 void make_gem_classes_global()
 {
@@ -448,6 +466,8 @@ void make_gem_classes_global()
         class_addmethod(pd_objectmaker, (t_method)c->newmethod, c->sym,
                         c->vec[0], c->vec[1], c->vec[2], c->vec[3], c->vec[4], c->vec[5]);
     }
+    
+    gem_is_global = 1;
 }
 
 
