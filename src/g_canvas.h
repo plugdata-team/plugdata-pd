@@ -271,6 +271,9 @@ struct _instancecanvas
     struct _instancetemplate *i_template;
     t_symbol *i_newfilename;
     t_symbol *i_newdirectory;
+    int i_forcenewpath;
+    t_symbol *i_forcenewfilename;
+    t_symbol *i_forcenewdirectory;
     int i_newargc;
     t_atom *i_newargv;
     t_glist *i_reloadingabstraction;

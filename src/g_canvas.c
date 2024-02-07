@@ -227,6 +227,14 @@ void glob_setfilename(void *dummy, t_symbol *filesym, t_symbol *dirsym)
     THISGUI->i_newdirectory = dirsym;
 }
 
+void glob_forcefilename(t_symbol *filesym, t_symbol *dirsym)
+{
+    THISGUI->i_forcenewpath = 1;
+    THISGUI->i_forcenewfilename = filesym;
+    THISGUI->i_forcenewdirectory = dirsym;
+}
+
+
 void glob_menunew(void *dummy, t_symbol *filesym, t_symbol *dirsym)
 {
     glob_setfilename(dummy, filesym, dirsym);
@@ -2162,6 +2170,7 @@ void g_canvas_newpdinstance(void)
     THISGUI->i_newargc = 0;
     THISGUI->i_newargv = 0;
     THISGUI->i_reloadingabstraction = 0;
+    THISGUI->i_forcenewpath = 0;
     THISGUI->i_dspstate = 0;
     THISGUI->i_dollarzero = 1000;
     g_editor_newpdinstance();

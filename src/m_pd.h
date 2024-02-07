@@ -437,6 +437,7 @@ EXTERN void outconnect_set_path_data(t_outconnect* oc, t_symbol* newsym);
 /* -------------------- canvases -------------- */
 
 EXTERN void glob_setfilename(void *dummy, t_symbol *name, t_symbol *dir);
+EXTERN void glob_forcefilename(t_symbol *name, t_symbol *dir);
 
 EXTERN void canvas_setargs(int argc, const t_atom *argv);
 EXTERN void canvas_getargs(int *argcp, t_atom **argvp);

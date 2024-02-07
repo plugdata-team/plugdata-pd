@@ -1447,7 +1447,13 @@ void binbuf_evalfile(t_symbol *name, t_symbol *dir)
         !strcmp(name->s_name + strlen(name->s_name) - 4, ".mxt");
     int dspstate = canvas_suspend_dsp();
         /* set filename so that new canvases can pick them up */
-    glob_setfilename(0, name, dir);
+    if(THISGUI->i_forcenewpath) {
+        glob_setfilename(0, THISGUI->i_forcenewfilename, THISGUI->i_forcenewdirectory);
+        THISGUI->i_forcenewpath = 0;
+    }
+    else {
+        glob_setfilename(0, name, dir);
+    }
     if (binbuf_read(b, name->s_name, dir->s_name, 0))
         pd_error(0, "%s: read failed; %s", name->s_name, strerror(errno));
     else
