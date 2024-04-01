@@ -2025,8 +2025,6 @@ void plugdata_gui_message(const char* message, va_list args)
         SETSYMBOL(atoms + 1, gensym(text));
         pd_this->pd_inter->gui_callback(INTER->callback_target, "cyclone_editor_append", 2, atoms);
     }
-    
-    
 }
 
 void plugdata_forward_message(void* x, t_symbol *s, int argc, t_atom *argv)
