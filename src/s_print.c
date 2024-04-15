@@ -137,7 +137,7 @@ static void doerror(const void *object, const char *s)
     if (STUFF->st_printhook)
     {
         pd_snprintf(upbuf, MAXPDSTRING-1, "error: %s", s);
-        (*STUFF->st_printhook)(upbuf);
+        (*STUFF->st_printhook)(object, upbuf);
     }
     else if (sys_printtostderr)
     {
@@ -165,7 +165,7 @@ static void dologpost(const void *object, const int level, const char *s)
     if (STUFF->st_printhook)
     {
         pd_snprintf(upbuf, MAXPDSTRING-1, "verbose(%d): %s", level, s);
-        (*STUFF->st_printhook)(upbuf);
+        (*STUFF->st_printhook)(object, upbuf);
     }
     else if (sys_printtostderr)
     {
