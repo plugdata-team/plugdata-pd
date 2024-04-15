@@ -17,8 +17,6 @@ extern "C" {
 #define PD_PLUGDATA_VERSION "0.9.0"
 #define PD_FLAVOR "plugdata"
 
-extern int pd_compatibilitylevel;   /* e.g., 43 for pd 0.43 compatibility */
-
 /* old name for "MSW" flag -- we have to take it for the sake of many old
 "nmakefiles" for externs, which will define NT and not MSW */
 #if defined(NT) && !defined(MSW)
