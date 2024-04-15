@@ -272,19 +272,17 @@ static int sys_domicrosleep(int microsec)
     t_fdpoll* fp;
     timeout.tv_sec = 0;
     timeout.tv_usec = 0;
-    if (INTER->i_nfdpoll) {
-        fd_set readset, writeset, exceptset;
+    if (INTER->i_nfdpoll)
+    {
+        fd_set readset, writeset;
         FD_ZERO(&writeset);
         FD_ZERO(&readset);
-        FD_ZERO(&exceptset);
         for (fp = INTER->i_fdpoll,
-            i = INTER->i_nfdpoll;
-             i--; fp++)
-            FD_SET(fp->fdp_fd, &readset);
-        if (select(INTER->i_maxfd + 1,
-                &readset, &writeset, &exceptset, &timeout)
-            < 0)
-            perror("microsleep select");
+            i = INTER->i_nfdpoll; i--; fp++)
+                FD_SET(fp->fdp_fd, &readset);
+        if(select(INTER->i_maxfd+1,
+                  &readset, &writeset, NULL, &timeout) < 0)
+          perror("microsleep select");
         INTER->i_fdschanged = 0;
         for (i = 0; i < INTER->i_nfdpoll && !INTER->i_fdschanged; i++)
             if (FD_ISSET(INTER->i_fdpoll[i].fdp_fd, &readset)) {
@@ -1056,8 +1054,7 @@ void sys_gui_preferences(void)
 
 static int sys_watchfd = -1;
 
-
-void glob_watchdog(t_pd *dummy)
+void glob_watchdog(void *dummy)
 {
     if (sys_watchfd < 0)
         return;
@@ -1153,7 +1150,9 @@ static void init_deken_arch(void)
 #if defined(DEKEN_CPU)
     deken_CPU[0] = strip_quotes(deken_CPU[0], deken_CPU_noquotes, MAXPDSTRING);
 #else /* !DEKEN_CPU */
-# if defined __ARM_ARCH
+# if defined(__aarch64__)
+    /* no special-casing for arm64 */
+# elif defined __ARM_ARCH
         /* ARM-specific:
          * if we are running ARMv7, we can also load ARMv6 externals
          */
@@ -1191,7 +1190,7 @@ static void init_deken_arch(void)
             cpu_v--)
         {
             static char cpuname[CPUNAME_SIZE+1];
-            snprintf(cpuname, CPUNAME_SIZE, "armv%d%c", cpu_v, endianness);
+            pd_snprintf(cpuname, CPUNAME_SIZE, "armv%d%c", cpu_v, endianness);
             deken_CPU[n++] = gensym(cpuname)->s_name;
         }
     }
@@ -1216,7 +1215,7 @@ const char*sys_deken_specifier(char*buf, size_t bufsize, int float_agnostic, int
     if ((cpu>=0) && (((!deken_CPU) || (cpu >= (sizeof(deken_CPU)/sizeof(*deken_CPU))) || (!deken_CPU[cpu]))))
         return 0;
 
-    snprintf(buf, bufsize-1,
+    pd_snprintf(buf, bufsize-1,
         "%s-%s-%d", deken_OS, (cpu<0)?"fat":deken_CPU[cpu], (int)((float_agnostic?0:8) * sizeof(t_float)));
 
     buf[bufsize-1] = 0;
@@ -1481,13 +1480,13 @@ static int sys_do_startgui(char const* libdir)
 #else  /* NOT _WIN32 */
         /* fprintf(stderr, "%s\n", libdir); */
 
-        snprintf(wishbuf, sizeof(wishbuf), "%s/" PDBINDIR WISH, libdir);
+        pd_snprintf(wishbuf, sizeof(wishbuf), "%s/" PDBINDIR WISH, libdir);
         sys_bashfilename(wishbuf, wishbuf);
 
-        snprintf(scriptbuf, sizeof(scriptbuf), "%s/" PDGUIDIR "/pd-gui.tcl", libdir);
+        pd_snprintf(scriptbuf, sizeof(scriptbuf), "%s/" PDGUIDIR "/pd-gui.tcl", libdir);
         sys_bashfilename(scriptbuf, scriptbuf);
 
-        snprintf(cmdbuf, sizeof(cmdbuf), "%s \"%s\" %d", /* quote script path! */
+        pd_snprintf(cmdbuf, sizeof(cmdbuf), "%s \"%s\" %d", /* quote script path! */
             WISH, scriptbuf, portno);
 
         memset(&si, 0, sizeof(si));
@@ -1571,9 +1570,10 @@ void sys_setrealtime(char const* libdir)
     if (sys_hipriority == -1)
         sys_hipriority = 1;
 
-    snprintf(cmdbuf, MAXPDSTRING, "%s/bin/pd-watchdog", libdir);
-    cmdbuf[MAXPDSTRING - 1] = 0;
-    if (sys_hipriority) {
+    pd_snprintf(cmdbuf, MAXPDSTRING, "%s/bin/pd-watchdog", libdir);
+    cmdbuf[MAXPDSTRING-1] = 0;
+    if (sys_hipriority)
+    {
         struct stat statbuf;
         if (stat(cmdbuf, &statbuf) < 0) {
             fprintf(stderr,
@@ -1711,21 +1711,39 @@ static void glist_maybevis(t_glist* gl)
     }
 }
 
-int sys_startgui(char const* libdir)
+    /* this is called from main when GUI has given us out font metrics,
+    so that we can now draw all "visible" canvases.  These include all
+    root canvases and all subcanvases that already believe they're visible. */
+void sys_doneglobinit( void)
 {
-    t_canvas* x;
+    t_canvas *x;
+    for (x = pd_getcanvaslist(); x; x = x->gl_next)
+        if (strcmp(x->gl_name->s_name, "_float_template") &&
+            strcmp(x->gl_name->s_name, "_float_array_template") &&
+                strcmp(x->gl_name->s_name, "_text_template"))
+    {
+        glist_maybevis(x);
+        canvas_vis(x, 1);
+    }
+}
+
+    /* start the GUI up.  Before we actually draw our "visible" windows
+    we have to wait for the GUI to give us our font metrics.  LATER
+    it would be cool to figure out what metrics we really need and tell
+    the GUI - that way we can support arbitrary zoom with appropriate font
+    sizes.   And/or: if we ever move definitively to a vector-based GUI
+    lib we might be able to skip this step altogether. */
+int sys_startgui(const char *libdir)
+{
+    t_canvas *x;
     stderr_isatty = isatty(2);
     for (x = pd_getcanvaslist(); x; x = x->gl_next)
         canvas_vis(x, 0);
     INTER->i_havegui = 1;
     INTER->i_guihead = INTER->i_guitail = 0;
+    INTER->i_waitingforping = 0;
     if (sys_do_startgui(libdir))
         return (-1);
-    for (x = pd_getcanvaslist(); x; x = x->gl_next)
-        if (strcmp(x->gl_name->s_name, "_float_template") && strcmp(x->gl_name->s_name, "_float_array_template") && strcmp(x->gl_name->s_name, "_text_template")) {
-            glist_maybevis(x);
-            canvas_vis(x, 1);
-        }
     return (0);
 }
 
