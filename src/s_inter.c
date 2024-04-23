@@ -1684,7 +1684,7 @@ void sys_exit(int status);
 void glob_exit(void* dummy, t_float status)
 {
     /* sys_exit() sets the sys_quit flag, so all loops end */
-    sys_exit();
+    sys_exit((int)status);
     sys_close_audio();
     sys_close_midi();
     if (sys_havegui()) {
