@@ -583,7 +583,7 @@ void outlet_bang(t_outlet *x)
         outlet_stackerror(x);
     else
         for (oc = x->o_connections; oc; oc = oc->oc_next) {
-            if(plugdata_debugging_enabled()) plugdata_forward_message(oc, gensym("bang"), 0, NULL);
+            if(plugdata_debugging_enabled()) plugdata_forward_message(oc, &s_bang, 0, NULL);
             pd_bang(oc->oc_to);
         }
     stackcount_release();
@@ -599,7 +599,7 @@ void outlet_pointer(t_outlet *x, t_gpointer *gp)
     {
         gpointer = *gp;
         for (oc = x->o_connections; oc; oc = oc->oc_next) {
-            if(plugdata_debugging_enabled()) plugdata_forward_message(oc, gensym("pointer"), 0, gp);
+            if(plugdata_debugging_enabled()) plugdata_forward_message(oc, &s_pointer, 0, gp);
             pd_pointer(oc->oc_to, &gpointer);
         }
     }
@@ -616,7 +616,7 @@ void outlet_float(t_outlet *x, t_float f)
             if(plugdata_debugging_enabled()) {
                 t_atom value;
                 SETFLOAT(&value, f);
-                plugdata_forward_message(oc, gensym("float"), 1, &value);
+                plugdata_forward_message(oc, &s_float, 1, &value);
             }
             pd_float(oc->oc_to, f);
         }
@@ -633,7 +633,7 @@ void outlet_symbol(t_outlet *x, t_symbol *s)
             if(plugdata_debugging_enabled()) {
                 t_atom value;
                 SETSYMBOL(&value, s);
-                plugdata_forward_message(oc, gensym("symbol"), 1, &value);
+                plugdata_forward_message(oc, &s_symbol, 1, &value);
             }
             pd_symbol(oc->oc_to, s);
         }

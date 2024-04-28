@@ -1029,6 +1029,7 @@ void iemgui_free(t_iemgui *iemgui) {
         pd_unbind(&iemgui->x_obj.ob_pd, iemgui->x_rcv);
     pdgui_stub_deleteforkey(iemgui);
     sys_unqueuegui(iemgui);
+    freebytes(iemgui->x_private, sizeof(*iemgui->x_private));
 }
 
 
