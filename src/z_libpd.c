@@ -132,8 +132,6 @@ void libpd_clear_search_path(void) {
 void libpd_get_search_paths(char** paths, int* num_paths)
 {
     t_namelist* searchpath = STUFF->st_searchpath;
-    printf("c path get: %i\n", STUFF->st_searchpath);
-    fflush(stdout);
     int i = 0;
     while (searchpath) {
         paths[i] = searchpath->nl_string;
@@ -147,8 +145,6 @@ void libpd_get_search_paths(char** paths, int* num_paths)
 void libpd_add_to_search_path(const char *path) {
   sys_lock();
   STUFF->st_searchpath = namelist_append(STUFF->st_searchpath, path, 0);
-    printf("c path set: %i", STUFF->st_searchpath);
-
   sys_unlock();
 }
 
