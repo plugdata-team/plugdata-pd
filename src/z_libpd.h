@@ -31,6 +31,9 @@ EXTERN int libpd_init(void);
 /// note: this is called by libpd_init()
 EXTERN void libpd_clear_search_path(void);
 
+/// fills the array buffer passed as first argument with the current search paths
+EXTERN void libpd_get_search_paths(char** paths, int* num_paths);
+
 /// add a path to the libpd search paths
 /// relative paths are relative to the current working directory
 /// unlike desktop pd, *no* search paths are set by default (ie. extra)
