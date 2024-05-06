@@ -576,9 +576,16 @@ EXTERN void class_setdrawcommand(t_class *c);
 EXTERN int class_isdrawcommand(const t_class *c);
 EXTERN void class_set_extern_dir(t_symbol *s);
 EXTERN void class_domainsignalin(t_class *c, int onset);
+
+#ifdef __cplusplus
+#define CLASS_MAINSIGNALIN(c, type, field) \
+    class_domainsignalin(c, offsetof(type, field))
+#else
 #define CLASS_MAINSIGNALIN(c, type, field) \
     STATIC_ASSERT(sizeof(((type *)NULL)->field) == sizeof(t_float), "field must be t_float!"); \
     class_domainsignalin(c, offsetof(type, field))
+#endif
+
 
          /* prototype for functions to save Pd's to a binbuf */
 typedef void (*t_savefn)(t_gobj *x, t_binbuf *b);
