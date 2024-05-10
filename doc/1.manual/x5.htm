@@ -2,7 +2,7 @@
 <HTML lang="en">
 <HEAD>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<TITLE>Pd Manual 5</TITLE>
+<TITLE>Pd Manual - Chapter 5: Current status</TITLE>
 <meta http-equiv="content-type" content="text/html; charset=UTF-8">
 <link rel="stylesheet" type="text/css" href="css/pdmanual.css" media="screen">
 <link rel="icon" type="image/png" href="css/favicon.ico">
@@ -18,10 +18,7 @@
 
 <H2>Chapter 5: Current status</H2>
 
-<P>
-<A href="index.htm#s5"> back to table of contents </A>
-<BR><BR>
-</P>
+<div id="backnav"><A href="index.htm#s5">back to table of contents</A></div>
 
 <P>This chapter tracks changes in Pd's current implementation.</P>
 
@@ -31,17 +28,29 @@
 <P> ------------------ 0.55-0 ------------------------------
 
 <P> Many documentation updates, thanks to Alexandre Porres, Ben Wesch, and
-others.
+others. Most notably several updates and edits were made to Pd's HTML manual,
+specially a new section on 'advanced editing techniques' (aka 'intelligent
+patching').
 
-<P> 64-bit soundfile reading and writing support by Dan Wilcox.
+<P> The [oscparse] object was updated by Porres to allow numeric addresses
+via a new '-n' flag and a right outlet was added to output split point
+between address and message.
+
+<P> Minor improvements to the [file] object by IOhannes, such as properly
+expanding '~' to home directory and allowing [file which] to also search
+paths relative to the parent patch.
+
+<P> 64-bit soundfile reading and writing support by Dan Wilcox for [readsf~],
+[writesf~] and [soundfiler].
 
 <P> Many bug fixes and code-level updates and improvements, notably to libpd and
-for emscripten support, thanks as usual to Iohanes, Dan, and Christof.  The
-emscripten support, in particular, should someday allow Pd to run in a web
-browser.
+for emscripten support thanks to Claude Heiland-Allen and IOhannes, Dan, and
+Christof. The emscripten support, in particular, should someday allow Pd to run
+in a web browser.
 
-<P> Also thanks to Christof, much improved audio interfacing and related
-scheduler updates.
+<P> Also thanks to Christof, you can now use just 'set' to unset [receive~] and
+[throw~] objects, plus a much improved audio interfacing and related scheduler
+updates.
 
 <P> Updates to language support.
 
@@ -107,7 +116,7 @@ input to both channels.
 
 <P> ------------------ 0.53-1 ------------------------------
 
-<P> Bug fixes, mostly from Iohannes concerning iemguis regression bugs because of
+<P> Bug fixes, mostly from IOhannes concerning iemguis regression bugs because of
 the cleanup/rewrite for 0.53. Also more documentation updates by Alexandre Porres.
 
 <P> ------------------ 0.53-0 ------------------------------
@@ -162,7 +171,7 @@ copy/paste from/to.
 <P> A new "trace" object allows you to get backward and forward traces of
 message passing.
 
-<P> New "file" object by Iohannes with contributions from Jean-Michael
+<P> New "file" object by IOhannes with contributions from Jean-Michael
 Celerier - general file operations.
 
 <P> Support for uncompressed CAF and AIFC soundfiles (by Dan Wilcox) - the soundfile
@@ -246,7 +255,7 @@ that outside input is ignored while in fast forward.
 <P> ------------------ 0.51-0 ------------------------------
 
 <P> Many bug fixes and some enhancements to network objects.  Many thanks
-to Dan Wilcox, Christof Ressi, and Iohannes Zmoelnig who did almost all the
+to Dan Wilcox, Christof Ressi, and IOhannes Zmoelnig who did almost all the
 work.
 
 <P> (Also Dan) some fix I don't understand about code signing for MacOS 10.15,
@@ -286,7 +295,7 @@ Things seem to be improved but the improvements aren't exhaustively tested yet.
 
 <P> improved HTML style in documentation and more info on managing externs.
 
-<P> updates to Iohannes's smart patching features
+<P> updates to IOhannes's smart patching features
 
 <P> sort method for text object.  Also text searching can deal with restricted
 range of lines (so that, for instance, you can iteratively get all the matches,
@@ -352,7 +361,7 @@ tool); seed message added to noise~; many code-level enhancements.
 
 <P> Many bug fixes and a re-working of font handling that might make font
 sizes resemble 0.47 more closely.  most of the work was done by Dan Wilcox and
-Iohannes Zmoelnig.
+IOhannes Zmoelnig.
 
 <P> ------------------ 0.48-0 ------------------------------
 

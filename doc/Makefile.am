@@ -14,13 +14,13 @@ ABOUT_FILE=1.manual/1.introduction.txt
 M_PD=$(top_srcdir)/src/m_pd.h
 
 # get version info from m_pd.h to use in doc/1.manual/1.introduction.txt
-PD_MAJOR_VERSION = $(shell grep PD_MAJOR_VERSION $(M_PD) | \
+PD_MAJOR_VERSION = $(shell grep "^\s*\#\s*define\s*PD_MAJOR_VERSION\>" $(M_PD) | \
     sed 's|^.define *PD_MAJOR_VERSION *\([0-9]*\).*|\1|' )
-PD_MINOR_VERSION = $(shell grep PD_MINOR_VERSION $(M_PD) | \
+PD_MINOR_VERSION = $(shell grep "^\s*\#\s*define\s*PD_MINOR_VERSION\>" $(M_PD) | \
     sed 's|^.define *PD_MINOR_VERSION *\([0-9]*\).*|\1|' )
-PD_BUGFIX_VERSION = $(shell grep PD_BUGFIX_VERSION $(M_PD) | \
+PD_BUGFIX_VERSION = $(shell grep "^\s*\#\s*define\s*PD_BUGFIX_VERSION\>" $(M_PD) | \
     sed 's|^.define *PD_BUGFIX_VERSION *\([0-9]*\).*|\1|' )
-PD_TEST_VERSION = $(shell grep PD_TEST_VERSION $(M_PD) | \
+PD_TEST_VERSION = $(shell grep "^\s*\#\s*define\s*PD_TEST_VERSION\>" $(M_PD) | \
     sed 's|^.define *PD_TEST_VERSION *"\(.*\)".*|\1|' )
 PD_VERSION = $(PD_MAJOR_VERSION).$(PD_MINOR_VERSION).$(PD_BUGFIX_VERSION)
 
@@ -32,11 +32,11 @@ install-data-hook:
 	mv $(DESTDIR)$(libpddir)/$(ABOUT_FILE) $(DESTDIR)$(libpddir)/$(ABOUT_FILE).tmp
 	if test "x${PD_TEST_VERSION}" == "x" ; then \
 	    cat $(DESTDIR)$(libpddir)/$(ABOUT_FILE).tmp | \
-	    sed 's|PD_VERSION|Pd version $(PD_VERSION)|' \
+	    sed 's|PD_VERSION|Pd version $(VERSION)|' \
 	    > $(DESTDIR)$(libpddir)/$(ABOUT_FILE) ; \
 	else \
 	    cat $(DESTDIR)$(libpddir)/$(ABOUT_FILE).tmp | \
-	    sed 's|PD_VERSION|Pd version $(PD_VERSION)-$(PD_TEST_VERSION)|' \
+	    sed 's|PD_VERSION|Pd version $(VERSION)-$(PD_TEST_VERSION)|' \
 	    > $(DESTDIR)$(libpddir)/$(ABOUT_FILE) ; \
 	fi
 	rm $(DESTDIR)$(libpddir)/$(ABOUT_FILE).tmp
