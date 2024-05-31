@@ -12,18 +12,18 @@ extern "C" {
 #define PD_MAJOR_VERSION 0
 #define PD_MINOR_VERSION 55
 #define PD_BUGFIX_VERSION 0
-#define PD_TEST_VERSION "test2"
+#define PD_TEST_VERSION "test3"
 
 #define PD_PLUGDATA_VERSION "0.9.0"
 #define PD_FLAVOR "plugdata"
 /* compile-time version check:
-   #if PD_CODE_VERSION < PD_VERSION(0, 56, 0)
+   #if PD_VERSION_CODE < PD_VERSION(0, 56, 0)
       // put legacy code for Pd<<0.56 in here
    #endif
  */
 #define PD_VERSION(major, minor, bugfix) \
     (((major) << 16) + ((minor) << 8) + ((bugfix) > 255 ? 255 : (bugfix)))
-#define PD_CODE_VERSION PD_VERSION(PD_MAJOR_VERSION, PD_MINOR_VERSION, PD_BUGFIX_VERSION)
+#define PD_VERSION_CODE PD_VERSION(PD_MAJOR_VERSION, PD_MINOR_VERSION, PD_BUGFIX_VERSION)
 
 extern int pd_compatibilitylevel;   /* e.g., 43 for pd 0.43 compatibility */
 
@@ -731,10 +731,6 @@ EXTERN void mayer_fft(int n, t_sample *real, t_sample *imag);
 EXTERN void mayer_ifft(int n, t_sample *real, t_sample *imag);
 EXTERN void mayer_realfft(int n, t_sample *real);
 EXTERN void mayer_realifft(int n, t_sample *real);
-
-EXTERN float *cos_table;
-#define LOGCOSTABSIZE 9
-#define COSTABSIZE (1<<LOGCOSTABSIZE)
 
 // Connection DSP manipulation for plugdata
 EXTERN t_signal* outconnect_get_signal(t_outconnect* oc);
