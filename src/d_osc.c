@@ -6,6 +6,8 @@
 */
 
 #include "m_pd.h"
+
+#define _USE_MATH_DEFINES
 #include "math.h"
 
 #define BIGFLOAT 1.0e+19
