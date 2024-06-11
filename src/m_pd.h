@@ -12,7 +12,7 @@ extern "C" {
 #define PD_MAJOR_VERSION 0
 #define PD_MINOR_VERSION 55
 #define PD_BUGFIX_VERSION 0
-#define PD_TEST_VERSION "test3"
+#define PD_TEST_VERSION ""
 
 #define PD_PLUGDATA_VERSION "0.9.0"
 #define PD_FLAVOR "plugdata"
@@ -87,11 +87,11 @@ extern int pd_compatibilitylevel;   /* e.g., 43 for pd 0.43 compatibility */
 
 #if __STDC_VERSION__ >= 201112L
 #include <assert.h>
-#define STATIC_ASSERT _Static_assert
+#define PD_STATIC_ASSERT _Static_assert
 #elif __cplusplus >= 201103L
-#define STATIC_ASSERT static_assert
+#define PD_STATIC_ASSERT static_assert
 #else
-#define STATIC_ASSERT(condition, message) /* no-op */
+#define PD_STATIC_ASSERT(condition, message) /* no-op */
 #endif
 
 /* deprecation warning */
@@ -582,7 +582,7 @@ EXTERN void class_domainsignalin(t_class *c, int onset);
     class_domainsignalin(c, offsetof(type, field))
 #else
 #define CLASS_MAINSIGNALIN(c, type, field) \
-    STATIC_ASSERT(sizeof(((type *)NULL)->field) == sizeof(t_float), "field must be t_float!"); \
+    PD_STATIC_ASSERT(sizeof(((type *)NULL)->field) == sizeof(t_float), "field must be t_float!"); \
     class_domainsignalin(c, offsetof(type, field))
 #endif
 
