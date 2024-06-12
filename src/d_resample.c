@@ -81,7 +81,6 @@ t_int *upsampling_perform_linear(t_int *w)
   t_sample *fp;
   t_sample a=*x->buffer, b=*in;
 
-
   for (n=0; n<length; n++) {
     t_sample findex = (t_sample)(n+1)/up;
     int     index  = findex;
@@ -89,7 +88,7 @@ t_int *upsampling_perform_linear(t_int *w)
     if (frac==0.)frac=1.;
     *out++ = frac * b + (1.-frac) * a;
     fp = in+index;
-    b=*fp;
+    if(index < parent) b=*fp;
     a=(index)?*(fp-1):a;
   }
 
