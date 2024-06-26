@@ -1271,18 +1271,17 @@ static void text_getrect(t_gobj *z, t_glist *glist,
     int width, height, iscomment = (x->te_type == T_TEXT);
     t_float x1, y1, x2, y2;
 
-    /* Not needed for plugdata, and glist_findrtext can be a bit slow
     if (glist->gl_editor && glist->gl_editor->e_rtext)
     {
         t_rtext *y = glist_findrtext(glist, x);
         width = rtext_width(y);
         height = rtext_height(y) - (iscomment << 1);
-    } */
+    }
     
         /* for number boxes, we know width and height a priori, and should
         report them here so that graphs can get swelled to fit. */
 
-    if (x->te_type == T_ATOM && x->te_width > 0)
+    else if (x->te_type == T_ATOM && x->te_width > 0)
     {
         width = (x->te_width > 0 ? x->te_width : 6) * glist_fontwidth(glist);
         height = glist_fontheight(glist);

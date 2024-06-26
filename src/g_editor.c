@@ -2238,7 +2238,7 @@ static void undarken_if_gatom(t_gobj*gobj)
 }
 
     /* mouse click */
-static void canvas_doclick(t_canvas *x, int xpos, int ypos, int which,
+void canvas_doclick(t_canvas *x, int xpos, int ypos, int which,
     int mod, int doit)
 {
     t_gobj *hitbox;
@@ -2647,7 +2647,7 @@ static int tryconnect(t_canvas*x, t_object*src, int nout, t_object*sink, int nin
     return 0;
 }
 
-static void canvas_doconnect(t_canvas *x, int xpos, int ypos, int mod, int doit)
+void canvas_doconnect(t_canvas *x, int xpos, int ypos, int mod, int doit)
 {
     int x11=0, y11=0, x12=0, y12=0;
     t_gobj *y1;
