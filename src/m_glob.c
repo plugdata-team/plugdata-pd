@@ -134,6 +134,8 @@ void glob_init(void)
     class_addmethod(glob_pdobject, (t_method)glob_exit, gensym("quit"), A_DEFFLOAT, 0);
     class_addmethod(glob_pdobject, (t_method)glob_verifyquit,
         gensym("verifyquit"), A_DEFFLOAT, 0);
+    class_addmethod(glob_pdobject, (t_method)nullfn,
+        gensym("pluginmode"), A_NULL, 0);
     class_addmethod(glob_pdobject, (t_method)glob_foo, gensym("foo"), A_GIMME, 0);
     class_addmethod(glob_pdobject, (t_method)glob_dsp, gensym("dsp"), A_GIMME, 0);
     class_addmethod(glob_pdobject, (t_method)glob_key, gensym("key"), A_GIMME, 0);
