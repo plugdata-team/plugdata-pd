@@ -228,6 +228,11 @@ void glob_setfilename(void *dummy, t_symbol *filesym, t_symbol *dirsym)
     THISGUI->i_newdirectory = dirsym;
 }
 
+int glob_hasforcedfilename()
+{
+    return THISGUI->i_forcenewpath;
+}
+
 void glob_forcefilename(t_symbol *filesym, t_symbol *dirsym)
 {
     THISGUI->i_forcenewpath = 1;
