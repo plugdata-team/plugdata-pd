@@ -757,10 +757,12 @@ void *canvas_undo_set_move(t_canvas *x, int selected)
         for (y = x->gl_list, i = indx = 0; y; y = y->g_next, indx++)
             if (glist_isselected(x, y))
             {
-                gobj_getrect(y, x, &x1, &y1, &x2, &y2);
+                t_object* checked =  pd_checkobject(&y->g_pd);
+                if(!checked) continue;
+
                 buf->u_vec[i].e_index = indx;
-                buf->u_vec[i].e_xpix = x1 / x->gl_zoom;
-                buf->u_vec[i].e_ypix = y1 / x->gl_zoom;
+                buf->u_vec[i].e_xpix = checked->te_xpix / x->gl_zoom;
+                buf->u_vec[i].e_ypix = checked->te_ypix / x->gl_zoom;
                 i++;
             }
     }
@@ -768,10 +770,12 @@ void *canvas_undo_set_move(t_canvas *x, int selected)
     {
         for (y = x->gl_list, indx = 0; y; y = y->g_next, indx++)
         {
-            gobj_getrect(y, x, &x1, &y1, &x2, &y2);
+            t_object* checked = pd_checkobject(&y->g_pd);
+            if(!checked) continue;
+
             buf->u_vec[indx].e_index = indx;
-            buf->u_vec[indx].e_xpix = x1 / x->gl_zoom;
-            buf->u_vec[indx].e_ypix = y1 / x->gl_zoom;
+            buf->u_vec[indx].e_xpix = checked->te_xpix / x->gl_zoom;
+            buf->u_vec[indx].e_ypix = checked->te_ypix / x->gl_zoom;
         }
     }
     EDITOR->canvas_undo_already_set_move = 1;
