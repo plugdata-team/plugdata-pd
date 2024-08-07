@@ -86,6 +86,7 @@ void array_resize_and_redraw(t_array *array, t_glist *glist, int n)
     array_resize(array, n);
     if (vis)
         gobj_vis(&a2->a_gp.gp_un.gp_scalar->sc_gobj, glist, 1);
+    plugdata_forward_message(glist, gensym("redraw"), 0, NULL);
 }
 
 void word_free(t_word *wp, t_template *template);
