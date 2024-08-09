@@ -969,24 +969,12 @@ static void canvas_drawlines(t_canvas *x)
         }
     }
 }
+
 void canvas_fixlinesfor(t_canvas *x, t_text *text)
 {
-    t_linetraverser t;
-    t_outconnect *oc;
-
-    linetraverser_start(&t, x);
-    while ((oc = linetraverser_next(&t)))
-    {
-        if (t.tr_ob == text || t.tr_ob2 == text)
-        {
-            char tag[128];
-            sprintf(tag, "l%p", oc);
-            pdgui_vmess(0, "crs iiii",
-                glist_getcanvas(x), "coords", tag,
-                t.tr_lx1,t.tr_ly1, t.tr_lx2,t.tr_ly2);
-        }
-    }
+    // NO-OP for plugdata
 }
+
 
 static void _canvas_delete_line(t_canvas*x, t_outconnect *oc)
 {
