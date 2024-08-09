@@ -432,6 +432,44 @@ t_outconnect *linetraverser_next(t_linetraverser *t)
     return (rval);
 }
 
+t_outconnect *linetraverser_next_nosize(t_linetraverser *t)
+{
+    t_outconnect *rval = t->tr_nextoc;
+    int outno;
+    while (!rval)
+    {
+        outno = t->tr_nextoutno;
+        while (outno == t->tr_nout)
+        {
+            t_gobj *y;
+            t_object *ob = 0;
+            if (!t->tr_ob) y = t->tr_x->gl_list;
+            else y = t->tr_ob->ob_g.g_next;
+            for (; y; y = y->g_next)
+                if ((ob = pd_checkobject(&y->g_pd))) break;
+            if (!ob) return (0);
+            t->tr_ob = ob;
+            t->tr_nout = obj_noutlets(ob);
+            outno = 0;
+            t->tr_x11 = t->tr_y11 = t->tr_x12 = t->tr_y12 = 0;
+        }
+        t->tr_nextoutno = outno + 1;
+        rval = obj_starttraverseoutlet(t->tr_ob, &t->tr_outlet, outno);
+        t->tr_outno = outno;
+    }
+    
+    t->tr_nextoc = obj_nexttraverseoutlet(rval, &t->tr_ob2,
+        &t->tr_inlet, &t->tr_inno);
+    t->tr_nin = obj_ninlets(t->tr_ob2);
+    if (!t->tr_nin) bug("drawline");
+    t->tr_x21 = t->tr_y21 = t->tr_x22 = t->tr_y22 = 0;
+    t->tr_lx1 = t->tr_ly1 = t->tr_lx2 = t->tr_ly2 = 0;
+    
+    t->outconnect_path_info = outconnect_get_path_data(rval);
+    
+    return (rval);
+}
+
 void linetraverser_skipobject(t_linetraverser *t)
 {
     t->tr_nextoc = 0;
@@ -952,22 +990,7 @@ void canvas_free(t_canvas *x)
 
 static void canvas_drawlines(t_canvas *x)
 {
-    t_linetraverser t;
-    t_outconnect *oc;
-    {
-        char tag[128];
-        const char*tags[2] = {tag, "cord"};
-        linetraverser_start(&t, x);
-        while ((oc = linetraverser_next(&t)))
-        {
-            sprintf(tag, "l%p", oc);
-            pdgui_vmess(0, "crr iiii ri rS",
-                glist_getcanvas(x), "create", "line",
-                t.tr_lx1,t.tr_ly1, t.tr_lx2,t.tr_ly2,
-                "-width", (outlet_getsymbol(t.tr_outlet) == &s_signal ? 2:1) * x->gl_zoom,
-                "-tags", 2, tags);
-        }
-    }
+    // NO-OP for plugdata
 }
 
 void canvas_fixlinesfor(t_canvas *x, t_text *text)
@@ -978,11 +1001,7 @@ void canvas_fixlinesfor(t_canvas *x, t_text *text)
 
 static void _canvas_delete_line(t_canvas*x, t_outconnect *oc)
 {
-    char tag[128];
-    if (!glist_isvisible(x))
-        return;
-    sprintf(tag, "l%p", oc);
-    pdgui_vmess(0, "crs", glist_getcanvas(x), "delete", tag);
+    // NO-OP for plugdata
 }
 
     /* kill all lines for the object */
@@ -991,7 +1010,7 @@ void canvas_deletelinesfor(t_canvas *x, t_text *text)
     t_linetraverser t;
     t_outconnect *oc;
     linetraverser_start(&t, x);
-    while ((oc = linetraverser_next(&t)))
+    while ((oc = linetraverser_next_nosize(&t)))
     {
         if (t.tr_ob == text || t.tr_ob2 == text)
         {
@@ -1008,7 +1027,7 @@ void canvas_deletelinesforio(t_canvas *x, t_text *text,
     t_linetraverser t;
     t_outconnect *oc;
     linetraverser_start(&t, x);
-    while ((oc = linetraverser_next(&t)))
+    while ((oc = linetraverser_next_nosize(&t)))
     {
         if ((t.tr_ob == text && t.tr_outlet == outp) ||
             (t.tr_ob2 == text && t.tr_inlet == inp))

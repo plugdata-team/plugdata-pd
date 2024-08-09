@@ -571,6 +571,7 @@ EXTERN int canvas_path_iterate(const t_canvas *x, t_canvas_path_iterator fun,
 
 EXTERN void linetraverser_start(t_linetraverser *t, t_canvas *x);
 EXTERN t_outconnect *linetraverser_next(t_linetraverser *t);
+EXTERN t_outconnect *linetraverser_next_nosize(t_linetraverser *t);
 EXTERN void linetraverser_skipobject(t_linetraverser *t);
 
 /* --------- functions on garrays (graphical arrays) -------------------- */
