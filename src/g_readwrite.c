@@ -699,7 +699,7 @@ void canvas_saveto(t_canvas *x, t_binbuf *b)
         gobj_save(y, b);
 
     linetraverser_start(&t, x);
-    while ((oc = linetraverser_next(&t)))
+    while ((oc = linetraverser_next_nosize(&t)))
     {
         int srcno = canvas_getindex(x, &t.tr_ob->ob_g);
         int sinkno = canvas_getindex(x, &t.tr_ob2->ob_g);

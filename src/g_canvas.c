@@ -1396,7 +1396,7 @@ void canvas_dodsp(t_canvas *x, int toplevel, t_signal **sp)
 
         /* ... and all dsp interconnections */
     linetraverser_start(&t, x);
-    while ((oc = linetraverser_next(&t)))
+    while ((oc = linetraverser_next_nosize(&t)))
         if (obj_issignaloutlet(t.tr_ob, t.tr_outno))
             ugen_connect(dc, t.tr_ob, t.tr_outno, t.tr_ob2, t.tr_inno, oc);
 

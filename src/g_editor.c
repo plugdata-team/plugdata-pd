@@ -457,7 +457,7 @@ void canvas_disconnect(t_canvas *x,
     t_linetraverser t;
     t_outconnect *oc;
     linetraverser_start(&t, x);
-    while ((oc = linetraverser_next(&t)))
+    while ((oc = linetraverser_next_nosize(&t)))
     {
         int srcno = canvas_getindex(x, &t.tr_ob->ob_g);
         int sinkno = canvas_getindex(x, &t.tr_ob2->ob_g);
@@ -540,7 +540,7 @@ void *canvas_undo_set_cut(t_canvas *x, int mode)
         /* store connections into/out of the selection */
     buf->u_reconnectbuf = binbuf_new();
     linetraverser_start(&t, x);
-    while ((oc = linetraverser_next(&t)))
+    while ((oc = linetraverser_next_nosize(&t)))
     {
         int issel1 = glist_isselected(x, &t.tr_ob->ob_g);
         int issel2 = glist_isselected(x, &t.tr_ob2->ob_g);
@@ -957,7 +957,7 @@ void *canvas_undo_set_apply(t_canvas *x, int n)
         /* store connections into/out of the selection */
     buf->u_reconnectbuf = binbuf_new();
     linetraverser_start(&t, x);
-    while ((oc = linetraverser_next(&t)))
+    while ((oc = linetraverser_next_nosize(&t)))
     {
         int issel1 = glist_isselected(x, &t.tr_ob->ob_g);
         int issel2 = glist_isselected(x, &t.tr_ob2->ob_g);
@@ -1486,7 +1486,7 @@ void *canvas_undo_set_recreate(t_canvas *x, t_gobj *y, int pos)
 
     buf->u_reconnectbuf = binbuf_new();
     linetraverser_start(&t, x);
-    while ((oc = linetraverser_next(&t)))
+    while ((oc = linetraverser_next_nosize(&t)))
     {
         int issel1, issel2;
         issel1 = ( &t.tr_ob->ob_g == y ? 1 : 0);
@@ -2588,7 +2588,7 @@ int canvas_isconnected (t_canvas *x, t_text *ob1, int n1,
     t_linetraverser t;
     t_outconnect *oc;
     linetraverser_start(&t, x);
-    while ((oc = linetraverser_next(&t)))
+    while ((oc = linetraverser_next_nosize(&t)))
         if (t.tr_ob == ob1 && t.tr_outno == n1 &&
             t.tr_ob2 == ob2 && t.tr_inno == n2)
                 return (1);
@@ -3672,7 +3672,7 @@ void canvas_stowconnections(t_canvas *x)
         /* add connections to binbuf */
     binbuf_clear(x->gl_editor->e_connectbuf);
     linetraverser_start(&t, x);
-    while ((oc = linetraverser_next(&t)))
+    while ((oc = linetraverser_next_nosize(&t)))
     {
         int s1 = glist_isselected(x, &t.tr_ob->ob_g);
         int s2 = glist_isselected(x, &t.tr_ob2->ob_g);
@@ -3704,7 +3704,7 @@ static t_binbuf *canvas_docopy(t_canvas *x)
             gobj_save(y, b);
     }
     linetraverser_start(&t, x);
-    while ((oc = linetraverser_next(&t)))
+    while ((oc = linetraverser_next_nosize(&t)))
     {
         if (glist_isselected(x, &t.tr_ob->ob_g)
             && glist_isselected(x, &t.tr_ob2->ob_g))
@@ -4320,7 +4320,7 @@ static void canvas_cycleselect(t_canvas*x, t_float foffset)
         t_outconnect *oc = 0;
 
         linetraverser_start(&t, x);
-        while (offset && (oc = linetraverser_next(&t)))
+        while (offset && (oc = linetraverser_next_nosize(&t)))
         {
             connectioncount++;
             if(!foundit) {
@@ -4346,7 +4346,7 @@ static void canvas_cycleselect(t_canvas*x, t_float foffset)
                 % connectioncount;
             /* ... and start from the beginning */
             linetraverser_start(&t, x);
-            while ((oc = linetraverser_next(&t)))
+            while ((oc = linetraverser_next_nosize(&t)))
             {
                 if(!offset)break;
                 offset--;
@@ -4737,7 +4737,7 @@ static void canvas_connect_selection(t_canvas *x)
             t_outconnect *oc;
             canvas_undo_add(x, UNDO_SEQUENCE_START, "disconnect", 0);
             linetraverser_start(&t, x);
-            while ((oc = linetraverser_next(&t)))
+            while ((oc = linetraverser_next_nosize(&t)))
             {
                 if ((obj == t.tr_ob) || (obj == t.tr_ob2))
                 {
