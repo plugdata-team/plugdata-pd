@@ -1417,7 +1417,7 @@ void *canvas_undo_set_create(t_canvas *x)
         }
         buf->u_reconnectbuf = binbuf_new();
         linetraverser_start(&t, x);
-        while ((oc = linetraverser_next(&t)))
+        while ((oc = linetraverser_next_nosize(&t)))
         {
             int issel1, issel2;
             issel1 = ( &t.tr_ob->ob_g == y ? 1 : 0);
