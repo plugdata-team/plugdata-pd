@@ -1669,8 +1669,8 @@ void sys_setrealtime(char const* libdir)
 void sys_do_close_audio(void);
 
 /* This is called when something bad has happened, like a segfault.
- Call glob_quit() below to exit cleanly.
- LATER try to save dirty documents even in the bad case. */
+Call glob_exit() below to exit cleanly.
+LATER try to save dirty documents even in the bad case. */
 void sys_bail(int n)
 {
     static int reentered = 0;
@@ -1692,7 +1692,8 @@ void sys_bail(int n)
 
 void sys_exit(int status);
 
-void glob_exit(void* dummy, t_float status)
+    /* exit scheduler and shut down gracefully */
+void glob_exit(void *dummy, t_floatarg status)
 {
     /* sys_exit() sets the sys_quit flag, so all loops end */
     sys_exit((int)status);
@@ -1705,9 +1706,10 @@ void glob_exit(void* dummy, t_float status)
     // Let plugdata handle exit message
     //exit((int)status);
 }
-void glob_quit(void* dummy)
+    /* force-quit */
+void glob_quit(void *dummy, t_floatarg status)
 {
-    glob_exit(dummy, 0);
+    exit(status);
 }
 
 /* recursively descend to all canvases and send them "vis" messages

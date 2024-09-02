@@ -88,7 +88,7 @@ t_int *upsampling_perform_linear(t_int *w)
     if (frac==0.)frac=1.;
     *out++ = frac * b + (1.-frac) * a;
     fp = in+index;
-    if(index < parent) b=*fp;
+    b=(index<parent)?*fp:b;
     a=(index)?*(fp-1):a;
   }
 
