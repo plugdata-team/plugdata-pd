@@ -2065,6 +2065,14 @@ void plugdata_gui_message(const char* message, va_list args)
         SETSYMBOL(atoms + 1, gensym(text));
         pd_this->pd_inter->gui_callback(INTER->callback_target, "cyclone_editor_append", 2, atoms);
     }
+    else if (strncmp(message, "coll_check_open", strlen("coll_check_open")) == 0) {
+        unsigned long ptr = va_arg(args, unsigned long);
+        int open = va_arg(args, int);
+        t_atom atoms[2];
+        SETPOINTER(atoms, ptr);
+        SETFLOAT(atoms + 1, open);
+        pd_this->pd_inter->gui_callback(INTER->callback_target, "coll_check_open", 2, atoms);
+    }
 }
 
 void plugdata_forward_message(void* x, t_symbol *s, int argc, t_atom *argv)
