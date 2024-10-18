@@ -19,6 +19,8 @@ append -  add an element to a list
 #include "m_pd.h"
 #include "g_canvas.h"
 
+void plugdata_forward_message(void* x, t_symbol *s, int argc, t_atom *argv);
+
     /* templates are named using the name-bashing by which canvases bind
     thenselves, with a leading "pd-".  LATER see if we can have templates
     occupy their real names.  Meanwhile, if a template has an empty name
@@ -1166,6 +1168,8 @@ static void append_float(t_append *x, t_float f)
 
     if (glist_isvisible(glist_getcanvas(glist)))
         gobj_vis(&sc->sc_gobj, glist, 1);
+    
+    plugdata_forward_message(glist, gensym("sync"), 0, NULL);
     /*  scalar_redraw(sc, glist);  ... have to do 'vis' instead here because
     redraw assumes we're already visible??? ... */
 
