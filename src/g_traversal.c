@@ -192,6 +192,8 @@ static void ptrobj_delete(t_ptrobj *x)
     while (gobj && (pd_class(&gobj->g_pd) != scalar_class))
         gobj = gobj->g_next;
     glist_delete(glist, old);
+    plugdata_forward_message(glist, gensym("sync"), 0, NULL);
+    
     gp->gp_valid = glist->gl_valid;
     if (gobj)
     {
