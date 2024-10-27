@@ -1102,6 +1102,8 @@ EXTERN void pd_undo_set_objectstate(t_canvas*canvas, t_pd*x, t_symbol*s,
                                     int undo_argc, t_atom*undo_argv,
                                     int redo_argc, t_atom*redo_argv);
 
+EXTERN void plugdata_forward_message(void *x, t_symbol *s, int argc, t_atom *argv);
+
 #if defined(_LANGUAGE_C_PLUS_PLUS) || defined(__cplusplus)
 }
 #endif

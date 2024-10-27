@@ -30,8 +30,6 @@ t_pd pd_canvasmaker;    /* factory for creating canvases */
 
 static t_symbol *class_extern_dir;
 
-void plugdata_forward_message(void *x, t_symbol *s, int argc, t_atom *argv);
-
 #ifdef PDINSTANCE
 static t_class *class_list = 0;
 PERTHREAD t_pdinstance *pd_this_inst = NULL;

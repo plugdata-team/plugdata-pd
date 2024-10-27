@@ -24,7 +24,6 @@ behavior for "gobjs" appears at the end of this file.  */
 void register_weak_reference(void* ptr, void* weak_reference);
 void unregister_weak_reference(void* ptr, void* weak_reference);
 int is_reference_valid(void* ptr);
-void plugdata_forward_message(void* x, t_symbol *s, int argc, t_atom *argv);
 int plugdata_debugging_enabled();
 void signal_makereusable(t_signal *sig);
 void set_plugdata_debugging_enabled(int enabled_debugging);

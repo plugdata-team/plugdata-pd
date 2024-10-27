@@ -12,8 +12,6 @@ can contain numbers, sublists, and arrays.
 #include "m_pd.h"
 #include "g_canvas.h"
 
-void plugdata_forward_message(void *x, t_symbol *s, int argc, t_atom *argv);
-
 /* ------------- gstubs and gpointers - safe pointing --------------- */
 
 /* create a gstub which is "owned" by a glist (gl) or an array ("a"). */

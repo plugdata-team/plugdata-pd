@@ -12,8 +12,6 @@
 #define M_PI 3.14159265358979323846
 #endif
 
-void plugdata_forward_message(void *x, t_symbol *s, int argc, t_atom *argv);
-
 /* jsarlo { */
 #define ARRAYPAGESIZE 1000  /* this should match the page size in u_main.tk */
 /* } jsarlo */

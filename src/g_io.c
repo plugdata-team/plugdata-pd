@@ -90,31 +90,49 @@ static void *vinlet_new(t_symbol *s)
 
 static void vinlet_bang(t_vinlet *x)
 {
+    plugdata_forward_message(x->x_canvas, gensym("bang"), 0, NULL);
+    
     outlet_bang(x->x_obj.ob_outlet);
 }
 
 static void vinlet_pointer(t_vinlet *x, t_gpointer *gp)
 {
+    t_atom atom;
+    SETPOINTER(&atom, gp);
+    plugdata_forward_message(x->x_canvas, gensym("pointer"), 1, &atom);
+    
     outlet_pointer(x->x_obj.ob_outlet, gp);
 }
 
 static void vinlet_float(t_vinlet *x, t_float f)
 {
+    t_atom atom;
+    SETFLOAT(&atom, f);
+    plugdata_forward_message(x->x_canvas, gensym("float"), 1, &atom);
+    
     outlet_float(x->x_obj.ob_outlet, f);
 }
 
 static void vinlet_symbol(t_vinlet *x, t_symbol *s)
 {
+    t_atom atom;
+    SETSYMBOL(&atom, s);
+    plugdata_forward_message(x->x_canvas, gensym("symbol"), 1, &atom);
+    
     outlet_symbol(x->x_obj.ob_outlet, s);
 }
 
 static void vinlet_list(t_vinlet *x, t_symbol *s, int argc, t_atom *argv)
 {
+    plugdata_forward_message(x->x_canvas, s, argc, argv);
+    
     outlet_list(x->x_obj.ob_outlet, s, argc, argv);
 }
 
 static void vinlet_anything(t_vinlet *x, t_symbol *s, int argc, t_atom *argv)
 {
+    plugdata_forward_message(x->x_canvas, s, argc, argv);
+    
     outlet_anything(x->x_obj.ob_outlet, s, argc, argv);
 }
 
@@ -400,31 +418,50 @@ static void *voutlet_new(t_symbol *s)
 
 static void voutlet_bang(t_voutlet *x)
 {
+    plugdata_forward_message(x->x_canvas, gensym("bang"), 0, NULL);
+    
     outlet_bang(x->x_parentoutlet);
 }
 
 static void voutlet_pointer(t_voutlet *x, t_gpointer *gp)
 {
+    t_atom atom;
+    SETPOINTER(&atom, gp);
+    plugdata_forward_message(x->x_canvas, gensym("pointer"), 1, &atom);
+    
     outlet_pointer(x->x_parentoutlet, gp);
 }
 
 static void voutlet_float(t_voutlet *x, t_float f)
 {
+    t_atom atom;
+    SETFLOAT(&atom, f);
+    plugdata_forward_message(x->x_canvas, gensym("float"), 1, &atom);
+    
+    
     outlet_float(x->x_parentoutlet, f);
 }
 
 static void voutlet_symbol(t_voutlet *x, t_symbol *s)
 {
+    t_atom atom;
+    SETSYMBOL(&atom, s);
+    plugdata_forward_message(x->x_canvas, gensym("symbol"), 1, &atom);
+   
     outlet_symbol(x->x_parentoutlet, s);
 }
 
 static void voutlet_list(t_voutlet *x, t_symbol *s, int argc, t_atom *argv)
 {
+    plugdata_forward_message(x->x_canvas, s, argc, argv);
+    
     outlet_list(x->x_parentoutlet, s, argc, argv);
 }
 
 static void voutlet_anything(t_voutlet *x, t_symbol *s, int argc, t_atom *argv)
 {
+    plugdata_forward_message(x->x_canvas, s, argc, argv);
+    
     outlet_anything(x->x_parentoutlet, s, argc, argv);
 }
 

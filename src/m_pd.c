@@ -299,8 +299,6 @@ void pd_doloadbang(void)
 }
 
 
-void plugdata_forward_message(void *x, t_symbol *s, int argc, t_atom *argv);
-
 void pd_bang(t_pd *x)
 {
     (*(*x)->c_bangmethod)(x);
