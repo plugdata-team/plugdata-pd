@@ -2082,13 +2082,23 @@ void plugdata_forward_message(void* x, t_symbol *s, int argc, t_atom *argv)
     }
 }
 
-static int enable_debugging = 1;
+static int enable_debugging = 0;
+static int enable_activity = 0;
 
 int plugdata_debugging_enabled() {
     return enable_debugging;
 }
 
+int plugdata_activity_enabled() {
+    return enable_activity;
+}
+
 void set_plugdata_debugging_enabled(int enabled_debugging)
 {
     enable_debugging = enabled_debugging;
+}
+
+void set_plugdata_activity_enabled(int enabled_activity)
+{
+    enable_activity = enabled_activity;
 }

@@ -16,6 +16,8 @@
 # include <alloca.h> /* linux, mac, mingw, cygwin */
 #endif
 
+int plugdata_activity_enabled();
+
 /* -------------------------- int ------------------------------ */
 static t_class *pdint_class;
 
@@ -255,7 +257,7 @@ typedef struct _send
 
 static void plugdata_send_activity_to_parent(t_canvas* canvas)
 {
-    if(!canvas) return;
+    if(!canvas || !plugdata_activity_enabled()) return;
     
     plugdata_forward_message(canvas, gensym("_activity"), 0, NULL);
     while((canvas = canvas->gl_owner))
