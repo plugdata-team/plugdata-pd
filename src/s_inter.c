@@ -1950,7 +1950,8 @@ void plugdata_gui_message(const char* message, va_list args)
 {
     if(!message) return;
     
-    if (strncmp(message, "pdtk_canvas_raise", strlen("pdtk_canvas_raise")) == 0) {
+    if (strncmp(message, "pdtk_canvas_raise", strlen("pdtk_canvas_raise")) == 0
+        || strncmp(message, "pdtk_canvas_new", strlen("pdtk_canvas_new")) == 0) {
         void* canvas = va_arg(args, void*);
         t_atom atoms[2];
         SETPOINTER(atoms, canvas);
