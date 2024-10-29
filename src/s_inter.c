@@ -1950,8 +1950,22 @@ void plugdata_gui_message(const char* message, va_list args)
 {
     if(!message) return;
     
-    // This call causes a circular loop, so ignore it
     if (strncmp(message, "pdtk_canvas_raise", strlen("pdtk_canvas_raise")) == 0) {
+        void* canvas = va_arg(args, void*);
+        t_atom atoms[2];
+        SETPOINTER(atoms, canvas);
+        SETFLOAT(atoms + 1, 1);
+        
+        pd_this->pd_inter->gui_callback(INTER->callback_target, "canvas_vis", 2, atoms);
+        return;
+    }
+    if (strncmp(message, "destroy", strlen("destroy")) == 0) {
+        void* canvas = va_arg(args, void*);
+        t_atom atoms[2];
+        SETPOINTER(atoms, canvas);
+        SETFLOAT(atoms + 1, 0);
+
+        pd_this->pd_inter->gui_callback(INTER->callback_target, "canvas_vis", 2, atoms);
         return;
     }
 
