@@ -24,9 +24,8 @@ behavior for "gobjs" appears at the end of this file.  */
 void register_weak_reference(void* ptr, void* weak_reference);
 void unregister_weak_reference(void* ptr, void* weak_reference);
 int is_reference_valid(void* ptr);
-int plugdata_debugging_enabled();
+int plugdata_debugging_or_activity_enabled();
 void signal_makereusable(t_signal *sig);
-void set_plugdata_debugging_enabled(int enabled_debugging);
 
 union inletunion
 {
@@ -588,7 +587,7 @@ void outlet_bang(t_outlet *x)
         outlet_stackerror(x);
     else
         for (oc = x->o_connections; oc; oc = oc->oc_next) {
-            if(plugdata_debugging_enabled()) plugdata_forward_message(oc, &s_bang, 0, NULL);
+            if(plugdata_debugging_or_activity_enabled()) plugdata_forward_message(oc, &s_bang, 0, NULL);
             pd_bang(oc->oc_to);
         }
     stackcount_release();
@@ -604,7 +603,7 @@ void outlet_pointer(t_outlet *x, t_gpointer *gp)
     {
         gpointer = *gp;
         for (oc = x->o_connections; oc; oc = oc->oc_next) {
-            if(plugdata_debugging_enabled()) plugdata_forward_message(oc, &s_pointer, 0, gp);
+            if(plugdata_debugging_or_activity_enabled()) plugdata_forward_message(oc, &s_pointer, 0, gp);
             pd_pointer(oc->oc_to, &gpointer);
         }
     }
@@ -618,7 +617,7 @@ void outlet_float(t_outlet *x, t_float f)
         outlet_stackerror(x);
     else
         for (oc = x->o_connections; oc; oc = oc->oc_next) {
-            if(plugdata_debugging_enabled()) {
+            if(plugdata_debugging_or_activity_enabled()) {
                 t_atom value;
                 SETFLOAT(&value, f);
                 plugdata_forward_message(oc, &s_float, 1, &value);
@@ -635,7 +634,7 @@ void outlet_symbol(t_outlet *x, t_symbol *s)
         outlet_stackerror(x);
     else
         for (oc = x->o_connections; oc; oc = oc->oc_next) {
-            if(plugdata_debugging_enabled()) {
+            if(plugdata_debugging_or_activity_enabled()) {
                 t_atom value;
                 SETSYMBOL(&value, s);
                 plugdata_forward_message(oc, &s_symbol, 1, &value);
@@ -652,7 +651,7 @@ void outlet_list(t_outlet *x, t_symbol *s, int argc, t_atom *argv)
         outlet_stackerror(x);
     else
         for (oc = x->o_connections; oc; oc = oc->oc_next) {
-            if(plugdata_debugging_enabled()) plugdata_forward_message(oc, s, argc, argv);
+            if(plugdata_debugging_or_activity_enabled()) plugdata_forward_message(oc, s, argc, argv);
             pd_list(oc->oc_to, s, argc, argv);
         }
     stackcount_release();
@@ -665,7 +664,7 @@ void outlet_anything(t_outlet *x, t_symbol *s, int argc, t_atom *argv)
         outlet_stackerror(x);
     else
         for (oc = x->o_connections; oc; oc = oc->oc_next) {
-            if(plugdata_debugging_enabled()) plugdata_forward_message(oc, s, argc, argv);
+            if(plugdata_debugging_or_activity_enabled()) plugdata_forward_message(oc, s, argc, argv);
             typedmess(oc->oc_to, s, argc, argv);
         }
     stackcount_release();

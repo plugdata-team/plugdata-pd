@@ -2100,8 +2100,12 @@ void plugdata_forward_message(void* x, t_symbol *s, int argc, t_atom *argv)
 static int enable_debugging = 0;
 static int enable_activity = 0;
 
-int plugdata_debugging_enabled() {
+int plugdata_debugging_or_activity_enabled() {
     return enable_debugging || enable_activity;
+}
+
+int plugdata_debugging_enabled() {
+    return enable_debugging;
 }
 
 int plugdata_activity_enabled() {
