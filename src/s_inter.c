@@ -2101,7 +2101,7 @@ static int enable_debugging = 0;
 static int enable_activity = 0;
 
 int plugdata_debugging_enabled() {
-    return enable_debugging;
+    return enable_debugging || enable_activity;
 }
 
 int plugdata_activity_enabled() {
