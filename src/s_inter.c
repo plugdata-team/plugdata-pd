@@ -2006,11 +2006,17 @@ void plugdata_gui_message(const char* message, va_list args)
         const char* filename = va_arg(args, const char*);
         const char* dir = va_arg(args, const char*);
         
-        t_atom atoms[2];
-        SETSYMBOL(atoms, gensym(filename));
-        SETSYMBOL(atoms + 1, gensym(dir));
-        
-        INTER->gui_callback(INTER->callback_target, "openfile", 2, &atoms);
+        if(dir) {
+            t_atom atoms[2];
+            SETSYMBOL(atoms, gensym(filename));
+            SETSYMBOL(atoms + 1, gensym(dir));
+            INTER->gui_callback(INTER->callback_target, "openfile", 2, atoms);
+        }
+        else {
+            t_atom atom;
+            SETSYMBOL(&atom, gensym(filename));
+            INTER->gui_callback(INTER->callback_target, "openfile", 1, &atom);
+        }
     }
     // These are tcl/tk functions ELSE defines for spawning a file browser
     else if (strncmp(message, "panel_save", strlen("panel_save")) == 0) {
