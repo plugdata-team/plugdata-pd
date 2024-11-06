@@ -1950,8 +1950,11 @@ void plugdata_gui_message(const char* message, va_list args)
 {
     if(!message) return;
     
+    //plugdata TODO: uncomment pdtk_canvas_new message in a later version
+    //this is a temporary measure to make sure patches don't open up a dozen of subpatch windows, since plugdata <0.9.1 always set the gl_mapped flag
+    
     if (strncmp(message, "pdtk_canvas_raise", strlen("pdtk_canvas_raise")) == 0
-        || strncmp(message, "pdtk_canvas_new", strlen("pdtk_canvas_new")) == 0) {
+        /*|| strncmp(message, "pdtk_canvas_new", strlen("pdtk_canvas_new")) == 0 */) {
         void* canvas = va_arg(args, void*);
         t_atom atoms[2];
         SETPOINTER(atoms, canvas);
