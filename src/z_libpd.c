@@ -49,19 +49,16 @@ int sys_startgui(const char *libdir);
 void sys_stopgui(void);
 int sys_pollgui(void);
 
-// (optional) setup functions for built-in "extra" externals
-#ifdef LIBPD_EXTRA
-  void bob_tilde_setup(void);
-  void bonk_tilde_setup(void);
-  void choice_setup(void);
-  void fiddle_tilde_setup(void);
-  void loop_tilde_setup(void);
-  void lrshift_tilde_setup(void);
-  void pd_tilde_setup(void);
-  void pique_setup(void);
-  void sigmund_tilde_setup(void);
-  void stdout_setup(void);
-#endif
+void bob_tilde_setup(void);
+void bonk_tilde_setup(void);
+void choice_setup(void);
+void fiddle_tilde_setup(void);
+void loop_tilde_setup(void);
+void lrshift_tilde_setup(void);
+void pd_tilde_setup(void);
+void pique_setup(void);
+void sigmund_tilde_setup(void);
+void stdout_setup(void);
 
 static PERTHREAD t_atom *s_argv = NULL;
 static PERTHREAD t_atom *s_curr = NULL;
@@ -120,14 +117,29 @@ int libpd_init(void) {
 #ifndef LIBPD_NO_NUMERIC
   setlocale(LC_NUMERIC, "C");
 #endif
+
   return 0;
 }
+
 
 void libpd_clear_search_path(void) {
   sys_lock();
   namelist_free(STUFF->st_searchpath);
   STUFF->st_searchpath = NULL;
   sys_unlock();
+}
+
+void libpd_get_search_paths(char** paths, int* num_paths)
+{
+    t_namelist* searchpath = STUFF->st_searchpath;
+    int i = 0;
+    while (searchpath) {
+        paths[i] = searchpath->nl_string;
+        i++;
+        searchpath = searchpath->nl_next;
+    }
+    
+    *num_paths = i;
 }
 
 void libpd_add_to_search_path(const char *path) {
@@ -517,14 +529,14 @@ t_atom *libpd_next_atom(t_atom *a) {
 #define CHECK_RANGE_7BIT(v) if (v < 0 || v > 0x7f) return -1;
 #define CHECK_RANGE_8BIT(v) if (v < 0 || v > 0xff) return -1;
 #define PORT (channel >> 4)
-#define CHANNEL (channel & 0x0f)
+#define IN_CHANNEL (channel & 0x0f)
 
 int libpd_noteon(int channel, int pitch, int velocity) {
   CHECK_CHANNEL
   CHECK_RANGE_7BIT(pitch)
   CHECK_RANGE_7BIT(velocity)
   sys_lock();
-  inmidi_noteon(PORT, CHANNEL, pitch, velocity);
+  inmidi_noteon(PORT, IN_CHANNEL, pitch, velocity);
   sys_unlock();
   return 0;
 }
@@ -534,7 +546,7 @@ int libpd_controlchange(int channel, int controller, int value) {
   CHECK_RANGE_7BIT(controller)
   CHECK_RANGE_7BIT(value)
   sys_lock();
-  inmidi_controlchange(PORT, CHANNEL, controller, value);
+  inmidi_controlchange(PORT, IN_CHANNEL, controller, value);
   sys_unlock();
   return 0;
 }
@@ -543,7 +555,7 @@ int libpd_programchange(int channel, int value) {
   CHECK_CHANNEL
   CHECK_RANGE_7BIT(value)
   sys_lock();
-  inmidi_programchange(PORT, CHANNEL, value);
+  inmidi_programchange(PORT, IN_CHANNEL, value);
   sys_unlock();
   return 0;
 }
@@ -553,7 +565,7 @@ int libpd_pitchbend(int channel, int value) {
   CHECK_CHANNEL
   if (value < -8192 || value > 8191) return -1;
   sys_lock();
-  inmidi_pitchbend(PORT, CHANNEL, value + 8192);
+  inmidi_pitchbend(PORT, IN_CHANNEL, value + 8192);
   sys_unlock();
   return 0;
 }
@@ -562,7 +574,7 @@ int libpd_aftertouch(int channel, int value) {
   CHECK_CHANNEL
   CHECK_RANGE_7BIT(value)
   sys_lock();
-  inmidi_aftertouch(PORT, CHANNEL, value);
+  inmidi_aftertouch(PORT, IN_CHANNEL, value);
   sys_unlock();
   return 0;
 }
@@ -572,7 +584,7 @@ int libpd_polyaftertouch(int channel, int pitch, int value) {
   CHECK_RANGE_7BIT(pitch)
   CHECK_RANGE_7BIT(value)
   sys_lock();
-  inmidi_polyaftertouch(PORT, CHANNEL, pitch, value);
+  inmidi_polyaftertouch(PORT, IN_CHANNEL, pitch, value);
   sys_unlock();
   return 0;
 }
@@ -630,6 +642,15 @@ void libpd_set_polyaftertouchhook(const t_libpd_polyaftertouchhook hook) {
 
 void libpd_set_midibytehook(const t_libpd_midibytehook hook) {
   IMP->i_hooks.h_midibytehook = hook;
+}
+
+void* libpd_get_class_methods(t_class* o)
+{
+#ifdef PDINSTANCE
+   return o->c_methods[pd_this->pd_instanceno];
+#else
+   return o->c_methods;
+#endif
 }
 
 int libpd_start_gui(const char *path) {
@@ -705,12 +726,93 @@ void* libpd_get_instancedata() {
 
 void libpd_set_verbose(int verbose) {
   if (verbose < 0) verbose = 0;
-  sys_verbose = verbose;
+  
 }
 
 int libpd_get_verbose(void) {
   return sys_verbose;
 }
+
+#define CLAMP(x, low, high) ((x > high) ? high : ((x < low) ? low : x))
+#define CLAMP4BIT(x) CLAMP(x, 0, 0x0f)
+#define CLAMP7BIT(x) CLAMP(x, 0, 0x7f)
+#define CLAMP8BIT(x) CLAMP(x, 0, 0xff)
+#define CLAMP12BIT(x) CLAMP(x, 0, 0x0fff)
+#define CLAMP14BIT(x) CLAMP(x, 0, 0x3fff)
+
+#define OUT_CHANNEL ((CLAMP12BIT(port) << 4) | CLAMP4BIT(channel))
+
+void outmidi_noteon(int port, int channel, int pitch, int velo)
+{
+    if (IMP->i_hooks.h_noteonhook)
+        IMP->i_hooks.h_noteonhook(OUT_CHANNEL, CLAMP7BIT(pitch), CLAMP7BIT(velo));
+}
+
+void outmidi_controlchange(int port, int channel, int ctl, int value)
+{
+    if (IMP->i_hooks.h_controlchangehook)
+        IMP->i_hooks.h_controlchangehook(OUT_CHANNEL, CLAMP7BIT(ctl), CLAMP7BIT(value));
+}
+
+void outmidi_programchange(int port, int channel, int value)
+{
+    if (IMP->i_hooks.h_programchangehook)
+        IMP->i_hooks.h_programchangehook(OUT_CHANNEL, CLAMP7BIT(value));
+}
+
+void outmidi_pitchbend(int port, int channel, int value)
+{
+    if (IMP->i_hooks.h_pitchbendhook)
+        IMP->i_hooks.h_pitchbendhook(OUT_CHANNEL, CLAMP14BIT(value) - 8192); // remove offset
+}
+
+void outmidi_aftertouch(int port, int channel, int value)
+{
+    if (IMP->i_hooks.h_aftertouchhook)
+        IMP->i_hooks.h_aftertouchhook(OUT_CHANNEL, CLAMP7BIT(value));
+}
+
+void outmidi_polyaftertouch(int port, int channel, int pitch, int value)
+{
+    if (IMP->i_hooks.h_polyaftertouchhook)
+        IMP->i_hooks.h_polyaftertouchhook(OUT_CHANNEL, CLAMP7BIT(pitch), CLAMP7BIT(value));
+}
+
+void outmidi_byte(int port, int value)
+{
+    if (IMP->i_hooks.h_midibytehook)
+        IMP->i_hooks.h_midibytehook(CLAMP12BIT(port), CLAMP8BIT(value));
+}
+
+void sys_putmidibyte(int port, int value)
+{
+    outmidi_byte(port, value);
+}
+
+/* tell Pd GUI that our list of MIDI APIs is empty */
+void sys_get_midi_apis(char* buf)
+{
+    strcpy(buf, "{}");
+}
+
+// the rest is not relevant to libpd
+void sys_listmididevs(void) { }
+void sys_get_midi_params(int* pnmidiindev, int* pmidiindev,
+                         int* pnmidioutdev, int* pmidioutdev) { *pnmidiindev = *pnmidioutdev = 0; }
+void sys_open_midi(int nmidiindev, int* midiindev,
+                   int nmidioutdev, int* midioutdev, int enable) { }
+void sys_close_midi() { }
+void sys_reopen_midi(void) { }
+void sys_initmidiqueue(void) { }
+void sys_pollmidiqueue(void) { }
+void sys_setmiditimediff(double inbuftime, double outbuftime) { }
+void glob_midi_setapi(void* dummy, t_floatarg f) { }
+void glob_midi_properties(t_pd* dummy, t_floatarg flongform) { }
+void glob_midi_dialog(t_pd* dummy, t_symbol* s, int argc, t_atom* argv) { }
+int sys_mididevnametonumber(int output, char const* name) { return 0; }
+void sys_mididevnumbertoname(int output, int devno, char* name, int namesize) { }
+void sys_set_midi_api(int api) { }
+int sys_midiapi;
 
 // dummy routines needed because we don't use s_file.c
 void glob_loadpreferences(t_pd *dummy, t_symbol *s) {}

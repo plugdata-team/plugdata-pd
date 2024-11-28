@@ -21,6 +21,12 @@ behavior for "gobjs" appears at the end of this file.  */
 #define INLINE inline
 #endif
 
+void register_weak_reference(void* ptr, void* weak_reference);
+void unregister_weak_reference(void* ptr, void* weak_reference);
+int is_reference_valid(void* ptr);
+int plugdata_debugging_or_activity_enabled();
+void signal_makereusable(t_signal *sig);
+
 union inletunion
 {
     t_symbol *iu_symto;
@@ -316,11 +322,13 @@ void obj_list(t_object *x, t_symbol *s, int argc, t_atom *argv)
 
 /* --------------------------- outlets ------------------------------ */
 
-
 struct _outconnect
 {
     struct _outconnect *oc_next;
     t_pd *oc_to;
+    t_symbol* oc_path_data;
+    t_signal* oc_signal;
+    void* oc_signal_reference;
 };
 
 struct _outlet
@@ -578,8 +586,10 @@ void outlet_bang(t_outlet *x)
     if(!stackcount_add())
         outlet_stackerror(x);
     else
-        for (oc = x->o_connections; oc; oc = oc->oc_next)
+        for (oc = x->o_connections; oc; oc = oc->oc_next) {
+            if(plugdata_debugging_or_activity_enabled()) plugdata_forward_message(oc, &s_bang, 0, NULL);
             pd_bang(oc->oc_to);
+        }
     stackcount_release();
 }
 
@@ -592,8 +602,10 @@ void outlet_pointer(t_outlet *x, t_gpointer *gp)
     else
     {
         gpointer = *gp;
-        for (oc = x->o_connections; oc; oc = oc->oc_next)
+        for (oc = x->o_connections; oc; oc = oc->oc_next) {
+            if(plugdata_debugging_or_activity_enabled()) plugdata_forward_message(oc, &s_pointer, 0, gp);
             pd_pointer(oc->oc_to, &gpointer);
+        }
     }
     stackcount_release();
 }
@@ -604,8 +616,13 @@ void outlet_float(t_outlet *x, t_float f)
     if(!stackcount_add())
         outlet_stackerror(x);
     else
-        for (oc = x->o_connections; oc; oc = oc->oc_next)
+        for (oc = x->o_connections; oc; oc = oc->oc_next) {
+            if(plugdata_debugging_or_activity_enabled()) {
+                t_atom value = { .a_type = A_FLOAT, .a_w.w_float = f};
+                plugdata_forward_message(oc, &s_float, 1, &value);
+            }
             pd_float(oc->oc_to, f);
+        }
     stackcount_release();
 }
 
@@ -615,8 +632,13 @@ void outlet_symbol(t_outlet *x, t_symbol *s)
     if(!stackcount_add())
         outlet_stackerror(x);
     else
-        for (oc = x->o_connections; oc; oc = oc->oc_next)
+        for (oc = x->o_connections; oc; oc = oc->oc_next) {
+            if(plugdata_debugging_or_activity_enabled()) {
+                t_atom value = { .a_type = A_SYMBOL, .a_w.w_symbol = s};
+                plugdata_forward_message(oc, &s_symbol, 1, &value);
+            }
             pd_symbol(oc->oc_to, s);
+        }
     stackcount_release();
 }
 
@@ -626,8 +648,10 @@ void outlet_list(t_outlet *x, t_symbol *s, int argc, t_atom *argv)
     if(!stackcount_add())
         outlet_stackerror(x);
     else
-        for (oc = x->o_connections; oc; oc = oc->oc_next)
+        for (oc = x->o_connections; oc; oc = oc->oc_next) {
+            if(plugdata_debugging_or_activity_enabled()) plugdata_forward_message(oc, s, argc, argv);
             pd_list(oc->oc_to, s, argc, argv);
+        }
     stackcount_release();
 }
 
@@ -637,8 +661,10 @@ void outlet_anything(t_outlet *x, t_symbol *s, int argc, t_atom *argv)
     if(!stackcount_add())
         outlet_stackerror(x);
     else
-        for (oc = x->o_connections; oc; oc = oc->oc_next)
+        for (oc = x->o_connections; oc; oc = oc->oc_next) {
+            if(plugdata_debugging_or_activity_enabled()) plugdata_forward_message(oc, s, argc, argv);
             typedmess(oc->oc_to, s, argc, argv);
+        }
     stackcount_release();
 }
 
@@ -693,6 +719,8 @@ doit:
     oc = (t_outconnect *)t_getbytes(sizeof(*oc));
     oc->oc_next = 0;
     oc->oc_to = to;
+    oc->oc_signal = NULL;
+    oc->oc_path_data = gensym("empty");
         /* append it to the end of the list */
         /* LATER we might cache the last "oc" to make this faster. */
     if ((oc2 = *ochead))
@@ -734,6 +762,9 @@ doit:
     if (oc->oc_to == to)
     {
         *ochead = oc->oc_next;
+        if(oc->oc_signal)  {
+            outconnect_unset_signal(oc);
+        }
         freebytes(oc, sizeof(*oc));
         goto done;
     }
@@ -742,6 +773,9 @@ doit:
         if (oc2->oc_to == to)
         {
             oc->oc_next = oc2->oc_next;
+            if(oc2->oc_signal)  {
+                outconnect_unset_signal(oc);
+            }
             freebytes(oc2, sizeof(*oc2));
             goto done;
         }
@@ -1017,4 +1051,48 @@ void obj_init(void)
         sizeof(t_backtracer), CLASS_PD, 0);
     class_addanything(backtracer_class, backtracer_anything);
 
+}
+
+t_symbol* outconnect_get_path_data(t_outconnect* oc)
+{
+    return oc->oc_path_data;
+}
+
+void outconnect_set_path_data(t_outconnect* oc, t_symbol* newsym)
+{
+    oc->oc_path_data = newsym;
+}
+
+/* only for internal use in Pd! */
+void outconnect_set_signal(t_outconnect* oc, t_signal* signal)
+{
+    if(oc->oc_signal)
+    {
+        outconnect_unset_signal(oc);
+    }
+
+    register_weak_reference(signal, &oc->oc_signal_reference);
+    oc->oc_signal = signal;
+    signal->s_refcount++; // This signal can't be reused until the connection is deleted!
+}
+
+void outconnect_unset_signal(t_outconnect* oc)
+{
+    if(oc->oc_signal && is_reference_valid(oc->oc_signal_reference)) {
+        oc->oc_signal->s_refcount--;
+        if(oc->oc_signal->s_refcount == 0) signal_makereusable(oc->oc_signal);
+    }
+    unregister_weak_reference(oc->oc_signal, &oc->oc_signal_reference);
+    oc->oc_signal = NULL;
+    oc->oc_signal_reference = NULL;
+}
+
+t_signal* outconnect_get_signal(t_outconnect* oc)
+{
+    if(oc->oc_signal && is_reference_valid(oc->oc_signal_reference))
+    {
+        return oc->oc_signal;
+    }
+    
+    return NULL;
 }

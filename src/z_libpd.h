@@ -31,6 +31,9 @@ EXTERN int libpd_init(void);
 /// note: this is called by libpd_init()
 EXTERN void libpd_clear_search_path(void);
 
+/// fills the array buffer passed as first argument with the current search paths
+EXTERN void libpd_get_search_paths(char** paths, int* num_paths);
+
 /// add a path to the libpd search paths
 /// relative paths are relative to the current working directory
 /// unlike desktop pd, *no* search paths are set by default (ie. extra)
@@ -259,7 +262,7 @@ EXTERN int libpd_exists(const char *recv);
 /// print receive hook signature, s is the string to be printed
 /// note: default behavior returns individual words and spaces:
 ///     line "hello 123" is received in 4 parts -> "hello", " ", "123\n"
-typedef void (*t_libpd_printhook)(const char *s);
+typedef void (*t_libpd_printhook)(void*, const char *s);
 
 /// bang receive hook signature, recv is the source receiver name
 typedef void (*t_libpd_banghook)(const char *recv);
@@ -571,6 +574,8 @@ EXTERN void libpd_set_verbose(int verbose);
 
 /// get the verbose print state: 0 or 1
 EXTERN int libpd_get_verbose(void);
+
+EXTERN void* libpd_get_class_methods(t_class* o);
 
 #ifdef __cplusplus
 }

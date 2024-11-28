@@ -8,11 +8,14 @@
 extern "C" {
 #endif
 
+
 #define PD_MAJOR_VERSION 0
 #define PD_MINOR_VERSION 55
 #define PD_BUGFIX_VERSION 2
 #define PD_TEST_VERSION ""
 
+#define PD_PLUGDATA_VERSION "0.9.2"
+#define PD_FLAVOR "plugdata"
 /* compile-time version check:
    #if PD_VERSION_CODE < PD_VERSION(0, 56, 0)
       // put legacy code for Pd<<0.56 in here
@@ -473,10 +476,13 @@ EXTERN t_symbol *outlet_getsymbol(t_outlet *x);
 EXTERN void outlet_free(t_outlet *x);
 EXTERN t_object *pd_checkobject(t_pd *x);
 
-
+EXTERN t_symbol* outconnect_get_path_data(t_outconnect* oc);
+EXTERN void outconnect_set_path_data(t_outconnect* oc, t_symbol* newsym);
 /* -------------------- canvases -------------- */
 
 EXTERN void glob_setfilename(void *dummy, t_symbol *name, t_symbol *dir);
+EXTERN void glob_forcefilename(t_symbol *name, t_symbol *dir);
+EXTERN int glob_hasforcedfilename();
 
 EXTERN void canvas_setargs(int argc, const t_atom *argv);
 EXTERN void canvas_getargs(int *argcp, t_atom **argvp);
@@ -571,9 +577,16 @@ EXTERN void class_setdrawcommand(t_class *c);
 EXTERN int class_isdrawcommand(const t_class *c);
 EXTERN void class_set_extern_dir(t_symbol *s);
 EXTERN void class_domainsignalin(t_class *c, int onset);
+
+#ifdef __cplusplus
+#define CLASS_MAINSIGNALIN(c, type, field) \
+    class_domainsignalin(c, offsetof(type, field))
+#else
 #define CLASS_MAINSIGNALIN(c, type, field) \
     PD_STATIC_ASSERT(sizeof(((type *)NULL)->field) == sizeof(t_float), "field must be t_float!"); \
     class_domainsignalin(c, offsetof(type, field))
+#endif
+
 
          /* prototype for functions to save Pd's to a binbuf */
 typedef void (*t_savefn)(t_gobj *x, t_binbuf *b);
@@ -719,6 +732,11 @@ EXTERN void mayer_fft(int n, t_sample *real, t_sample *imag);
 EXTERN void mayer_ifft(int n, t_sample *real, t_sample *imag);
 EXTERN void mayer_realfft(int n, t_sample *real);
 EXTERN void mayer_realifft(int n, t_sample *real);
+
+// Connection DSP manipulation for plugdata
+EXTERN t_signal* outconnect_get_signal(t_outconnect* oc);
+EXTERN void outconnect_set_signal(t_outconnect* oc, t_signal* signal);
+EXTERN void outconnect_unset_signal(t_outconnect* oc);
 
 EXTERN int canvas_suspend_dsp(void);
 EXTERN void canvas_resume_dsp(int oldstate);
@@ -1041,6 +1059,9 @@ EXTERN PERTHREAD t_pdinstance *pd_this;
 #endif /* _WIN32 */
 EXTERN t_pdinstance **pd_instances;
 EXTERN int pd_ninstances;
+EXTERN t_pdinstance* pd_get_instance();
+EXTERN void pd_set_instance(t_pdinstance*);
+#define pd_this pd_get_instance()
 #else
 #define pd_this (&pd_maininstance)
 #endif /* PDINSTANCE */
@@ -1080,6 +1101,8 @@ EXTERN void text_notifybyname(t_symbol *s);      /* notify it was modified */
 EXTERN void pd_undo_set_objectstate(t_canvas*canvas, t_pd*x, t_symbol*s,
                                     int undo_argc, t_atom*undo_argv,
                                     int redo_argc, t_atom*redo_argv);
+
+EXTERN void plugdata_forward_message(void *x, t_symbol *s, int argc, t_atom *argv);
 
 #if defined(_LANGUAGE_C_PLUS_PLUS) || defined(__cplusplus)
 }

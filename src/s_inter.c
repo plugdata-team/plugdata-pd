@@ -1,10 +1,11 @@
 /* Copyright (c) 1997-1999 Miller Puckette.
-* For information on usage and redistribution, and for a DISCLAIMER OF ALL
-* WARRANTIES, see the file, "LICENSE.txt," in this distribution.  */
+ * For information on usage and redistribution, and for a DISCLAIMER OF ALL
+ * WARRANTIES, see the file, "LICENSE.txt," in this distribution.  */
 
 /* Pd side of the Pd/Pd-gui interface.  Also, some system interface routines
-that didn't really belong anywhere. */
+ that didn't really belong anywhere. */
 
+#include "s_inter.h"
 #include "m_pd.h"
 #include "s_stuff.h"
 #include "m_imp.h"
@@ -12,21 +13,21 @@ that didn't really belong anywhere. */
 #include "s_net.h"
 #include <errno.h>
 #ifndef _WIN32
-#include <unistd.h>
-#include <stdlib.h>
-#include <sys/time.h>
-#include <sys/mman.h>
-#include <sys/resource.h>
-#include <sys/types.h>
-#include <sys/stat.h>
+#    include <unistd.h>
+#    include <stdlib.h>
+#    include <sys/time.h>
+#    include <sys/mman.h>
+#    include <sys/resource.h>
+#    include <sys/types.h>
+#    include <sys/stat.h>
 #endif
 #ifdef HAVE_BSTRING_H
-#include <bstring.h>
+#    include <bstring.h>
 #endif
 #ifdef _WIN32
-#include <io.h>
-#include <process.h>
-#include <windows.h>
+#    include <io.h>
+#    include <process.h>
+#    include <windows.h>
 #endif
 
 #include <stdarg.h>
@@ -35,13 +36,12 @@ that didn't really belong anywhere. */
 #include <string.h>
 #include <stdio.h>
 #include <ctype.h>
+#include <stdbool.h>
 
 #ifdef __APPLE__
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <glob.h>
+#    include <glob.h>
 #else
-#include <stdlib.h>
+#    include <stdlib.h>
 #endif
 
 #ifdef HAVE_SYS_UTSNAME_H
@@ -61,6 +61,13 @@ that didn't really belong anywhere. */
 #endif
 static int stderr_isatty;
 
+#if __has_builtin(__builtin_expect) || defined(__GNUC__)
+#    define EXPECT_LIKELY(EXPR) __builtin_expect((bool)(EXPR), true)
+#    define EXPECT_UNLIKELY(EXPR) __builtin_expect((bool)(EXPR), false)
+#else
+#    define EXPECT_LIKELY(EXPR) (EXPR)
+#    define EXPECT_UNLIKELY(EXPR) (EXPR)
+#endif
 
 #define stringify(s) str(s)
 #define str(s) #s
@@ -71,9 +78,8 @@ static int stderr_isatty;
 #define DEBUG_MESSDOWN 1<<1    /* messages down from pd-gui to pd */
 #define DEBUG_COLORIZE 1<<2    /* colorize messages (if we are on a TTY) */
 
-
 #ifndef PDBINDIR
-#define PDBINDIR "bin/"
+#    define PDBINDIR "bin/"
 #endif
 
 #ifndef PDGUIDIR
@@ -81,20 +87,20 @@ static int stderr_isatty;
 #endif
 
 #ifndef WISH
-# if defined _WIN32
-#  define WISH "wish85.exe"
-# elif defined __APPLE__
-   // leave undefined to use dummy search path, otherwise
-   // this should be a full path to wish on mac
-#else
-#  define WISH "wish"
-# endif
+#    if defined _WIN32
+#        define WISH "wish85.exe"
+#    elif defined __APPLE__
+// leave undefined to use dummy search path, otherwise
+// this should be a full path to wish on mac
+#    else
+#        define WISH "wish"
+#    endif
 #endif
 
 #define LOCALHOST "localhost"
 
 #if PDTHREADS
-#include "pthread.h"
+#    include "pthread.h"
 #endif
 
 typedef struct _fdpoll
@@ -148,12 +154,63 @@ struct _instanceinter
     LARGE_INTEGER i_inittime;
     double i_freq;
 #endif
-#if PDTHREADS
-    pthread_mutex_t i_mutex;
-#endif
 
     unsigned char i_recvbuf[NET_MAXPACKETSIZE];
+
+    pd_gui_callback gui_callback;
+    pd_message_callback message_callback;
+    void *callback_target;
+    
+    void *lock;
+    void(*lock_fn)(void*);
+    void(*unlock_fn)(void*);
+    void(*clear_references_fn)(void*, void*);
+    void(*register_reference_fn)(void*, void*, void*);
+    void(*unregister_reference_fn)(void*, void*, void*);
+    int(*is_reference_valid_fn)(void*);
 };
+
+void register_gui_triggers(t_pdinstance* instance, void* target, pd_gui_callback gui_callback, pd_message_callback message_callback)
+{
+
+#if !PDINSTANCE
+    instance = &pd_maininstance;
+#endif
+
+    instance->pd_inter->gui_callback = gui_callback;
+    instance->pd_inter->message_callback = message_callback;
+    instance->pd_inter->callback_target = target;
+}
+
+int is_reference_valid(void* ptr)
+{
+    if(pd_this->pd_inter->callback_target) {
+        return pd_this->pd_inter->is_reference_valid_fn(ptr);
+    }
+    
+    return 1;
+}
+
+void register_weak_reference(void* ptr, void* weak_reference)
+{
+    if(pd_this->pd_inter->callback_target) {
+        pd_this->pd_inter->register_reference_fn(pd_this->pd_inter->callback_target, ptr, weak_reference);
+    }
+}
+
+void unregister_weak_reference(void* ptr, void* weak_reference)
+{
+    if(pd_this->pd_inter->callback_target) {
+        pd_this->pd_inter->unregister_reference_fn(pd_this->pd_inter->callback_target, ptr, weak_reference);
+    }
+}
+
+void clear_weak_references(void* ptr)
+{
+    if(pd_this->pd_inter->callback_target) {
+        pd_this->pd_inter->clear_references_fn(pd_this->pd_inter->callback_target, ptr);
+    }
+}
 
 extern int sys_guisetportnumber;
 extern int sys_addhist(int phase);
@@ -168,46 +225,45 @@ static void sys_initntclock(void)
     LARGE_INTEGER f1;
     LARGE_INTEGER now;
     QueryPerformanceCounter(&now);
-    if (!QueryPerformanceFrequency(&f1))
-    {
-          fprintf(stderr, "pd: QueryPerformanceFrequency failed\n");
-          f1.QuadPart = 1;
+    if (!QueryPerformanceFrequency(&f1)) {
+        fprintf(stderr, "pd: QueryPerformanceFrequency failed\n");
+        f1.QuadPart = 1;
     }
     INTER->i_freq = f1.QuadPart;
     INTER->i_inittime = now;
 }
 
-#if 0
-    /* this is a version you can call if you did the QueryPerformanceCounter
-    call yourself.  Necessary for time tagging incoming MIDI at interrupt
-    level, for instance; but we're not doing that just now. */
+#    if 0
+/* this is a version you can call if you did the QueryPerformanceCounter
+ call yourself.  Necessary for time tagging incoming MIDI at interrupt
+ level, for instance; but we're not doing that just now. */
 
 double nt_tixtotime(LARGE_INTEGER *dumbass)
 {
     if (INTER->i_freq == 0) sys_initntclock();
     return (((double)(dumbass->QuadPart -
-        INTER->i_inittime.QuadPart)) / INTER->i_freq);
+                      INTER->i_inittime.QuadPart)) / INTER->i_freq);
 }
-#endif
+#    endif
 #endif /* _WIN32 */
 
-    /* get "real time" in seconds; take the
-    first time we get called as a reference time of zero. */
+/* get "real time" in seconds; take the
+ first time we get called as a reference time of zero. */
 double sys_getrealtime(void)
 {
 #ifndef _WIN32
     static struct timeval then;
     struct timeval now;
     gettimeofday(&now, 0);
-    if (then.tv_sec == 0 && then.tv_usec == 0) then = now;
-    return ((now.tv_sec - then.tv_sec) +
-        (1./1000000.) * (now.tv_usec - then.tv_usec));
+    if (then.tv_sec == 0 && then.tv_usec == 0)
+        then = now;
+    return ((now.tv_sec - then.tv_sec) + (1. / 1000000.) * (now.tv_usec - then.tv_usec));
 #else
     LARGE_INTEGER now;
     QueryPerformanceCounter(&now);
-    if (INTER->i_freq == 0) sys_initntclock();
-    return (((double)(now.QuadPart -
-        INTER->i_inittime.QuadPart)) / INTER->i_freq);
+    if (INTER->i_freq == 0)
+        sys_initntclock();
+    return (((double)(now.QuadPart - INTER->i_inittime.QuadPart)) / INTER->i_freq);
 #endif
 }
 
@@ -809,99 +865,16 @@ int sys_havetkproc(void)
 
 void sys_vgui(const char *fmt, ...)
 {
-    int msglen, bytesleft, headwas, nwrote;
-    va_list ap;
-
-    if (!INTER->i_havetkproc)
-    {       /* if there's no TK process just throw it to stderr */
-        va_start(ap, fmt);
-        vfprintf(stderr, fmt, ap);
-        va_end(ap);
-        return;
-    }
-    if (!INTER->i_guibuf)
-    {
-        if (!(INTER->i_guibuf = malloc(GUI_ALLOCCHUNK)))
-        {
-            fprintf(stderr, "Pd: couldn't allocate GUI buffer\n");
-            sys_bail(1);
-        }
-        INTER->i_guisize = GUI_ALLOCCHUNK;
-        INTER->i_guihead = INTER->i_guitail = 0;
-    }
-    if (INTER->i_guihead > INTER->i_guisize - (GUI_ALLOCCHUNK/2)) {
-            sys_trytogetmoreguibuf(INTER->i_guisize + GUI_ALLOCCHUNK);
-    }
-    va_start(ap, fmt);
-    msglen = pd_vsnprintf(
-        INTER->i_guibuf  + INTER->i_guihead,
-        INTER->i_guisize - INTER->i_guihead,
-        fmt, ap);
-    va_end(ap);
-    if(msglen < 0)
-    {
-        fprintf(stderr,
-            "sys_vgui: pd_snprintf() failed with error code %d\n", errno);
-        return;
-    }
-    if (msglen >= INTER->i_guisize - INTER->i_guihead)
-    {
-        int msglen2, newsize =
-            INTER->i_guisize
-            + (msglen < GUI_ALLOCCHUNK ? GUI_ALLOCCHUNK : msglen + 1);
-        sys_trytogetmoreguibuf(newsize);
-
-        va_start(ap, fmt);
-        msglen2 = pd_vsnprintf(
-            INTER->i_guibuf  + INTER->i_guihead,
-            INTER->i_guisize - INTER->i_guihead,
-            fmt, ap);
-        va_end(ap);
-        if (msglen2 != msglen)
-            bug("sys_vgui");
-        if (msglen >= INTER->i_guisize - INTER->i_guihead)
-            msglen  = INTER->i_guisize - INTER->i_guihead;
-    }
-    if (sys_debuglevel & DEBUG_MESSUP)
-    {
-        const char *mess = INTER->i_guibuf + INTER->i_guihead;
-        int colorize = stderr_isatty && (sys_debuglevel & DEBUG_COLORIZE);
-        static int newmess = 1;
-#ifdef _WIN32
-    #ifdef _MSC_VER
-        fwprintf(stderr, L"%S", mess);
-    #else
-        fwprintf(stderr, L"%s", mess);
-    #endif
-        fflush(stderr);
-#else
-        if (colorize)
-            fprintf(stderr, "\e[0;1;35m%s%s\e[0m", (newmess)?">> ":"", mess);
-        else
-            fprintf(stderr, "%s%s", (newmess)?">> ":"", mess);
-
-        newmess = ('\n' == mess[msglen-1]);
-#endif
-    }
-    INTER->i_guihead += msglen;
-    INTER->i_bytessincelastping += msglen;
+    va_list args;
+    va_start(args, fmt);
+    
+    plugdata_gui_message(fmt, args);
+    
+    va_end(args);
 }
 
-
-/* sys_vgui() and sys_gui() are deprecated for externals
-   and shouldn't be used directly within Pd.
-   however, the we do use them for implementing the high-level
-   communication, so we do not want the compiler to shout out loud.
- */
-#ifdef __GNUC__
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-#elif defined _MSC_VER
-#pragma warning( disable : 4996 )
-#endif
-
-void sys_gui(const char *s)
+void sys_gui(char const* s)
 {
-    sys_vgui("%s", s);
 }
 
 static const char**namelist2strings(t_namelist *nl, unsigned int *N) {
@@ -1024,72 +997,25 @@ void sys_pretendguibytes(int n)
 
 void sys_queuegui(void *client, t_glist *glist, t_guicallbackfn f)
 {
-    t_guiqueue **gqnextptr, *gq;
-    if (!INTER->i_guiqueuehead)
-        gqnextptr = &INTER->i_guiqueuehead;
-    else
-    {
-        for (gq = INTER->i_guiqueuehead; gq->gq_next;
-            gq = gq->gq_next)
-                if (gq->gq_client == client)
-                    return;
-        if (gq->gq_client == client)
-            return;
-        gqnextptr = &gq->gq_next;
-    }
-    gq = t_getbytes(sizeof(*gq));
-    gq->gq_next = 0;
-    gq->gq_client = client;
-    gq->gq_glist = glist;
-    gq->gq_fn = f;
-    gq->gq_next = 0;
-    *gqnextptr = gq;
+    // NO-OP for plugdata
 }
 
-void sys_unqueuegui(void *client)
+void sys_unqueuegui(void* client)
 {
-    t_guiqueue *gq, *gq2;
-    while (INTER->i_guiqueuehead && INTER->i_guiqueuehead->gq_client == client)
-    {
-        gq = INTER->i_guiqueuehead;
-        INTER->i_guiqueuehead = INTER->i_guiqueuehead->gq_next;
-        t_freebytes(gq, sizeof(*gq));
-    }
-    if (!INTER->i_guiqueuehead)
-        return;
-    for (gq = INTER->i_guiqueuehead; (gq2 = gq->gq_next); gq = gq2)
-        if (gq2->gq_client == client)
-        {
-            gq->gq_next = gq2->gq_next;
-            t_freebytes(gq2, sizeof(*gq2));
-            break;
-        }
+    // NO-OP for plugdata
 }
 
-    /* poll for any incoming packets, or for GUI updates to send.  call with
-    the PD instance lock set. */
+/* poll for any incoming packets, or for GUI updates to send.  call with
+ the PD instance lock set. */
 int sys_pollgui(void)
 {
-    static double lasttime = 0;
-    double now = 0;
-    int didsomething = sys_domicrosleep(0);
-    if (!didsomething || (now = sys_getrealtime()) > lasttime + 0.5)
-    {
-        didsomething |= sys_poll_togui();
-        if (now)
-            lasttime = now;
-    }
-    return (didsomething);
+    // NO-OP for plugdata
+    return 0;
 }
 
 void sys_init_fdpoll(void)
 {
-    if (INTER->i_fdpoll)
-        return;
-    /* create an empty FD poll list */
-    INTER->i_fdpoll = (t_fdpoll *)t_getbytes(0);
-    INTER->i_nfdpoll = 0;
-    INTER->i_inbinbuf = binbuf_new();
+    // NO-OP for plugdata
 }
 
 void sys_gui_preferences(void)
@@ -1876,7 +1802,6 @@ void s_inter_newpdinstance(void)
 {
     INTER = getbytes(sizeof(*INTER));
 #if PDTHREADS
-    pthread_mutex_init(&INTER->i_mutex, NULL);
     pd_this->pd_islocked = 0;
 #endif
 #ifdef _WIN32
@@ -1897,9 +1822,6 @@ void s_inter_free(t_instanceinter *inter)
         inter->i_fdpoll = 0;
         inter->i_nfdpoll = 0;
     }
-#if PDTHREADS
-    pthread_mutex_destroy(&inter->i_mutex);
-#endif
     freebytes(inter, sizeof(*inter));
 }
 
@@ -1916,6 +1838,21 @@ static pthread_mutex_t sys_mutex = PTHREAD_MUTEX_INITIALIZER;
 #endif /* PDINSTANCE */
 #endif /* PDTHREADS */
 
+void setup_lock(const void* lock, void(*lock_func)(void*), void(*unlock_func)(void*))
+{
+    INTER->lock = (void*)lock;
+    INTER->lock_fn = lock_func;
+    INTER->unlock_fn = unlock_func;
+}
+
+void setup_weakreferences(void(*clear_references_func)(void*, void*), void(*register_reference_func)(void*, void*, void*), void(*unregister_reference_func)(void*, void*, void*), int(*is_reference_valid_func)(void*))
+{
+    INTER->clear_references_fn = clear_references_func;
+    INTER->is_reference_valid_fn = is_reference_valid_func;
+    INTER->register_reference_fn = register_reference_func;
+    INTER->unregister_reference_fn = unregister_reference_func;
+}
+
 #if PDTHREADS
 
 /* routines to lock and unlock Pd's global class structure or list of Pd
@@ -1929,8 +1866,10 @@ write-lock to be available. */
 void pd_globallock(void)
 {
 #ifdef PDINSTANCE
-    if (!pd_this->pd_islocked)
-        bug("pd_globallock");
+    // Skip this check now because it's not thread safe, and not worth locking for
+    //if (!pd_this->pd_islocked)
+    //    bug("pd_globallock");
+    
     pthread_rwlock_unlock(&sys_rwlock);
     pthread_rwlock_wrlock(&sys_rwlock);
 #endif /* PDINSTANCE */
@@ -1945,48 +1884,39 @@ void pd_globalunlock(void)
 }
 
 /* routines to lock/unlock a Pd instance for thread safety.  Call pd_setinsance
-first.  The "pd_this"  variable can be written and read thread-safely as it
-is defined as per-thread storage. */
+ first.  The "pd_this"  variable can be written and read thread-safely as it
+ is defined as per-thread storage. */
 void sys_lock(void)
 {
+    if(INTER && INTER->lock) {
+        INTER->lock_fn(INTER->lock);
+    }
+    
+    pd_this->pd_islocked++;
+    
 #ifdef PDINSTANCE
-    pthread_mutex_lock(&INTER->i_mutex);
     pthread_rwlock_rdlock(&sys_rwlock);
-    pd_this->pd_islocked = 1;
-#else
-    pthread_mutex_lock(&sys_mutex);
 #endif
+    
 }
 
 void sys_unlock(void)
 {
 #ifdef PDINSTANCE
-    pd_this->pd_islocked = 0;
     pthread_rwlock_unlock(&sys_rwlock);
-    pthread_mutex_unlock(&INTER->i_mutex);
-#else
-    pthread_mutex_unlock(&sys_mutex);
 #endif
+    
+    pd_this->pd_islocked--;
+    
+    if(INTER && INTER->lock) {
+        INTER->unlock_fn(INTER->lock);
+    }
 }
 
+// not used anywhere!
 int sys_trylock(void)
 {
-#ifdef PDINSTANCE
-    int ret;
-    if (!(ret = pthread_mutex_trylock(&INTER->i_mutex)))
-    {
-        if (!(ret = pthread_rwlock_tryrdlock(&sys_rwlock)))
-            return (0);
-        else
-        {
-            pthread_mutex_unlock(&INTER->i_mutex);
-            return (ret);
-        }
-    }
-    else return (ret);
-#else
-    return pthread_mutex_trylock(&sys_mutex);
-#endif
+    return 1;
 }
 
 #else /* PDTHREADS */
@@ -2012,3 +1942,264 @@ void pd_globallock(void) {}
 void pd_globalunlock(void) {}
 
 #endif /* PDTHREADS */
+
+
+uint32_t gui_message_hash(const char* str) {
+    uint32_t hash = 5381;
+    int c;
+    while ((c = *str++)) {
+        hash = ((hash << 5) + hash) + c; // hash * 33 + c
+    }
+    return hash;
+}
+
+#define NUM_GUI_HASHES 13
+uint32_t gui_message_hash_table[NUM_GUI_HASHES];
+
+
+static bool hashes_prepared = false;
+void prepare_hashes()
+{
+    const char* hashes[NUM_GUI_HASHES] = {
+        "pdtk_undomenu",
+        "pdtk_canvas_reflecttitle",
+        "pdtk_canvas_raise",
+        "destroy",
+        "pdtk_savepanel",
+        "pdtk_openpanel",
+        "::pd_menucommands::menu_openfile",
+        "openfile_open",
+        "panel_save",
+        "panel_open",
+        "editor_open",
+        "editor_append",
+        "coll_check_open",
+    };
+    
+    for(int i = 0; i < NUM_GUI_HASHES; i++)
+    {
+        
+        gui_message_hash_table[i] = gui_message_hash(hashes[i]);
+    }
+    
+    hashes_prepared = true;
+}
+
+
+void plugdata_gui_message(const char* message, va_list args)
+{
+    if(!message) return;
+    if(!hashes_prepared) prepare_hashes();
+    
+    int32_t hash = gui_message_hash(message);
+    
+    if (hash == gui_message_hash_table[0]) // pdtk_undomenu
+    {
+        t_canvas* canvas = va_arg(args, t_canvas*);
+        const char* undo = va_arg(args, const char*);
+        const char* redo = va_arg(args, const char*);
+        
+        t_atom atoms[4];
+        SETPOINTER(atoms, canvas);
+        SETSYMBOL(atoms + 1, gensym(undo));
+        SETSYMBOL(atoms + 2, gensym(redo));
+        pd_this->pd_inter->gui_callback(INTER->callback_target, "canvas_undo_redo", 3, atoms);
+        return;
+    }
+    if (hash == gui_message_hash_table[1]) // pdtk_canvas_reflecttitle
+    {
+        t_canvas* canvas = va_arg(args, t_canvas*);
+        const char* dirname = va_arg(args, void*);
+        const char* title = va_arg(args, void*);
+        
+        t_atom atoms[3];
+        SETPOINTER(atoms, canvas);
+        SETSYMBOL(atoms + 1, gensym(title));
+        SETFLOAT(atoms + 2, canvas->gl_dirty);
+        pd_this->pd_inter->gui_callback(INTER->callback_target, "canvas_title", 3, atoms);
+        return;
+    }
+    //plugdata TODO: uncomment pdtk_canvas_new message in a later version
+    //this is a temporary measure to make sure patches don't open up a dozen of subpatch windows, since plugdata <0.9.1 always set the gl_mapped flag
+    if (hash == gui_message_hash_table[2] // pdtk_canvas_raise
+        /*|| strncmp(message, "pdtk_canvas_new", strlen("pdtk_canvas_new")) == 0 */) {
+        void* canvas = va_arg(args, void*);
+        t_atom atoms[2];
+        SETPOINTER(atoms, canvas);
+        SETFLOAT(atoms + 1, 1);
+        
+        pd_this->pd_inter->gui_callback(INTER->callback_target, "canvas_vis", 2, atoms);
+        return;
+    }
+    if (hash == gui_message_hash_table[3]) { // destroy
+        void* canvas = va_arg(args, void*);
+        t_atom atoms[2];
+        SETPOINTER(atoms, canvas);
+        SETFLOAT(atoms + 1, 0);
+
+        pd_this->pd_inter->gui_callback(INTER->callback_target, "canvas_vis", 2, atoms);
+        return;
+    }
+
+    if (hash == gui_message_hash_table[4]) { // pdtk_savepanel
+
+        char const* snd = va_arg(args, char const*);
+        char const* path = va_arg(args, char const*);
+        
+        t_atom atoms[3];
+        SETFLOAT(atoms, 0);
+        SETSYMBOL(atoms + 1, gensym(snd));
+        SETSYMBOL(atoms + 2, gensym(path));
+        
+        pd_this->pd_inter->gui_callback(INTER->callback_target, "openpanel", 3, atoms);
+    }
+    else if (hash == gui_message_hash_table[5]) { // pdtk_openpanel
+        char const* snd = va_arg(args, char const*);
+        char const* path = va_arg(args, char const*);
+        int mode = va_arg(args, int);
+        
+        t_atom atoms[4];
+        SETFLOAT(atoms, 1);
+        SETSYMBOL(atoms + 1, gensym(snd));
+        SETSYMBOL(atoms + 2, gensym(path));
+        SETFLOAT(atoms + 3, mode);
+        
+        pd_this->pd_inter->gui_callback(INTER->callback_target, "openpanel", 4, atoms);
+    }
+    else if (hash == gui_message_hash_table[6]) { // ::pd_menucommands::menu_openfile
+        const char* file = va_arg(args, const char*);
+        
+        t_atom atoms;
+        SETSYMBOL(&atoms, gensym(file));
+        INTER->gui_callback(INTER->callback_target, "openfile", 1, &atoms);
+    }
+    else if (hash == gui_message_hash_table[7]) { // openfile_open
+        const char* filename = va_arg(args, const char*);
+        const char* dir = va_arg(args, const char*);
+        
+        if(dir) {
+            t_atom atoms[2];
+            SETSYMBOL(atoms, gensym(filename));
+            SETSYMBOL(atoms + 1, gensym(dir));
+            INTER->gui_callback(INTER->callback_target, "openfile", 2, atoms);
+        }
+        else {
+            t_atom atom;
+            SETSYMBOL(&atom, gensym(filename));
+            INTER->gui_callback(INTER->callback_target, "openfile", 1, &atom);
+        }
+    }
+    // These are tcl/tk functions ELSE defines for spawning a file browser
+    else if (hash == gui_message_hash_table[8]) { // panel_save
+        char const* snd = va_arg(args, char const*);
+        char const* path = va_arg(args, char const*);
+                
+        t_atom atoms[3];
+        SETFLOAT(atoms, 0);
+        SETSYMBOL(atoms + 1, gensym(snd));
+        SETSYMBOL(atoms + 2, gensym(path));
+        
+        pd_this->pd_inter->gui_callback(INTER->callback_target, "elsepanel", 3, atoms);
+    }
+    else if (hash == gui_message_hash_table[9]) { // panel_open
+        char const* snd = va_arg(args, char const*);
+        char const* path = va_arg(args, char const*);
+        
+        t_atom atoms[3];
+        SETFLOAT(atoms, 1);
+        SETSYMBOL(atoms + 1, gensym(snd));
+        SETSYMBOL(atoms + 2, gensym(path));
+        
+        pd_this->pd_inter->gui_callback(INTER->callback_target, "elsepanel", 3, atoms);
+    }
+    else if (hash == gui_message_hash_table[10]) { // editor_open
+        if(strncmp(message, "editor_open .%lx %dx%d {%s: %s} %d", strlen("editor_open .%lx %dx%d {%s: %s} %d")) == 0)
+        {
+            unsigned long ptr = va_arg(args, unsigned long);
+            int width = va_arg(args, int);
+            int height = va_arg(args, int);
+            char const* owner = va_arg(args, char const*);
+            char const* title = va_arg(args, char const*);
+            int has_callback = va_arg(args, int);
+            
+            t_atom atoms[6];
+            SETPOINTER(atoms, ptr);
+            SETFLOAT(atoms + 1, width);
+            SETFLOAT(atoms + 2, height);
+            SETSYMBOL(atoms + 3, gensym(owner));
+            SETSYMBOL(atoms + 4, gensym(title));
+            SETFLOAT(atoms + 5, has_callback);
+            pd_this->pd_inter->gui_callback(INTER->callback_target, "cyclone_editor", 6, atoms);
+        }
+        else {
+            
+            unsigned long ptr = va_arg(args, unsigned long);
+            int width = va_arg(args, int);
+            int height = va_arg(args, int);
+            char const* title = va_arg(args, char const*);
+            int has_callback = va_arg(args, int);
+            
+            t_atom atoms[5];
+            SETPOINTER(atoms, ptr);
+            SETFLOAT(atoms + 1, width);
+            SETFLOAT(atoms + 2, height);
+            SETSYMBOL(atoms + 3, gensym(title));
+            SETFLOAT(atoms + 4, has_callback);
+            pd_this->pd_inter->gui_callback(INTER->callback_target, "cyclone_editor", 5, atoms);
+        }
+    }
+    else if (hash == gui_message_hash_table[11]) { // editor_append
+        unsigned long ptr = va_arg(args, unsigned long);
+        char const* text = va_arg(args, char const*);
+        
+        t_atom atoms[2];
+        SETPOINTER(atoms, ptr);
+        SETSYMBOL(atoms + 1, gensym(text));
+        pd_this->pd_inter->gui_callback(INTER->callback_target, "cyclone_editor_append", 2, atoms);
+    }
+    else if (hash == gui_message_hash_table[12]) { // coll_check_open
+        unsigned long ptr = va_arg(args, unsigned long);
+        int open = va_arg(args, int);
+        t_atom atoms[2];
+        SETPOINTER(atoms, ptr);
+        SETFLOAT(atoms + 1, open);
+        pd_this->pd_inter->gui_callback(INTER->callback_target, "coll_check_open", 2, atoms);
+    }
+}
+
+void plugdata_forward_message(void* x, t_symbol *s, int argc, t_atom *argv)
+{
+    if(EXPECT_LIKELY(INTER->callback_target)) {
+        INTER->message_callback(INTER->callback_target, (void*)x, s, argc, argv);
+    }
+}
+
+static atomic_bool enable_debugging = 0;
+static atomic_bool enable_activity = 0;
+static atomic_bool enabled_debug_or_activity = 0;
+
+int plugdata_debugging_enabled() {
+    return atomic_load_explicit(&enable_debugging, memory_order_relaxed);
+}
+
+int plugdata_activity_enabled() {
+    // Use memory_order_relaxed for best performance, since all that matters is that this flag gets picked up "at some point"
+    return atomic_load_explicit(&enable_activity, memory_order_relaxed);
+}
+
+int plugdata_debugging_or_activity_enabled()
+{
+    return atomic_load_explicit(&enabled_debug_or_activity, memory_order_relaxed);
+}
+
+void set_plugdata_debugging_enabled(int enabled_debugging)
+{
+    atomic_store_explicit(&enable_debugging, enabled_debugging, memory_order_relaxed);
+    atomic_store_explicit(&enabled_debug_or_activity, enabled_debugging || atomic_load_explicit(&enable_activity, memory_order_relaxed), memory_order_relaxed);;
+}
+
+void set_plugdata_activity_enabled(int enabled_activity)
+{
+     atomic_store_explicit(&enable_activity, enabled_activity, memory_order_relaxed);
+     atomic_store_explicit(&enabled_debug_or_activity, enabled_activity || atomic_load_explicit(&enable_debugging, memory_order_relaxed), memory_order_relaxed);
+}

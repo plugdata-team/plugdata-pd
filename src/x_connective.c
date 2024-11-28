@@ -5,6 +5,7 @@
 /* connective objects */
 
 #include "m_pd.h"
+#include "g_canvas.h"
 
 #include <string.h>
 #include <stdio.h>
@@ -14,6 +15,8 @@
 #elif defined(__linux__) || defined(__APPLE__) || defined(HAVE_ALLOCA_H)
 # include <alloca.h> /* linux, mac, mingw, cygwin */
 #endif
+
+int plugdata_activity_enabled();
 
 /* -------------------------- int ------------------------------ */
 static t_class *pdint_class;
@@ -249,36 +252,66 @@ typedef struct _send
 {
     t_object x_obj;
     t_symbol *x_sym;
+    t_canvas *x_canvas;
 } t_send;
+
+static void plugdata_send_activity_to_parent(t_canvas* canvas)
+{
+    if(!canvas || !plugdata_activity_enabled()) return;
+    
+    plugdata_forward_message(canvas, gensym("_activity"), 0, NULL);
+    while((canvas = canvas->gl_owner))
+    {
+        plugdata_forward_message(canvas, gensym("_activity"), 0, NULL);
+    }
+}
 
 static void send_bang(t_send *x)
 {
-    if (x->x_sym->s_thing) pd_bang(x->x_sym->s_thing);
+    if (x->x_sym->s_thing) {
+        plugdata_send_activity_to_parent(x->x_canvas);
+        pd_bang(x->x_sym->s_thing);
+    }
 }
 
 static void send_float(t_send *x, t_float f)
 {
-    if (x->x_sym->s_thing) pd_float(x->x_sym->s_thing, f);
+    if (x->x_sym->s_thing) {
+        plugdata_send_activity_to_parent(x->x_canvas);
+        pd_float(x->x_sym->s_thing, f);
+    }
 }
 
 static void send_symbol(t_send *x, t_symbol *s)
 {
-    if (x->x_sym->s_thing) pd_symbol(x->x_sym->s_thing, s);
+    if (x->x_sym->s_thing) {
+        plugdata_send_activity_to_parent(x->x_canvas);
+        pd_symbol(x->x_sym->s_thing, s);
+    }
 }
 
 static void send_pointer(t_send *x, t_gpointer *gp)
 {
-    if (x->x_sym->s_thing) pd_pointer(x->x_sym->s_thing, gp);
+    if (x->x_sym->s_thing) {
+        plugdata_send_activity_to_parent(x->x_canvas);
+        pd_pointer(x->x_sym->s_thing, gp);
+    }
 }
 
 static void send_list(t_send *x, t_symbol *s, int argc, t_atom *argv)
 {
-    if (x->x_sym->s_thing) pd_list(x->x_sym->s_thing, s, argc, argv);
+    if (x->x_sym->s_thing) {
+        plugdata_send_activity_to_parent(x->x_canvas);
+        pd_list(x->x_sym->s_thing, s, argc, argv);
+    }
 }
 
 static void send_anything(t_send *x, t_symbol *s, int argc, t_atom *argv)
 {
-    if (x->x_sym->s_thing) typedmess(x->x_sym->s_thing, s, argc, argv);
+    if (x->x_sym->s_thing) {
+        plugdata_send_activity_to_parent(x->x_canvas);
+        typedmess(x->x_sym->s_thing, s, argc, argv);
+    }
 }
 
 static void *send_new(t_symbol *s)
@@ -287,6 +320,11 @@ static void *send_new(t_symbol *s)
     if (!*s->s_name)
         symbolinlet_new(&x->x_obj, &x->x_sym);
     x->x_sym = s;
+    
+    x->x_canvas = canvas_getcurrent();
+    t_symbol* dollsym = canvas_realizedollar(x->x_canvas, gensym("$0"));
+    if(strncmp(s->s_name, dollsym->s_name, strlen(dollsym->s_name)) == 0) x->x_canvas = NULL;
+    
     return (x);
 }
 
@@ -311,35 +349,42 @@ typedef struct _receive
 {
     t_object x_obj;
     t_symbol *x_sym;
+    t_canvas *x_canvas;
 } t_receive;
 
 static void receive_bang(t_receive *x)
 {
+    plugdata_send_activity_to_parent(x->x_canvas);
     outlet_bang(x->x_obj.ob_outlet);
 }
 
 static void receive_float(t_receive *x, t_float f)
 {
+    plugdata_send_activity_to_parent(x->x_canvas);
     outlet_float(x->x_obj.ob_outlet, f);
 }
 
 static void receive_symbol(t_receive *x, t_symbol *s)
 {
+    plugdata_send_activity_to_parent(x->x_canvas);
     outlet_symbol(x->x_obj.ob_outlet, s);
 }
 
 static void receive_pointer(t_receive *x, t_gpointer *gp)
 {
+    plugdata_send_activity_to_parent(x->x_canvas);
     outlet_pointer(x->x_obj.ob_outlet, gp);
 }
 
 static void receive_list(t_receive *x, t_symbol *s, int argc, t_atom *argv)
 {
+    plugdata_send_activity_to_parent(x->x_canvas);
     outlet_list(x->x_obj.ob_outlet, s, argc, argv);
 }
 
 static void receive_anything(t_receive *x, t_symbol *s, int argc, t_atom *argv)
 {
+    plugdata_send_activity_to_parent(x->x_canvas);
     outlet_anything(x->x_obj.ob_outlet, s, argc, argv);
 }
 
@@ -347,6 +392,11 @@ static void *receive_new(t_symbol *s)
 {
     t_receive *x = (t_receive *)pd_new(receive_class);
     x->x_sym = s;
+    
+    x->x_canvas = canvas_getcurrent();
+    t_symbol* dollsym = canvas_realizedollar(x->x_canvas, gensym("$0"));
+    if(strncmp(s->s_name, dollsym->s_name, strlen(dollsym->s_name)) == 0) x->x_canvas = NULL;
+    
     pd_bind(&x->x_obj.ob_pd, s);
     outlet_new(&x->x_obj, 0);
     return (x);
@@ -823,7 +873,7 @@ static void pack_symbol(t_pack *x, t_symbol *s)
     /* without a list method, pack_anything() would be called */
 static void pack_list(t_pack *x, t_symbol *s, int ac, t_atom *av)
 {
-    obj_list(&x->x_obj, 0, ac, av);
+    obj_list(&x->x_obj, NULL, ac, av);
 }
 
 static void pack_anything(t_pack *x, t_symbol *s, int ac, t_atom *av)

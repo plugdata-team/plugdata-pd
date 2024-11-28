@@ -51,7 +51,7 @@ void libpd_print_concatenator(const char *s) {
   while (util->concat_len + len >= PRINT_LINE_SIZE) {
     int d = PRINT_LINE_SIZE - 1 - util->concat_len;
     strncat(util->concat_buf, s, d);
-    util->concat_printhook(util->concat_buf);
+    util->concat_printhook(NULL, util->concat_buf);
     s += d;
     len -= d;
     util->concat_len = 0;
@@ -63,7 +63,7 @@ void libpd_print_concatenator(const char *s) {
 
   if (util->concat_len > 0 && util->concat_buf[util->concat_len - 1] == '\n') {
     util->concat_buf[util->concat_len - 1] = '\0';
-    util->concat_printhook(util->concat_buf);
+    util->concat_printhook(NULL, util->concat_buf);
     util->concat_len = 0;
   }
 }

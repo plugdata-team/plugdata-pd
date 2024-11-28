@@ -212,7 +212,6 @@ static void textbuf_write(t_textbuf *x, t_symbol *s, int argc, t_atom *argv)
 
 static void textbuf_free(t_textbuf *x)
 {
-    t_pd *x2;
     if (x->b_binbuf)
         binbuf_free(x->b_binbuf);
     if (x->b_guiconnect)
@@ -220,9 +219,12 @@ static void textbuf_free(t_textbuf *x)
         pdgui_vmess("destroy", "^", x);
         guiconnect_notarget(x->b_guiconnect, 1000);
     }
-        /* just in case we're still bound to #A from loading... */
-    while ((x2 = pd_findbyclass(gensym("#A"), text_define_class)))
-        pd_unbind(x2, gensym("#A"));
+    
+    /* just in case we're still bound to #A from loading... */
+     if(gensym("#A")->s_thing == &x->b_ob.te_g.g_pd)
+     {
+         pd_unbind(&x->b_ob.te_g.g_pd, gensym("#A"));
+     }
 }
 
     /* random helper function to find the nth line in a text buffer */
@@ -829,11 +831,17 @@ static void text_get_float(t_text_get *x, t_floatarg f)
         {
                 /* tell us what terminated the line (semi or comma) */
             outlet_float(x->x_out2, (end < n && vec[end].a_type == A_COMMA));
-            ALLOCA(t_atom, outv, outc, TEXT_NGETBYTE);
-            for (k = 0; k < outc; k++)
-                outv[k] = vec[start+k];
-            outlet_list(x->x_out1, 0, outc, outv);
-            FREEA(t_atom, outv, outc, TEXT_NGETBYTE);
+            
+            /* we can't assume anything about the size or memory of binbuf after outlet_float */
+            vec = binbuf_getvec(b);
+            
+            if(outc + start < binbuf_getnatom(b)) {
+                ALLOCA(t_atom, outv, outc, TEXT_NGETBYTE);
+                for (k = 0; k < outc; k++)
+                    outv[k] = vec[start+k];
+                outlet_list(x->x_out1, 0, outc, outv);
+                FREEA(t_atom, outv, outc, TEXT_NGETBYTE);
+            }
         }
         else if (startfield + nfield > outc)
             pd_error(x, "text get: field request (%d %d) out of range",

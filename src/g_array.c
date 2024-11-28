@@ -84,6 +84,7 @@ void array_resize_and_redraw(t_array *array, t_glist *glist, int n)
     array_resize(array, n);
     if (vis)
         gobj_vis(&a2->a_gp.gp_un.gp_scalar->sc_gobj, glist, 1);
+    plugdata_forward_message(glist, gensym("redraw"), 0, NULL);
 }
 
 void word_free(t_word *wp, t_template *template);
@@ -543,8 +544,7 @@ static void garray_arrayviewlist_close(t_garray *x)
 
 static void garray_free(t_garray *x)
 {
-    t_pd *x2;
-        sys_unqueuegui(&x->x_gobj);
+    sys_unqueuegui(&x->x_gobj);
     /* jsarlo { */
     if (x->x_listviewing)
     {
@@ -553,9 +553,13 @@ static void garray_free(t_garray *x)
     /* } jsarlo */
     pdgui_stub_deleteforkey(x);
     pd_unbind(&x->x_gobj.g_pd, x->x_realname);
-        /* just in case we're still bound to #A from loading... */
-    while ((x2 = pd_findbyclass(gensym("#A"), garray_class)))
-        pd_unbind(x2, gensym("#A"));
+    
+    /* just in case we're still bound to #A from loading... */
+     if(gensym("#A")->s_thing == &x->x_gobj.g_pd)
+     {
+         pd_unbind(&x->x_gobj.g_pd, gensym("#A"));
+     }
+    
     pd_free(&x->x_scalar->sc_gobj.g_pd);
 }
 
@@ -566,6 +570,7 @@ void array_redraw(t_array *a, t_glist *glist)
     while (a->a_gp.gp_stub->gs_which == GP_ARRAY)
         a = a->a_gp.gp_stub->gs_un.gs_array;
     scalar_redraw(a->a_gp.gp_un.gp_scalar, glist);
+    plugdata_forward_message(glist, gensym("redraw"), 0, NULL);
 }
 
     /* routine to get screen coordinates of a point in an array */
@@ -774,6 +779,8 @@ static void garray_doredraw(t_gobj *client, t_glist *glist)
 
 void garray_redraw(t_garray *x)
 {
+    plugdata_forward_message(x->x_glist, gensym("redraw"), 0, NULL);
+    
     if (glist_isvisible(x->x_glist))
         sys_queuegui(&x->x_gobj, x->x_glist, garray_doredraw);
     /* jsarlo { */

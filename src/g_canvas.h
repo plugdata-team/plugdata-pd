@@ -269,6 +269,7 @@ typedef struct _linetraverser
     int tr_lx1, tr_ly1, tr_lx2, tr_ly2;
     t_outconnect *tr_nextoc;
     int tr_nextoutno;
+    t_symbol* outconnect_path_info;
 } t_linetraverser;
 
 struct _instancecanvas
@@ -277,6 +278,9 @@ struct _instancecanvas
     struct _instancetemplate *i_template;
     t_symbol *i_newfilename;
     t_symbol *i_newdirectory;
+    int i_forcenewpath;
+    t_symbol *i_forcenewfilename;
+    t_symbol *i_forcenewdirectory;
     int i_newargc;
     t_atom *i_newargv;
     t_glist *i_reloadingabstraction;
@@ -385,7 +389,7 @@ struct _parentwidgetbehavior
 EXTERN void canvas_setcursor(t_glist *x, unsigned int cursornum);
 
 extern t_canvas *canvas_whichfind;  /* last canvas we did a find in */
-extern t_class *vinlet_class, *voutlet_class;
+EXTERN t_class *vinlet_class, *voutlet_class;
 extern int glist_valid;         /* incremented when pointers might be stale */
 
 #define PLOTSTYLE_POINTS 0     /* plotting styles for arrays */
@@ -463,7 +467,7 @@ EXTERN void text_drawborder(t_text *x, t_glist *glist, const char *tag,
 EXTERN void text_eraseborder(t_text *x, t_glist *glist, const char *tag);
 EXTERN int text_xpix(t_text *x, t_glist *glist);
 EXTERN int text_ypix(t_text *x, t_glist *glist);
-extern const t_widgetbehavior text_widgetbehavior;
+EXTERN const t_widgetbehavior text_widgetbehavior;
 
 /* -------------------- functions on rtexts ------------------------- */
 #define RTEXT_DOWN 1
@@ -546,7 +550,9 @@ EXTERN void canvas_noundo(t_canvas *x);
 EXTERN int canvas_getindex(t_canvas *x, t_gobj *y);
 
 EXTERN void canvas_connect(t_canvas *x,
-    t_floatarg fwhoout, t_floatarg foutno, t_floatarg fwhoin, t_floatarg finno);
+                           t_symbol *s, int argc, t_atom *argv);
+EXTERN void canvas_connect_expandargs(t_canvas *x, t_floatarg fwhoout, t_floatarg foutno, t_floatarg fwhoin, t_floatarg finno, t_symbol* path_data);
+
 EXTERN void canvas_disconnect(t_canvas *x,
     t_float index1, t_float outno, t_float index2, t_float inno);
 EXTERN int canvas_isconnected (t_canvas *x,
@@ -565,6 +571,7 @@ EXTERN int canvas_path_iterate(const t_canvas *x, t_canvas_path_iterator fun,
 
 EXTERN void linetraverser_start(t_linetraverser *t, t_canvas *x);
 EXTERN t_outconnect *linetraverser_next(t_linetraverser *t);
+EXTERN t_outconnect *linetraverser_next_nosize(t_linetraverser *t);
 EXTERN void linetraverser_skipobject(t_linetraverser *t);
 
 /* --------- functions on garrays (graphical arrays) -------------------- */

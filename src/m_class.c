@@ -22,6 +22,7 @@
 #include "m_private_utils.h"
 
 static t_symbol *class_loadsym;     /* name under which an extern is invoked */
+static t_symbol *class_prefixsym;   /* plugdata variable for setting a prefix to load many objects under */
 static void pd_defaultfloat(t_pd *x, t_float f);
 static void pd_defaultlist(t_pd *x, t_symbol *s, int argc, t_atom *argv);
 t_pd pd_objectmaker;    /* factory for creating "object" boxes */
@@ -31,7 +32,7 @@ static t_symbol *class_extern_dir;
 
 #ifdef PDINSTANCE
 static t_class *class_list = 0;
-PERTHREAD t_pdinstance *pd_this = NULL;
+PERTHREAD t_pdinstance *pd_this_inst = NULL;
 t_pdinstance **pd_instances;
 int pd_ninstances;
 #else
@@ -91,7 +92,7 @@ static t_pdinstance *pdinstance_init(t_pdinstance *x)
     dogensym("x",         &x->pd_s_x,        x);
     dogensym("y",         &x->pd_s_y,        x);
     dogensym("",          &x->pd_s_,         x);
-    pd_this = x;
+    pd_set_instance(x);
 #else
     dogensym("pointer",   &s_pointer,  x);
     dogensym("float",     &s_float,    x);
@@ -129,7 +130,8 @@ static void class_addmethodtolist(t_class *c, t_methodentry **methodlist,
         if (c == pd_objectmaker)
             logpost(NULL, PD_VERBOSE, "warning: class '%s' overwritten; old one renamed '%s'",
                 sel->s_name, nbuf);
-        else logpost(NULL, PD_VERBOSE, "warning: old method '%s' for class '%s' renamed '%s'",
+        else
+            logpost(NULL, PD_VERBOSE, "warning: old method '%s' for class '%s' renamed '%s'",
             sel->s_name, c->c_name->s_name, nbuf);
     }
     (*methodlist) = t_resizebytes((*methodlist),
@@ -144,7 +146,7 @@ static void class_addmethodtolist(t_class *c, t_methodentry **methodlist,
 #ifdef PDINSTANCE
 void pd_setinstance(t_pdinstance *x)
 {
-    pd_this = x;
+    pd_set_instance(x);
 }
 
 t_pdinstance *pd_getinstance(void)
@@ -167,7 +169,7 @@ t_pdinstance *pdinstance_new(void)
     t_pdinstance *x = (t_pdinstance *)getbytes(sizeof(t_pdinstance));
     t_class *c;
     int i;
-    pd_this = x;
+    pd_set_instance(x);
     s_inter_newpdinstance();
     pdinstance_init(x);
     sys_lock();
@@ -279,7 +281,7 @@ void mess_init(void)
     if (pd_objectmaker)
         return;
 #ifdef PDINSTANCE
-    pd_this = &pd_maininstance;
+    pd_set_instance(&pd_maininstance);
 #endif
     s_inter_newpdinstance();
     sys_lock();
@@ -430,6 +432,48 @@ static void pd_defaultlist(t_pd *x, t_symbol *s, int argc, t_atom *argv)
     argument form, one for the multiple one; see select_setup() to find out
     how this is handled.  */
 
+struct _gem_class
+{
+    t_symbol* sym;
+    t_newmethod newmethod;
+    t_atomtype vec[6];
+};
+
+// TODO: make this instance safe
+struct _gem_class* gem_classlist;
+int gem_classlist_size = 0;
+int gem_is_global = 0;
+
+int is_gem_object(const char* sym)
+{
+    if(!strncmp(sym, "Gem/", 4)) return 1;
+    else if(!gem_is_global) return 0;
+    
+    for(int i = 0; i < gem_classlist_size; i++)
+    {
+        struct _gem_class* c = gem_classlist + i;
+        if(!strcmp(sym, c->sym->s_name))
+        {
+            return 1;
+        }
+    }
+    
+    return 0;
+}
+
+void make_gem_classes_global()
+{
+    for(int i = 0; i < gem_classlist_size; i++)
+    {
+        struct _gem_class* c = gem_classlist + i;
+        class_addmethod(pd_objectmaker, (t_method)c->newmethod, c->sym,
+                        c->vec[0], c->vec[1], c->vec[2], c->vec[3], c->vec[4], c->vec[5]);
+    }
+    
+    gem_is_global = 1;
+}
+
+
 extern void text_save(t_gobj *z, t_binbuf *b);
 
 t_class *class_new(t_symbol *s, t_newmethod newmethod, t_method freemethod,
@@ -464,9 +508,24 @@ t_class *class_new(t_symbol *s, t_newmethod newmethod, t_method freemethod,
 
     if (pd_objectmaker && newmethod)
     {
+        // don't add gem objects into global namespace
+        if(class_prefixsym != gensym("Gem")) {
             /* add a "new" method by the name specified by the object */
-        class_addmethod(pd_objectmaker, (t_method)newmethod, s,
-            vec[0], vec[1], vec[2], vec[3], vec[4], vec[5]);
+            class_addmethod(pd_objectmaker, (t_method)newmethod, s,
+                            vec[0], vec[1], vec[2], vec[3], vec[4], vec[5]);
+        }
+        else {
+            // plugdata modification:
+            // gem shouldn't run in global namespace
+            // but since we are not loading it from an externals file, we need this hack to allow declaring gem as a lib
+            gem_classlist = resizebytes(gem_classlist, gem_classlist_size * sizeof(struct _gem_class), (gem_classlist_size+1) * sizeof(struct _gem_class));
+            struct _gem_class gem_entry;
+            gem_entry.sym = s;
+            gem_entry.newmethod = newmethod;
+            memcpy(gem_entry.vec, vec, sizeof(t_atomtype) * 6);
+            gem_classlist[gem_classlist_size] = gem_entry;
+            gem_classlist_size++;
+        }
         if (s && class_loadsym && !zgetfn(&pd_objectmaker, class_loadsym))
         {
                 /* if we're loading an extern it might have been invoked by a
@@ -474,10 +533,26 @@ t_class *class_new(t_symbol *s, t_newmethod newmethod, t_method freemethod,
                 too. */
             const char *loadstring = class_loadsym->s_name;
             size_t l1 = strlen(s->s_name), l2 = strlen(loadstring);
-            if (l2 > l1 && !strcmp(s->s_name, loadstring + (l2 - l1)))
+            if (l2 > l1 && !strcmp(s->s_name, loadstring + (l2 - l1))) {
                 class_addmethod(pd_objectmaker, (t_method)newmethod,
-                    class_loadsym,
-                    vec[0], vec[1], vec[2], vec[3], vec[4], vec[5]);
+                                class_loadsym,
+                                vec[0], vec[1], vec[2], vec[3], vec[4], vec[5]);
+            }
+        }
+        
+        // plugdata modification: it's very useful for us to just set loadstring to "else" when loading all else objects
+        if (s && class_prefixsym)
+        {
+            const char *loadstring = class_prefixsym->s_name;
+            size_t size = strlen(s->s_name) + strlen(loadstring) + 2;
+            char* full_path = t_getbytes(size);
+            snprintf(full_path, size, "%s/%s", loadstring, s->s_name);
+            
+            class_addmethod(pd_objectmaker, (t_method)newmethod,
+                            gensym(full_path),
+                            vec[0], vec[1], vec[2], vec[3], vec[4], vec[5]);
+            
+            freebytes(full_path, size);
         }
     }
     c = (t_class *)t_getbytes(sizeof(*c));
@@ -918,7 +993,13 @@ void new_anything(void *dummy, t_symbol *s, int argc, t_atom *argv)
     }
     pd_this->pd_newest = 0;
     class_loadsym = s;
-    pd_globallock();
+    
+    // This lock causes deadlocks...
+    // TODO: this is not very thread-safe, though it shouldn't be too horrible
+    // I should fix this though
+    
+    //pd_globallock();
+    
     if (sys_load_lib(canvas_getcurrent(), s->s_name))
     {
         tryingalready++;
@@ -927,7 +1008,17 @@ void new_anything(void *dummy, t_symbol *s, int argc, t_atom *argv)
         return;
     }
     class_loadsym = 0;
-    pd_globalunlock();
+    //pd_globalunlock();
+}
+
+void clear_class_loadsym()
+{
+    class_loadsym = 0;
+}
+
+void set_class_prefix(t_symbol* dir)
+{
+    class_prefixsym = dir;
 }
 
 /* This is externally available, but note that it might later disappear; the
@@ -967,6 +1058,8 @@ void pd_typedmess(t_pd *x, t_symbol *s, int argc, t_atom *argv)
     t_floatarg ad[MAXPDARG+1], *dp = ad;
     int niarg = 0;
     int nfarg = 0;
+
+    plugdata_forward_message(x, s, argc, argv);
 
         /* check for messages that are handled by fixed slots in the class
         structure. */

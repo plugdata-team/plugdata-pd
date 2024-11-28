@@ -507,6 +507,7 @@ static void scalar_vis(t_gobj *z, t_glist *owner, int vis)
         scalar_drawselectrect(x, owner, 1);
     }
     sys_unqueuegui(x);
+    plugdata_forward_message(x, gensym("redraw"), 0, NULL);
 }
 
 static void scalar_doredraw(t_gobj *client, t_glist *glist)
@@ -522,6 +523,8 @@ void scalar_redraw(t_scalar *x, t_glist *glist)
 {
     if (glist_isvisible(glist))
         sys_queuegui(x, glist, scalar_doredraw);
+    
+    plugdata_forward_message(x, gensym("redraw"), 0, NULL);
 }
 
 extern void template_notifyforscalar(t_template *template, t_glist *owner,

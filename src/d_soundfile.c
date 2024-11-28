@@ -1804,7 +1804,7 @@ static void *readsf_child_main(void *zz)
     t_soundfile sf = {0};
     soundfile_clear(&sf);
 #ifdef PDINSTANCE
-    pd_this = x->x_pd_this;
+    pd_set_instance(x->x_pd_this);
 #endif
 #ifdef DEBUG_SOUNDFILE_THREADS
     fprintf(stderr, "readsf~: 1\n");
@@ -2404,7 +2404,7 @@ static void *writesf_child_main(void *zz)
     t_soundfile sf = {0};
     soundfile_clear(&sf);
 #ifdef PDINSTANCE
-    pd_this = x->x_pd_this;
+    pd_set_instance(x->x_pd_this);
 #endif
 #ifdef DEBUG_SOUNDFILE_THREADS
     fprintf(stderr, "writesf~: 1\n");

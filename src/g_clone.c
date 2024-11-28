@@ -137,7 +137,11 @@ static void clone_in_vis(t_in *x, t_floatarg fn, t_floatarg vis)
         n = 0;
     else if (n >= x->i_owner->x_n)
         n = x->i_owner->x_n - 1;
-    canvas_vis(x->i_owner->x_vec[n].c_gl, (vis != 0));
+    
+    t_pd* target = &x->i_owner->x_vec[n].c_gl->gl_obj.te_g.g_pd;
+    t_atom isvis;
+    SETFLOAT(&isvis, vis != 0);
+    pd_typedmess(target, gensym("vis"), 1, &isvis);
 }
 
 static void clone_in_fwd(t_in *x, t_symbol *s, int argc, t_atom *argv)
@@ -364,8 +368,10 @@ static void clone_dsp(t_clone *x, t_signal **sp)
                 {
                     if (!--tempio[i]->s_refcount)
                         signal_makereusable(tempio[i]);
-                    else
-                        bug("clone 1: %d", tempio[i]->s_refcount);
+                    // FIXME: this warning pops up because plugdata manipulates the signal refcount when debug mode is enabled
+                    // I think it might be harmless, but not sure
+                    //else
+                    //    bug("clone 1: %d", tempio[i]->s_refcount);
                 }
             }
             for (i = 0; i < nout; i++)

@@ -17,6 +17,8 @@ life elsewhere. */
 #include "g_canvas.h"
 #include <string.h>
 
+int plugdata_activity_enabled();
+
 static int symbol2resamplemethod(t_symbol*s)
 {
     if      (s == gensym("hold"  )) return 1; /* up: sample and hold */
@@ -90,31 +92,43 @@ static void *vinlet_new(t_symbol *s)
 
 static void vinlet_bang(t_vinlet *x)
 {
+    if(plugdata_activity_enabled()) plugdata_forward_message(x->x_canvas, gensym("_activity"), 0, NULL);
+    
     outlet_bang(x->x_obj.ob_outlet);
 }
 
 static void vinlet_pointer(t_vinlet *x, t_gpointer *gp)
 {
+    if(plugdata_activity_enabled()) plugdata_forward_message(x->x_canvas, gensym("_activity"), 0, NULL);
+    
     outlet_pointer(x->x_obj.ob_outlet, gp);
 }
 
 static void vinlet_float(t_vinlet *x, t_float f)
 {
+    if(plugdata_activity_enabled()) plugdata_forward_message(x->x_canvas, gensym("_activity"), 0, NULL);
+    
     outlet_float(x->x_obj.ob_outlet, f);
 }
 
 static void vinlet_symbol(t_vinlet *x, t_symbol *s)
 {
+    if(plugdata_activity_enabled()) plugdata_forward_message(x->x_canvas, gensym("_activity"), 0, NULL);
+    
     outlet_symbol(x->x_obj.ob_outlet, s);
 }
 
 static void vinlet_list(t_vinlet *x, t_symbol *s, int argc, t_atom *argv)
 {
+    if(plugdata_activity_enabled()) plugdata_forward_message(x->x_canvas, gensym("_activity"), 0, NULL);
+    
     outlet_list(x->x_obj.ob_outlet, s, argc, argv);
 }
 
 static void vinlet_anything(t_vinlet *x, t_symbol *s, int argc, t_atom *argv)
 {
+    if(plugdata_activity_enabled()) plugdata_forward_message(x->x_canvas, gensym("_activity"), 0, NULL);
+    
     outlet_anything(x->x_obj.ob_outlet, s, argc, argv);
 }
 
@@ -400,31 +414,43 @@ static void *voutlet_new(t_symbol *s)
 
 static void voutlet_bang(t_voutlet *x)
 {
+    if(plugdata_activity_enabled()) plugdata_forward_message(x->x_canvas, gensym("_activity"), 0, NULL);
+    
     outlet_bang(x->x_parentoutlet);
 }
 
 static void voutlet_pointer(t_voutlet *x, t_gpointer *gp)
 {
+    if(plugdata_activity_enabled()) plugdata_forward_message(x->x_canvas, gensym("_activity"), 0, NULL);
+    
     outlet_pointer(x->x_parentoutlet, gp);
 }
 
 static void voutlet_float(t_voutlet *x, t_float f)
 {
+    if(plugdata_activity_enabled()) plugdata_forward_message(x->x_canvas, gensym("_activity"), 0, NULL);
+    
     outlet_float(x->x_parentoutlet, f);
 }
 
 static void voutlet_symbol(t_voutlet *x, t_symbol *s)
 {
+    if(plugdata_activity_enabled()) plugdata_forward_message(x->x_canvas, gensym("_activity"), 0, NULL);
+   
     outlet_symbol(x->x_parentoutlet, s);
 }
 
 static void voutlet_list(t_voutlet *x, t_symbol *s, int argc, t_atom *argv)
 {
+    if(plugdata_activity_enabled()) plugdata_forward_message(x->x_canvas, gensym("_activity"), 0, NULL);
+    
     outlet_list(x->x_parentoutlet, s, argc, argv);
 }
 
 static void voutlet_anything(t_voutlet *x, t_symbol *s, int argc, t_atom *argv)
 {
+    if(plugdata_activity_enabled()) plugdata_forward_message(x->x_canvas, gensym("_activity"), 0, NULL);
+    
     outlet_anything(x->x_parentoutlet, s, argc, argv);
 }
 

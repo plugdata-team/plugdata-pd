@@ -6,6 +6,30 @@
 #include "m_imp.h"
 #include "g_canvas.h"   /* just for LB_LOAD */
 
+extern void clear_weak_references(void* ptr);
+
+
+#if PDINSTANCE
+PERTHREAD t_pdinstance *pd_this_instance;
+
+t_pdinstance* pd_get_instance()
+{
+    return pd_this_instance;
+};
+
+void pd_set_instance(t_pdinstance* instance)
+{
+    pd_this_instance = instance;
+}
+#else
+
+t_pdinstance* pd_get_instance()
+{
+    return pd_this;
+};
+
+#endif
+
     /* FIXME no out-of-memory testing yet! */
 
 t_pd *pd_new(t_class *c)
@@ -22,6 +46,7 @@ t_pd *pd_new(t_class *c)
         ((t_object *)x)->ob_inlet = 0;
         ((t_object *)x)->ob_outlet = 0;
     }
+
     return (x);
 }
 
@@ -29,6 +54,8 @@ typedef void (*t_freemethod)(t_pd *);
 
 void pd_free(t_pd *x)
 {
+    clear_weak_references(x);
+
     t_class *c = *x;
     if (c->c_freemethod) (*(t_freemethod)(c->c_freemethod))(x);
     if (c->c_patchable)
@@ -104,12 +131,24 @@ static void bindlist_list(t_bindlist *x, t_symbol *s,
         pd_list(e->e_who, s, argc, argv);
 }
 
+
+void register_weak_reference(void* ptr, void* weak_reference);
+void unregister_weak_reference(void* ptr, void* weak_reference);
+int is_reference_valid(void* ptr);
+
 static void bindlist_anything(t_bindlist *x, t_symbol *s,
     int argc, t_atom *argv)
 {
+    void* bindlist_reference;
+    register_weak_reference(x, &bindlist_reference);
+    
     t_bindelem *e;
-    for (e = x->b_list; e; e = e->e_next)
+    for (e = x->b_list; e; e = e->e_next) {
         pd_typedmess(e->e_who, s, argc, argv);
+        if(!is_reference_valid(bindlist_reference)) break;
+    }
+    
+    unregister_weak_reference(x, &bindlist_reference);
 }
 
 void m_pd_setup(void)
@@ -179,7 +218,6 @@ void pd_unbind(t_pd *x, t_symbol *s)
         }
         if (!b->b_list->e_next)
         {
-
             s->s_thing = b->b_list->e_who;
             freebytes(b->b_list, sizeof(t_bindelem));
             b->b_list = 0;
@@ -252,7 +290,8 @@ void pd_pushsym(t_pd *x)
 
 void pd_popsym(t_pd *x)
 {
-    if (!gstack_head || s__X.s_thing != x) bug("gstack_pop");
+    if (!gstack_head || s__X.s_thing != x)
+        bug("gstack_pop");
     else
     {
         t_gstack *headwas = gstack_head;
@@ -270,36 +309,57 @@ void pd_doloadbang(void)
     lastpopped = 0;
 }
 
+
 void pd_bang(t_pd *x)
 {
+    plugdata_forward_message(x, &s_bang, 0, NULL);
+    
     (*(*x)->c_bangmethod)(x);
 }
 
 void pd_float(t_pd *x, t_float f)
 {
-    if (x == &pd_objectmaker)
+	if (x == &pd_objectmaker) {
         ((t_floatmethodr)(*(*x)->c_floatmethod))(x, f);
-    else
-        (*(*x)->c_floatmethod)(x, f);
+		return;
+	}
+    
+    {
+        t_atom fl_value = { .a_type = A_FLOAT, .a_w.w_float = f};
+        plugdata_forward_message(x, &s_float, 1, &fl_value);
+    }
+    
+    (*(*x)->c_floatmethod)(x, f);
 }
 
 void pd_pointer(t_pd *x, t_gpointer *gp)
 {
+    plugdata_forward_message(x, &s_pointer, 0, NULL);
+    
     (*(*x)->c_pointermethod)(x, gp);
 }
 
 void pd_symbol(t_pd *x, t_symbol *s)
 {
+    {
+        t_atom sym_value = { .a_type = A_SYMBOL, .a_w.w_symbol = s};
+        plugdata_forward_message(x, &s_symbol, 1, &sym_value);
+    }
+    
     (*(*x)->c_symbolmethod)(x, s);
 }
 
 void pd_list(t_pd *x, t_symbol *s, int argc, t_atom *argv)
 {
+    plugdata_forward_message(x, &s_list, argc, argv);
+    
     (*(*x)->c_listmethod)(x, &s_list, argc, argv);
 }
 
 void pd_anything(t_pd *x, t_symbol *s, int argc, t_atom *argv)
 {
+    plugdata_forward_message(x, &s_anything, argc, argv);
+    
     (*(*x)->c_anymethod)(x, s, argc, argv);
 }
 

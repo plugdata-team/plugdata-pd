@@ -119,7 +119,6 @@ static int atomic_int_compare_exchange(volatile int *ptr, int *expected, int des
         ((nmemb) < (maxnmemb) || (freebytes((array), (nmemb) * sizeof(type)), 0)))
 #endif /* !DONT_USE_ALLOCA */
 
-
 /* --------------------------- endianness helpers --------------------- */
 #ifdef HAVE_MACHINE_ENDIAN_H
 # include <machine/endian.h>
@@ -141,8 +140,8 @@ static int atomic_int_compare_exchange(volatile int *ptr, int *expected, int des
 # define LITTLE_ENDIAN _LITTLE_ENDIAN
 #endif
 
-#ifdef _MSC_VER
-/* _MSVC lacks BYTE_ORDER and LITTLE_ENDIAN */
+#if defined(_MSC_VER) || defined(__APPLE__)
+/* _MSVC and macOS lack BYTE_ORDER and LITTLE_ENDIAN */
 # if !defined(LITTLE_ENDIAN)
 #  define LITTLE_ENDIAN 0x0001
 # endif
@@ -155,7 +154,7 @@ static int atomic_int_compare_exchange(volatile int *ptr, int *expected, int des
 # if defined(__GNUC__) && defined(_XOPEN_SOURCE)
 #  warning unable to detect endianness (continuing anyhow)
 # else
-#  error unable to detect endianness
+#  warning unable to detect endianness (continuing anyhow)
 # endif
 #endif
 

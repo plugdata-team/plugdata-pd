@@ -22,6 +22,7 @@ extern t_class *vinlet_class, *voutlet_class, *canvas_class, *text_class;
 EXTERN_STRUCT _vinlet;
 EXTERN_STRUCT _voutlet;
 
+int plugdata_debugging_enabled();
 void vinlet_dspprolog(struct _vinlet *x, t_signal **parentsigs,
     int myvecsize, int phase, int period, int frequency,
     int downsample, int upsample,  int reblock, int switched);
@@ -425,8 +426,10 @@ static void signal_cleanup(void)
     while ((sig = THIS->u_signals))
     {
         THIS->u_signals = sig->s_nextused;
+        
         if (!sig->s_isborrowed && !sig->s_isscalar)
             t_freebytes(sig->s_vec, sig->s_nalloc * sizeof (*sig->s_vec));
+        
         t_freebytes(sig, sizeof *sig);
     }
     for (i = 0; i <= MAXLOGSIG; i++)
@@ -554,6 +557,7 @@ t_signal *signal_new(int length, int nchans, t_float sr, t_sample *scalarptr)
     ret->s_overlap = 0;
     ret->s_refcount = 0;
     ret->s_borrowedfrom = 0;
+    
     if (THIS->u_loud) post("new %lx: %lx", ret, ret->s_vec);
     return (ret);
 }
@@ -624,6 +628,7 @@ typedef struct _sigoutconnect
     t_ugenbox *oc_who;
     int oc_inno;
     struct _sigoutconnect *oc_next;
+    t_outconnect* oc_origin;
 } t_sigoutconnect;
 
 typedef struct _sigoutlet
@@ -779,7 +784,7 @@ void ugen_add(t_dspcontext *dc, t_object *obj)
 
     /* and then this to make all the connections. */
 void ugen_connect(t_dspcontext *dc, t_object *x1, int outno, t_object *x2,
-    int inno)
+    int inno, t_outconnect* oc_original)
 {
     t_ugenbox *u1, *u2;
     t_sigoutlet *uout;
@@ -820,6 +825,7 @@ void ugen_connect(t_dspcontext *dc, t_object *x1, int outno, t_object *x2,
     uout->o_connections = oc;
     oc->oc_who = u2;
     oc->oc_inno = siginno;
+    oc->oc_origin = oc_original;
         /* update inlet and outlet counts  */
     uout->o_nconnect++;
     uin->i_nconnect++;
@@ -994,8 +1000,22 @@ static void ugen_doit(t_dspcontext *dc, t_ugenbox *u)
     for (uout = u->u_out, i = u->u_nout; i--; uout++)
     {
         s1 = uout->o_signal;
+                
         for (oc = uout->o_connections; oc; oc = oc->oc_next)
         {
+            /* modification for plugdata:
+               store the signal on the outconnect so that we can read it from the GUI
+               this is used for for connection debugging and mc channel detection 
+               it will also increment the refcount to ensure the signal doesn't get reused until we're done with it
+             */
+            if(plugdata_debugging_enabled()) {
+                outconnect_set_signal(oc->oc_origin, s1);
+            }
+            else {
+                // Make sure signal are made reusable after disabling debugging
+                outconnect_unset_signal(oc->oc_origin);
+            }
+
             u2 = oc->oc_who;
             uin = &u2->u_in[oc->oc_inno];
                 /* if there's already someone here, sum the two */
@@ -1036,8 +1056,10 @@ static void ugen_doit(t_dspcontext *dc, t_ugenbox *u)
             if (u2->u_nin > 1)
             {
                 for (uin = u2->u_in, n = u2->u_nin; n--; uin++)
-                    if (uin->i_ngot < uin->i_nconnect) goto notyet;
+                    if (uin->i_ngot < uin->i_nconnect)
+                        goto notyet;
             }
+            
                 /* so now we can schedule the ugen.  */
             ugen_doit(dc, u2);
         notyet: ;

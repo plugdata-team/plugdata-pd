@@ -78,6 +78,10 @@ void glist_delete(t_glist *x, t_gobj *y)
             /* JMZ: send a closebang to the canvas */
         canvas_closebang((t_canvas *)y);
     }
+    if(pd_this->pd_newest == &y->g_pd)
+    {
+        pd_this->pd_newest = NULL;
+    }
 
     wasdeleting = canvas_setdeleting(canvas, 1);
     if (x->gl_editor)

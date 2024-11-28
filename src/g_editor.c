@@ -404,16 +404,17 @@ typedef struct _undo_connect
     int u_outletno;
     int u_index2;
     int u_inletno;
+    t_symbol* u_path;
 } t_undo_connect;
 
 void *canvas_undo_set_disconnect(t_canvas *x,
-    int index1, int outno, int index2, int inno);
+                                 int index1, int outno, int index2, int inno, t_symbol* connection_path);
 
 /* connect just calls disconnect actions backward... (see below) */
 void *canvas_undo_set_connect(t_canvas *x,
-    int index1, int outno, int index2, int inno)
+    int index1, int outno, int index2, int inno, t_symbol* path)
 {
-    return (canvas_undo_set_disconnect(x, index1, outno, index2, inno));
+    return (canvas_undo_set_disconnect(x, index1, outno, index2, inno, path));
 }
 
 int canvas_undo_connect(t_canvas *x, void *z, int action)
@@ -431,21 +432,22 @@ int canvas_undo_connect(t_canvas *x, void *z, int action)
 static void canvas_connect_with_undo(t_canvas *x,
     t_float index1, t_float outno, t_float index2, t_float inno)
 {
-    canvas_connect(x, index1, outno, index2, inno);
+    canvas_connect_expandargs(x, index1, outno, index2, inno, gensym("empty"));
     canvas_undo_add(x, UNDO_CONNECT, "connect", canvas_undo_set_connect(x,
-        index1, outno, index2, inno));
+        index1, outno, index2, inno, gensym("empty")));
 }
 
 /* ------- specific undo methods: 2. disconnect -------- */
 
 void *canvas_undo_set_disconnect(t_canvas *x,
-    int index1, int outno, int index2, int inno)
+    int index1, int outno, int index2, int inno, t_symbol* connection_path)
 {
     t_undo_connect *buf = (t_undo_connect *)getbytes(sizeof(*buf));
     buf->u_index1 = index1;
     buf->u_outletno = outno;
     buf->u_index2 = index2;
     buf->u_inletno = inno;
+    buf->u_path = connection_path;
     return (buf);
 }
 
@@ -455,7 +457,7 @@ void canvas_disconnect(t_canvas *x,
     t_linetraverser t;
     t_outconnect *oc;
     linetraverser_start(&t, x);
-    while ((oc = linetraverser_next(&t)))
+    while ((oc = linetraverser_next_nosize(&t)))
     {
         int srcno = canvas_getindex(x, &t.tr_ob->ob_g);
         int sinkno = canvas_getindex(x, &t.tr_ob2->ob_g);
@@ -479,8 +481,8 @@ int canvas_undo_disconnect(t_canvas *x, void *z, int action)
     t_undo_connect *buf = z;
     if (action == UNDO_UNDO)
     {
-        canvas_connect(x, buf->u_index1, buf->u_outletno,
-            buf->u_index2, buf->u_inletno);
+        canvas_connect_expandargs(x, buf->u_index1, buf->u_outletno,
+            buf->u_index2, buf->u_inletno, buf->u_path);
     }
     else if (action == UNDO_REDO)
     {
@@ -493,11 +495,11 @@ int canvas_undo_disconnect(t_canvas *x, void *z, int action)
 }
 
 static void canvas_disconnect_with_undo(t_canvas *x,
-    t_float index1, t_float outno, t_float index2, t_float inno)
+    t_float index1, t_float outno, t_float index2, t_float inno, t_symbol* connection_path)
 {
     canvas_disconnect(x, index1, outno, index2, inno);
     canvas_undo_add(x, UNDO_DISCONNECT, "disconnect", canvas_undo_set_disconnect(x,
-        index1, outno, index2, inno));
+        index1, outno, index2, inno, connection_path));
 }
 
 /* ---------- ... 3. cut, clear, and typing into objects: -------- */
@@ -538,20 +540,20 @@ void *canvas_undo_set_cut(t_canvas *x, int mode)
         /* store connections into/out of the selection */
     buf->u_reconnectbuf = binbuf_new();
     linetraverser_start(&t, x);
-    while ((oc = linetraverser_next(&t)))
+    while ((oc = linetraverser_next_nosize(&t)))
     {
         int issel1 = glist_isselected(x, &t.tr_ob->ob_g);
         int issel2 = glist_isselected(x, &t.tr_ob2->ob_g);
         if (issel1 != issel2)
         {
-            binbuf_addv(buf->u_reconnectbuf, "ssiiii;",
+            binbuf_addv(buf->u_reconnectbuf, "ssiiiis;",
                 gensym("#X"), gensym("connect"),
                 (issel1 ? nnotsel : 0)
                     + glist_selectionindex(x, &t.tr_ob->ob_g, issel1),
                 t.tr_outno,
                 (issel2 ? nnotsel : 0)
                     + glist_selectionindex(x, &t.tr_ob2->ob_g, issel2),
-                t.tr_inno);
+                t.tr_inno, t.outconnect_path_info);
         }
     }
     if (mode == UCUT_TEXT)
@@ -755,10 +757,12 @@ void *canvas_undo_set_move(t_canvas *x, int selected)
         for (y = x->gl_list, i = indx = 0; y; y = y->g_next, indx++)
             if (glist_isselected(x, y))
             {
-                gobj_getrect(y, x, &x1, &y1, &x2, &y2);
+                t_object* checked =  pd_checkobject(&y->g_pd);
+                if(!checked) continue;
+
                 buf->u_vec[i].e_index = indx;
-                buf->u_vec[i].e_xpix = x1 / x->gl_zoom;
-                buf->u_vec[i].e_ypix = y1 / x->gl_zoom;
+                buf->u_vec[i].e_xpix = checked->te_xpix / x->gl_zoom;
+                buf->u_vec[i].e_ypix = checked->te_ypix / x->gl_zoom;
                 i++;
             }
     }
@@ -766,10 +770,12 @@ void *canvas_undo_set_move(t_canvas *x, int selected)
     {
         for (y = x->gl_list, indx = 0; y; y = y->g_next, indx++)
         {
-            gobj_getrect(y, x, &x1, &y1, &x2, &y2);
+            t_object* checked = pd_checkobject(&y->g_pd);
+            if(!checked) continue;
+
             buf->u_vec[indx].e_index = indx;
-            buf->u_vec[indx].e_xpix = x1 / x->gl_zoom;
-            buf->u_vec[indx].e_ypix = y1 / x->gl_zoom;
+            buf->u_vec[indx].e_xpix = checked->te_xpix / x->gl_zoom;
+            buf->u_vec[indx].e_ypix = checked->te_ypix / x->gl_zoom;
         }
     }
     EDITOR->canvas_undo_already_set_move = 1;
@@ -951,20 +957,20 @@ void *canvas_undo_set_apply(t_canvas *x, int n)
         /* store connections into/out of the selection */
     buf->u_reconnectbuf = binbuf_new();
     linetraverser_start(&t, x);
-    while ((oc = linetraverser_next(&t)))
+    while ((oc = linetraverser_next_nosize(&t)))
     {
         int issel1 = glist_isselected(x, &t.tr_ob->ob_g);
         int issel2 = glist_isselected(x, &t.tr_ob2->ob_g);
         if (issel1 != issel2)
         {
-            binbuf_addv(buf->u_reconnectbuf, "ssiiii;",
+            binbuf_addv(buf->u_reconnectbuf, "ssiiiis;",
                 gensym("#X"), gensym("connect"),
                 (issel1 ? nnotsel : 0)
                     + glist_selectionindex(x, &t.tr_ob->ob_g, issel1),
                 t.tr_outno,
                 (issel2 ? nnotsel : 0)
                     + glist_selectionindex(x, &t.tr_ob2->ob_g, issel2),
-                t.tr_inno);
+                t.tr_inno, t.outconnect_path_info);
         }
     }
         /* copy object in its current state */
@@ -1411,21 +1417,21 @@ void *canvas_undo_set_create(t_canvas *x)
         }
         buf->u_reconnectbuf = binbuf_new();
         linetraverser_start(&t, x);
-        while ((oc = linetraverser_next(&t)))
+        while ((oc = linetraverser_next_nosize(&t)))
         {
             int issel1, issel2;
             issel1 = ( &t.tr_ob->ob_g == y ? 1 : 0);
             issel2 = ( &t.tr_ob2->ob_g == y ? 1 : 0);
             if (issel1 != issel2)
             {
-                binbuf_addv(buf->u_reconnectbuf, "ssiiii;",
+                binbuf_addv(buf->u_reconnectbuf, "ssiiiis;",
                     gensym("#X"), gensym("connect"),
                     (issel1 ? nnotsel : 0)
                         + glist_selectionindex(x, &t.tr_ob->ob_g, issel1),
                     t.tr_outno,
                     (issel2 ? nnotsel : 0)
                         + glist_selectionindex(x, &t.tr_ob2->ob_g, issel2),
-                    t.tr_inno);
+                    t.tr_inno, t.outconnect_path_info);
             }
         }
     }
@@ -1480,21 +1486,21 @@ void *canvas_undo_set_recreate(t_canvas *x, t_gobj *y, int pos)
 
     buf->u_reconnectbuf = binbuf_new();
     linetraverser_start(&t, x);
-    while ((oc = linetraverser_next(&t)))
+    while ((oc = linetraverser_next_nosize(&t)))
     {
         int issel1, issel2;
         issel1 = ( &t.tr_ob->ob_g == y ? 1 : 0);
         issel2 = ( &t.tr_ob2->ob_g == y ? 1 : 0);
         if (issel1 != issel2)
         {
-            binbuf_addv(buf->u_reconnectbuf, "ssiiii;",
+            binbuf_addv(buf->u_reconnectbuf, "ssiiiis;",
                 gensym("#X"), gensym("connect"),
                 (issel1 ? nnotsel : 0)
                     + glist_selectionindex(x, &t.tr_ob->ob_g, issel1),
                 t.tr_outno,
                 (issel2 ? nnotsel : 0)
                     + glist_selectionindex(x, &t.tr_ob2->ob_g, issel2),
-                t.tr_inno);
+                t.tr_inno, t.outconnect_path_info);
         }
     }
     return (buf);
@@ -2236,7 +2242,7 @@ static void undarken_if_gatom(t_gobj*gobj)
 }
 
     /* mouse click */
-static void canvas_doclick(t_canvas *x, int xpos, int ypos, int which,
+void canvas_doclick(t_canvas *x, int xpos, int ypos, int which,
     int mod, int doit)
 {
     t_gobj *hitbox;
@@ -2524,8 +2530,8 @@ static void canvas_doclick(t_canvas *x, int xpos, int ypos, int which,
                     if(doit)
                     {
                         canvas_undo_add(x, UNDO_SEQUENCE_START, "reconnect", 0);
-                        canvas_disconnect_with_undo(x, soutindex, soutno, sinindex, sinno);
-                        canvas_disconnect_with_undo(x, outindex, t.tr_outno, inindex, t.tr_inno);
+                        canvas_disconnect_with_undo(x, soutindex, soutno, sinindex, sinno, gensym("empty"));
+                        canvas_disconnect_with_undo(x, outindex, t.tr_outno, inindex, t.tr_inno, gensym("empty"));
                         canvas_connect_with_undo(x, outindex, t.tr_outno, sinindex, sinno);
                         canvas_connect_with_undo(x, soutindex, soutno, inindex, t.tr_inno);
                         canvas_undo_add(x, UNDO_SEQUENCE_END, "reconnect", 0);
@@ -2582,7 +2588,7 @@ int canvas_isconnected (t_canvas *x, t_text *ob1, int n1,
     t_linetraverser t;
     t_outconnect *oc;
     linetraverser_start(&t, x);
-    while ((oc = linetraverser_next(&t)))
+    while ((oc = linetraverser_next_nosize(&t)))
         if (t.tr_ob == ob1 && t.tr_outno == n1 &&
             t.tr_ob2 == ob2 && t.tr_inno == n2)
                 return (1);
@@ -2637,7 +2643,7 @@ static int tryconnect(t_canvas*x, t_object*src, int nout, t_object*sink, int nin
                 "-tags", 2, tags);
             canvas_undo_add(x, UNDO_CONNECT, "connect", canvas_undo_set_connect(x,
                     canvas_getindex(x, &src->ob_g), nout,
-                    canvas_getindex(x, &sink->ob_g), nin));
+                    canvas_getindex(x, &sink->ob_g), nin, gensym("empty")));
             canvas_dirty(x, 1);
             return 1;
         }
@@ -2645,7 +2651,7 @@ static int tryconnect(t_canvas*x, t_object*src, int nout, t_object*sink, int nin
     return 0;
 }
 
-static void canvas_doconnect(t_canvas *x, int xpos, int ypos, int mod, int doit)
+void canvas_doconnect(t_canvas *x, int xpos, int ypos, int mod, int doit)
 {
     int x11=0, y11=0, x12=0, y12=0;
     t_gobj *y1;
@@ -3666,15 +3672,15 @@ void canvas_stowconnections(t_canvas *x)
         /* add connections to binbuf */
     binbuf_clear(x->gl_editor->e_connectbuf);
     linetraverser_start(&t, x);
-    while ((oc = linetraverser_next(&t)))
+    while ((oc = linetraverser_next_nosize(&t)))
     {
         int s1 = glist_isselected(x, &t.tr_ob->ob_g);
         int s2 = glist_isselected(x, &t.tr_ob2->ob_g);
         if (s1 != s2)
-            binbuf_addv(x->gl_editor->e_connectbuf, "ssiiii;",
+            binbuf_addv(x->gl_editor->e_connectbuf, "ssiiiis;",
                 gensym("#X"), gensym("connect"),
                 glist_getindex(x, &t.tr_ob->ob_g), t.tr_outno,
-                glist_getindex(x, &t.tr_ob2->ob_g), t.tr_inno);
+                glist_getindex(x, &t.tr_ob2->ob_g), t.tr_inno, t.outconnect_path_info);
     }
 }
 
@@ -3698,14 +3704,24 @@ static t_binbuf *canvas_docopy(t_canvas *x)
             gobj_save(y, b);
     }
     linetraverser_start(&t, x);
-    while ((oc = linetraverser_next(&t)))
+    while ((oc = linetraverser_next_nosize(&t)))
     {
         if (glist_isselected(x, &t.tr_ob->ob_g)
             && glist_isselected(x, &t.tr_ob2->ob_g))
         {
-            binbuf_addv(b, "ssiiii;", gensym("#X"), gensym("connect"),
-                glist_selectionindex(x, &t.tr_ob->ob_g, 1), t.tr_outno,
-                glist_selectionindex(x, &t.tr_ob2->ob_g, 1), t.tr_inno);
+            if(t.outconnect_path_info == gensym("empty"))
+            {
+                binbuf_addv(b, "ssiiii;", gensym("#X"), gensym("connect"),
+                    glist_selectionindex(x, &t.tr_ob->ob_g, 1), t.tr_outno,
+                    glist_selectionindex(x, &t.tr_ob2->ob_g, 1), t.tr_inno);
+            }
+            else {
+                binbuf_addv(b, "ssiiiis;", gensym("#X"), gensym("connect"),
+                    glist_selectionindex(x, &t.tr_ob->ob_g, 1), t.tr_outno,
+                    glist_selectionindex(x, &t.tr_ob2->ob_g, 1), t.tr_inno, t.outconnect_path_info);
+            }
+            
+
         }
     }
     return (b);
@@ -3738,7 +3754,7 @@ static void canvas_clearline(t_canvas *x)
             x->gl_editor->e_selectline_index1,
             x->gl_editor->e_selectline_outno,
             x->gl_editor->e_selectline_index2,
-            x->gl_editor->e_selectline_inno);
+            x->gl_editor->e_selectline_inno, gensym("empty"));
         x->gl_editor->e_selectedline = 0;
         canvas_dirty(x, 1);
     }
@@ -3756,7 +3772,7 @@ static void canvas_doclear(t_canvas *x)
             x->gl_editor->e_selectline_index1,
             x->gl_editor->e_selectline_outno,
             x->gl_editor->e_selectline_index2,
-            x->gl_editor->e_selectline_inno);
+            x->gl_editor->e_selectline_inno, gensym("empty"));
         x->gl_editor->e_selectedline=0;
     }
         /* if text is selected, deselecting it might remake the
@@ -4304,7 +4320,7 @@ static void canvas_cycleselect(t_canvas*x, t_float foffset)
         t_outconnect *oc = 0;
 
         linetraverser_start(&t, x);
-        while (offset && (oc = linetraverser_next(&t)))
+        while (offset && (oc = linetraverser_next_nosize(&t)))
         {
             connectioncount++;
             if(!foundit) {
@@ -4330,7 +4346,7 @@ static void canvas_cycleselect(t_canvas*x, t_float foffset)
                 % connectioncount;
             /* ... and start from the beginning */
             linetraverser_start(&t, x);
-            while ((oc = linetraverser_next(&t)))
+            while ((oc = linetraverser_next_nosize(&t)))
             {
                 if(!offset)break;
                 offset--;
@@ -4378,13 +4394,35 @@ static void canvas_reselect(t_canvas *x)
         gobj_activate(x->gl_editor->e_selection->sel_what, x, 1);
 }
 
-void canvas_connect(t_canvas *x, t_floatarg fwhoout, t_floatarg foutno,
-    t_floatarg fwhoin, t_floatarg finno)
+void canvas_connect_expandargs(t_canvas *x, t_floatarg fwhoout, t_floatarg foutno, t_floatarg fwhoin, t_floatarg finno, t_symbol* path_data)
 {
-    int whoout = fwhoout, outno = foutno, whoin = fwhoin, inno = finno;
+    t_atom connectatom[5];
+    SETFLOAT(connectatom, fwhoout);
+    SETFLOAT(connectatom + 1, foutno);
+    SETFLOAT(connectatom + 2, fwhoin);
+    SETFLOAT(connectatom + 3, finno);
+    SETSYMBOL(connectatom + 4, path_data);
+    
+    canvas_connect(x, gensym("connect"), 5, connectatom);
+}
+void canvas_connect(t_canvas *x, t_symbol *s, int argc, t_atom *argv)
+{
+    t_int whoout, outno, whoin, inno;
+    t_symbol* path_data = gensym("empty");
+    if(argc >= 4) {
+        whoout = atom_getint(argv);
+        outno = atom_getint(argv + 1);
+        whoin = atom_getint(argv + 2);
+        inno = atom_getint(argv + 3);
+    }
+    if(argc == 5) {
+        path_data = atom_getsymbol(argv + 4);
+    }
+    
     t_gobj *src = 0, *sink = 0;
     t_object *objsrc, *objsink;
     t_outconnect *oc;
+    
     int nin = whoin, nout = whoout;
     if (EDITOR->paste_canvas == x) whoout += EDITOR->paste_onset,
         whoin += EDITOR->paste_onset;
@@ -4436,6 +4474,7 @@ void canvas_connect(t_canvas *x, t_floatarg fwhoout, t_floatarg foutno,
             "-tags", 2, tags);
         canvas_fixlinesfor(x, objsrc);
     }
+    outconnect_set_path_data(oc, path_data);
     return;
 
 bad:
@@ -4602,8 +4641,8 @@ static int canvas_try_bypassobj1(t_canvas* x,
     A = glist_getindex(x, &obj0->te_g);
     B = glist_getindex(x, &obj1->te_g);
     C = glist_getindex(x, &obj2->te_g);
-    canvas_disconnect_with_undo(x, A, out0, B, in1);
-    canvas_disconnect_with_undo(x, B, out1, C, in2);
+    canvas_disconnect_with_undo(x, A, out0, B, in1, gensym("empty"));
+    canvas_disconnect_with_undo(x, B, out1, C, in2, gensym("empty"));
     if (!canvas_isconnected(x, obj0, out0, obj2, in2))
         canvas_connect_with_undo(x, A, out0, C, in2);
     return 1;
@@ -4632,7 +4671,7 @@ static int canvas_try_insert(t_canvas *x
     B = glist_getindex(x, &obj11->te_g);
     C = glist_getindex(x, &obj22->te_g);
 
-    canvas_disconnect_with_undo(x, A, out00, B, in11);
+    canvas_disconnect_with_undo(x, A, out00, B, in11, gensym("empty"));
     if (!canvas_isconnected     (x, obj00, out00, obj22, in02))
         canvas_connect_with_undo(x, A,     out00, C,     in02);
     if (!canvas_isconnected     (x, obj22, out21, obj11, in11))
@@ -4698,13 +4737,13 @@ static void canvas_connect_selection(t_canvas *x)
             t_outconnect *oc;
             canvas_undo_add(x, UNDO_SEQUENCE_START, "disconnect", 0);
             linetraverser_start(&t, x);
-            while ((oc = linetraverser_next(&t)))
+            while ((oc = linetraverser_next_nosize(&t)))
             {
                 if ((obj == t.tr_ob) || (obj == t.tr_ob2))
                 {
                     int srcno = glist_getindex(x, &t.tr_ob->ob_g);
                     int sinkno = glist_getindex(x, &t.tr_ob2->ob_g);
-                    canvas_disconnect_with_undo(x, srcno, t.tr_outno, sinkno, t.tr_inno);
+                    canvas_disconnect_with_undo(x, srcno, t.tr_outno, sinkno, t.tr_inno, t.outconnect_path_info);
                 }
             }
             canvas_undo_add(x, UNDO_SEQUENCE_END, "disconnect", 0);

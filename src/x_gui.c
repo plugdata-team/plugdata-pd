@@ -537,7 +537,12 @@ static void pdcontrol_browse(t_pdcontrol *x, t_symbol *s)
 
 static void pdcontrol_isvisible(t_pdcontrol *x)
 {
-    outlet_float(x->x_outlet, glist_isvisible(x->x_canvas));
+    // plugdata fix: get top level canvas without considering gl_havewindow flag
+    t_canvas* cnv = x->x_canvas;
+    while (cnv->gl_owner && !cnv->gl_isclone && cnv->gl_isgraph)
+            cnv = cnv->gl_owner;
+    
+    outlet_float(x->x_outlet, glist_isvisible(cnv));
 }
 
 static void pdcontrol_sendcanvas(t_pdcontrol *x, t_symbol *s,

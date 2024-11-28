@@ -190,6 +190,8 @@ static void ptrobj_delete(t_ptrobj *x)
     while (gobj && (pd_class(&gobj->g_pd) != scalar_class))
         gobj = gobj->g_next;
     glist_delete(glist, old);
+    plugdata_forward_message(glist, gensym("sync"), 0, NULL);
+    
     gp->gp_valid = glist->gl_valid;
     if (gobj)
     {
@@ -1166,6 +1168,8 @@ static void append_float(t_append *x, t_float f)
 
     if (glist_isvisible(glist_getcanvas(glist)))
         gobj_vis(&sc->sc_gobj, glist, 1);
+    
+    plugdata_forward_message(glist, gensym("sync"), 0, NULL);
     /*  scalar_redraw(sc, glist);  ... have to do 'vis' instead here because
     redraw assumes we're already visible??? ... */
 

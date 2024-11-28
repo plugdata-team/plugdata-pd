@@ -414,16 +414,18 @@ static void template_conformarray(t_template *tfrom, t_template *tto,
     }
     else scalartemplate = template_findbyname(a->a_templatesym);
         /* convert all arrays and sublist fields in each element of the array */
-    for (i = 0; i < a->a_n; i++)
-    {
-        t_word *wp = (t_word *)(a->a_vec + sizeof(t_word) * a->a_n * i);
-        for (j = 0; j < scalartemplate->t_n; j++)
+    if(strlen(a->a_vec)) {
+        for (i = 0; i < a->a_n; i++)
         {
-            t_dataslot *ds = scalartemplate->t_vec + j;
-            if (ds->ds_type == DT_ARRAY)
+            t_word *wp = (t_word *)(a->a_vec + sizeof(t_word) * a->a_n * i);
+            for (j = 0; j < scalartemplate->t_n; j++)
             {
-                template_conformarray(tfrom, tto, conformaction,
-                    wp[j].w_array);
+                t_dataslot *ds = scalartemplate->t_vec + j;
+                if (ds->ds_type == DT_ARRAY)
+                {
+                    template_conformarray(tfrom, tto, conformaction,
+                                          wp[j].w_array);
+                }
             }
         }
     }

@@ -360,7 +360,7 @@ EXTERN int sys_hipriority;      /* real-time flag, true if priority boosted */
 
 /* s_print.c */
 
-typedef void (*t_printhook)(const char *s);
+typedef void (*t_printhook)(void*, const char *s);
 
 /* set this to override printing; used as default for STUFF->st_printhook */
 extern t_printhook sys_printhook;

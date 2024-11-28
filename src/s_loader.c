@@ -480,15 +480,25 @@ int sys_loadlib_iter(const char *path, struct _loadlib_data *data)
     return (ok == 0);
 }
 
+void make_gem_classes_global();
+
 int sys_load_lib(t_canvas *canvas, const char *classname)
 {
     int dspstate = canvas_suspend_dsp();
     struct _loadlib_data data;
     data.canvas = canvas;
     data.ok = 0;
+    
+    if(!strcmp(classname, "Gem"))
+    {
+        make_gem_classes_global();
+        return (1);
+    }
 
-    if (sys_onloadlist(classname))
+    if (sys_onloadlist(classname)) {
+        canvas_resume_dsp(dspstate);
         return (1); /* if lib is already loaded, dismiss. */
+    }
 
         /* if classname is absolute, try this first */
     if (sys_isabsolutepath(classname))
@@ -497,8 +507,10 @@ int sys_load_lib(t_canvas *canvas, const char *classname)
                LATER avoid code duplication */
         char dirbuf[MAXPDSTRING], *z = strrchr(classname, '/');
         int dirlen;
-        if (!z)
+        if (!z) {
+            canvas_resume_dsp(dspstate);
             return (0);
+        }
         dirlen = (int)(z - classname);
         if (dirlen > MAXPDSTRING-1)
             dirlen = MAXPDSTRING-1;
