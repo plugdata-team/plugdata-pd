@@ -203,14 +203,14 @@ t_undo_action *canvas_undo_add(t_canvas *x, t_undo_type type, const char *name,
        && udo && udo->u_last
        && UNDO_SEQUENCE_START == udo->u_last->type)
     {
-            /* empty undo sequence...get rid of it */
-        udo->u_last = udo->u_last->prev;
-        canvas_undo_rebranch(x);
-        udo->u_last->next = 0;
-        canvas_undo_set_name(udo->u_last->name);
-        canvas_show_undomenu(x, udo->u_last->name, "no");
-        return 0;
-    }
+             /* empty undo sequence...get rid of it */
+         udo->u_last = udo->u_last->prev;
+         freebytes(udo->u_last->next, sizeof(*udo->u_last->next));
+         udo->u_last->next = 0;
+         canvas_undo_set_name(udo->u_last->name);
+         canvas_show_undomenu(x, udo->u_last->name, "no");
+         return 0;
+     }
 
     a = canvas_undo_init(x);
     if(!a)return a;
