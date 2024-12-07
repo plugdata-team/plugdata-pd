@@ -88,7 +88,9 @@ typedef struct _audiosettings
 #define SENDDACS_YES 1
 #define SENDDACS_SLEPT 2
 
-#define DEFDACBLKSIZE 64
+int libpd_blocksize();
+
+#define DEFDACBLKSIZE (libpd_blocksize())
 #define DEFDACSAMPLERATE 48000
 
                     /* s_audio.c */
@@ -412,6 +414,7 @@ struct _instancestuff
     t_namelist *st_temppath;    /* temp search paths ie. -path on commandline */
     int st_schedblocksize;      /* audio block size for scheduler */
     int st_blocksize;           /* audio I/O block size in sample frames */
+    int st_setblocksize;        /* plugdata signal vector block size */
     t_float st_dacsr;           /* I/O sample rate */
     int st_inchannels;
     int st_outchannels;

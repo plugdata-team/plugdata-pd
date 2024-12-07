@@ -93,6 +93,7 @@ int libpd_init(void) {
   pd_init();
   STUFF->st_soundin = NULL;
   STUFF->st_soundout = NULL;
+  STUFF->st_setblocksize = 64;
   STUFF->st_schedblocksize = DEFDACBLKSIZE;
   STUFF->st_impdata = &libpd_mainimp;
   sys_init_fdpoll();
@@ -173,8 +174,13 @@ int libpd_getdollarzero(void *p) {
   return dzero;
 }
 
+void libpd_setblocksize(int new_blocksize)
+{
+    STUFF->st_setblocksize = new_blocksize;
+}
+
 int libpd_blocksize(void) {
-  return DEFDACBLKSIZE;
+    return STUFF->st_setblocksize;
 }
 
 int libpd_init_audio(int inChannels, int outChannels, int sampleRate) {
@@ -679,6 +685,7 @@ t_pdinstance *libpd_new_instance(void) {
 #ifdef PDINSTANCE
   t_pdinstance *pd = pdinstance_new();
   pd->pd_stuff->st_impdata = libpdimp_new();
+    pd->pd_stuff->st_setblocksize = 64;
   return pd;
 #else
   return NULL;

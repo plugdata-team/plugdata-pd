@@ -95,17 +95,18 @@ void sys_setchsr(int chin, int chout, int sr)
 
         /* NB: reallocating the input/output channel arrays requires a DSP
         graph update, so we only do it if the channel count has changed! */
-    if (!STUFF->st_soundin || chin != oldchin)
+    if (!STUFF->st_soundin || chin != oldchin || STUFF->st_schedblocksize != STUFF->st_setblocksize)
     {
         if (STUFF->st_soundin)
             freebytes(STUFF->st_soundin, oldinbytes);
         STUFF->st_soundin = (t_sample *)getbytes(inbytes);
         STUFF->st_inchannels = chin;
+        STUFF->st_schedblocksize = STUFF->st_setblocksize;
         changed = 1;
     }
     memset(STUFF->st_soundin, 0, inbytes);
 
-    if (!STUFF->st_soundout || chout != oldchout)
+    if (!STUFF->st_soundout || chout != oldchout || changed)
     {
         if (STUFF->st_soundout)
             freebytes(STUFF->st_soundout, oldoutbytes);

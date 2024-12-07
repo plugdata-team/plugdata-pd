@@ -56,6 +56,7 @@ EXTERN int libpd_getdollarzero(void *p);
 
 /// return pd's fixed block size: the number of sample frames per 1 pd tick
 EXTERN int libpd_blocksize(void);
+EXTERN void libpd_setblocksize(int);
 
 /// initialize audio rendering
 /// returns 0 on success

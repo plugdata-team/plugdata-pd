@@ -364,7 +364,7 @@ t_class *backtracer_class;
 
 static PERTHREAD int stackcount = 0; /* iteration counter */
 static PERTHREAD int overflow = 0;
-#define STACKITER 1000 /* maximum iterations allowed */
+#define STACKITER 600 /* maximum iterations allowed */
 
 static PERTHREAD int outlet_eventno;
 
