@@ -88,7 +88,7 @@ typedef struct _audiosettings
 #define SENDDACS_YES 1
 #define SENDDACS_SLEPT 2
 
-int libpd_blocksize();
+EXTERN int libpd_blocksize();
 
 #define DEFDACBLKSIZE (libpd_blocksize())
 #define DEFDACSAMPLERATE 48000
