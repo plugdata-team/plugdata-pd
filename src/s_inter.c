@@ -1948,6 +1948,7 @@ uint32_t gui_message_hash(const char* str) {
     uint32_t hash = 5381;
     int c;
     while ((c = *str++)) {
+        if(c == ' ') break;
         hash = ((hash << 5) + hash) + c; // hash * 33 + c
     }
     return hash;
@@ -1978,7 +1979,6 @@ void prepare_hashes()
     
     for(int i = 0; i < NUM_GUI_HASHES; i++)
     {
-        
         gui_message_hash_table[i] = gui_message_hash(hashes[i]);
     }
     
