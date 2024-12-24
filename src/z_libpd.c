@@ -180,7 +180,7 @@ void libpd_setblocksize(int new_blocksize)
 }
 
 int libpd_blocksize(void) {
-    return STUFF->st_setblocksize;
+  return DEFDACBLKSIZE;
 }
 
 int libpd_init_audio(int inChannels, int outChannels, int sampleRate) {
