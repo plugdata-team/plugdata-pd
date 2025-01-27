@@ -2075,19 +2075,10 @@ void plugdata_gui_message(const char* message, va_list args)
     }
     else if (hash == gui_message_hash_table[7]) { // openfile_open
         const char* filename = va_arg(args, const char*);
-        const char* dir = va_arg(args, const char*);
-        
-        if(dir) {
-            t_atom atoms[2];
-            SETSYMBOL(atoms, gensym(filename));
-            SETSYMBOL(atoms + 1, gensym(dir));
-            INTER->gui_callback(INTER->callback_target, "openfile", 2, atoms);
-        }
-        else {
-            t_atom atom;
-            SETSYMBOL(&atom, gensym(filename));
-            INTER->gui_callback(INTER->callback_target, "openfile", 1, &atom);
-        }
+
+        t_atom atom;
+        SETSYMBOL(&atom, gensym(filename));
+        INTER->gui_callback(INTER->callback_target, "openfile", 1, &atom);
     }
     // These are tcl/tk functions ELSE defines for spawning a file browser
     else if (hash == gui_message_hash_table[8]) { // panel_save
