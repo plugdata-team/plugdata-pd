@@ -1954,7 +1954,7 @@ uint32_t gui_message_hash(const char* str) {
     return hash;
 }
 
-#define NUM_GUI_HASHES 13
+#define NUM_GUI_HASHES 14
 uint32_t gui_message_hash_table[NUM_GUI_HASHES];
 
 
@@ -1975,6 +1975,7 @@ void prepare_hashes()
         "editor_open",
         "editor_append",
         "coll_check_open",
+        "editor_close"
     };
     
     for(int i = 0; i < NUM_GUI_HASHES; i++)
@@ -2155,6 +2156,12 @@ void plugdata_gui_message(const char* message, va_list args)
         SETPOINTER(atoms, ptr);
         SETFLOAT(atoms + 1, open);
         pd_this->pd_inter->gui_callback(INTER->callback_target, "coll_check_open", 2, atoms);
+    }
+    else if (hash == gui_message_hash_table[13]) { // editor_close
+        unsigned long ptr = va_arg(args, unsigned long);
+        t_atom atom;
+        SETPOINTER(&atom, ptr);
+        pd_this->pd_inter->gui_callback(INTER->callback_target, "cyclone_editor_close", 1, &atom);
     }
 }
 
