@@ -1009,8 +1009,16 @@ void sys_unqueuegui(void* client)
  the PD instance lock set. */
 int sys_pollgui(void)
 {
-    // NO-OP for plugdata
-    return 0;
+    static double lasttime = 0;
+    double now = 0;
+    int didsomething = sys_domicrosleep(0);
+    if (!didsomething || (now = sys_getrealtime()) > lasttime + 0.5)
+    {
+        didsomething |= sys_poll_togui();
+        if (now)
+            lasttime = now;
+    }
+    return (didsomething);
 }
 
 void sys_init_fdpoll(void)
