@@ -1023,7 +1023,12 @@ int sys_pollgui(void)
 
 void sys_init_fdpoll(void)
 {
-    // NO-OP for plugdata
+    if (INTER->i_fdpoll)
+        return;
+    /* create an empty FD poll list */
+    INTER->i_fdpoll = (t_fdpoll *)t_getbytes(0);
+    INTER->i_nfdpoll = 0;
+    INTER->i_inbinbuf = binbuf_new();
 }
 
 void sys_gui_preferences(void)
