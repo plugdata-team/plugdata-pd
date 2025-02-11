@@ -2120,7 +2120,7 @@ void plugdata_gui_message(const char* message, va_list args)
     else if (hash == gui_message_hash_table[10]) { // editor_open
         if(strncmp(message, "editor_open .%lx %dx%d {%s: %s} %d", strlen("editor_open .%lx %dx%d {%s: %s} %d")) == 0)
         {
-            unsigned long ptr = va_arg(args, unsigned long);
+            unsigned long long ptr = va_arg(args, unsigned long long);
             int width = va_arg(args, int);
             int height = va_arg(args, int);
             char const* owner = va_arg(args, char const*);
@@ -2138,7 +2138,7 @@ void plugdata_gui_message(const char* message, va_list args)
         }
         else {
             
-            unsigned long ptr = va_arg(args, unsigned long);
+            unsigned long long ptr = va_arg(args, unsigned long long);
             int width = va_arg(args, int);
             int height = va_arg(args, int);
             char const* title = va_arg(args, char const*);
@@ -2154,7 +2154,7 @@ void plugdata_gui_message(const char* message, va_list args)
         }
     }
     else if (hash == gui_message_hash_table[11]) { // editor_append
-        unsigned long ptr = va_arg(args, unsigned long);
+        unsigned long long ptr = va_arg(args, unsigned long long);
         char const* text = va_arg(args, char const*);
         
         t_atom atoms[2];
@@ -2163,7 +2163,7 @@ void plugdata_gui_message(const char* message, va_list args)
         pd_this->pd_inter->gui_callback(INTER->callback_target, "cyclone_editor_append", 2, atoms);
     }
     else if (hash == gui_message_hash_table[12]) { // coll_check_open
-        unsigned long ptr = va_arg(args, unsigned long);
+        unsigned long long ptr = va_arg(args, unsigned long long);
         int open = va_arg(args, int);
         t_atom atoms[2];
         SETPOINTER(atoms, ptr);
@@ -2171,7 +2171,7 @@ void plugdata_gui_message(const char* message, va_list args)
         pd_this->pd_inter->gui_callback(INTER->callback_target, "coll_check_open", 2, atoms);
     }
     else if (hash == gui_message_hash_table[13]) { // editor_close
-        unsigned long ptr = va_arg(args, unsigned long);
+        unsigned long long ptr = va_arg(args, unsigned long long);
         t_atom atom;
         SETPOINTER(&atom, ptr);
         pd_this->pd_inter->gui_callback(INTER->callback_target, "cyclone_editor_close", 1, &atom);
