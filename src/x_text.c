@@ -102,7 +102,7 @@ static void textbuf_open(t_textbuf *x)
         char textid[128];
         sprintf(textid, ".x%lx.text", x);
         pdgui_vmess("wm", "r^", "deiconify", x);
-        pdgui_vmess("raise", "^", x);
+        pdgui_vmess("pdtk_textwindow_raise", "^", x);
         pdgui_vmess("focus", "s", textid);
     }
     else
@@ -216,7 +216,7 @@ static void textbuf_free(t_textbuf *x)
         binbuf_free(x->b_binbuf);
     if (x->b_guiconnect)
     {
-        pdgui_vmess("destroy", "^", x);
+        pdgui_vmess("pdtk_textwindow_destroy", "^", x);
         guiconnect_notarget(x->b_guiconnect, 1000);
     }
     

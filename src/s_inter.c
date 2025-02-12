@@ -1967,7 +1967,7 @@ uint32_t gui_message_hash(const char* str) {
     return hash;
 }
 
-#define NUM_GUI_HASHES 19
+#define NUM_GUI_HASHES 20
 uint32_t gui_message_hash_table[NUM_GUI_HASHES];
 
 
@@ -1993,7 +1993,8 @@ void prepare_hashes()
         "pdtk_textwindow_doclose",
         "pdtk_textwindow_clear",
         "pdtk_textwindow_appendatoms",
-        "pdtk_textwindow_setdirty"
+        "pdtk_textwindow_raise",
+        "pdtk_textwindow_destroy"
     };
     
     for(int i = 0; i < NUM_GUI_HASHES; i++)
@@ -2219,11 +2220,18 @@ void plugdata_gui_message(const char* message, va_list args)
         FREEA(t_atom, atoms, argc + 1, 100);
 
     }
-    /*
-    else if (hash == gui_message_hash_table[18]) { // pdtk_textwindow_setdirty
+    else if (hash == gui_message_hash_table[18]) { // pdtk_textwindow_raise
         unsigned long long ptr = va_arg(args, unsigned long long);
-
-    } */
+        t_atom atom;
+        SETPOINTER(&atom, ptr);
+        pd_this->pd_inter->gui_callback(INTER->callback_target, "pdtk_textwindow_raise", 1, &atom);
+    }
+    else if (hash == gui_message_hash_table[19]) { // pdtk_textwindow_destroy
+        unsigned long long ptr = va_arg(args, unsigned long long);
+        t_atom atom;
+        SETPOINTER(&atom, ptr);
+        pd_this->pd_inter->gui_callback(INTER->callback_target, "pdtk_textwindow_destroy", 1, &atom);
+    }
 }
 
 void plugdata_forward_message(void* x, t_symbol *s, int argc, t_atom *argv)
