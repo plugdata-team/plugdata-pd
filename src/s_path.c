@@ -495,6 +495,7 @@ FILE *sys_fopen(const char *filename, const char *mode)
    across dll-boundaries, but we provide it for other platforms as well */
 int sys_close(int fd)
 {
+    if(fd < 0) return 0;
 #ifdef _WIN32
     return _close(fd);  /* Bill Gates is a big fat hen */
 #else
