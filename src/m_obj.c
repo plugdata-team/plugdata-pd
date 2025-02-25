@@ -649,7 +649,7 @@ void outlet_list(t_outlet *x, t_symbol *s, int argc, t_atom *argv)
         outlet_stackerror(x);
     else
         for (oc = x->o_connections; oc; oc = oc->oc_next) {
-            if(plugdata_debugging_or_activity_enabled()) plugdata_forward_message(oc, s, argc, argv);
+            if(plugdata_debugging_or_activity_enabled()) plugdata_forward_message(oc, &s_list, argc, argv);
             pd_list(oc->oc_to, s, argc, argv);
         }
     stackcount_release();
