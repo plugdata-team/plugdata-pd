@@ -89,6 +89,26 @@ t_rtext *glist_getrtext(t_glist *gl, t_text *who)
     return (x);
 }
 
+int rtext_width(t_rtext *x)
+{
+    int w = 0, h = 0, indx;
+    rtext_senditup(x, SEND_CHECK, &w, &h, &indx);
+    return (w);
+}
+
+int rtext_height(t_rtext *x)
+{
+    int w = 0, h = 0, indx;
+    rtext_senditup(x, SEND_CHECK, &w, &h, &indx);
+    return (h);
+}
+
+/* For externals compatibility */
+t_rtext *glist_findrtext(t_glist *gl, t_text *who)
+{
+    return glist_getrtext(gl, who);
+}
+
     /* find rtext for a field of a scalar being drawn by a drawtext */
 t_rtext *glist_getforscalar(t_glist *gl, t_scalar *sc, t_word *words,
     t_gobj *drawtext)

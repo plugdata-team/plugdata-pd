@@ -2244,7 +2244,7 @@ static void canvas_rightclick(t_canvas *x, int xpos, int ypos, int mod)
 
     /* mouse click or, if !doit, mouse motion (in which case we still search
     through the canvas to show the appropriate cursor) */
-static void canvas_doclick(t_canvas *x, int xpix, int ypix, int mod, int doit)
+void canvas_doclick(t_canvas *x, int xpix, int ypix, int mod, int doit)
 {
     t_gobj *hitbox;
     int shiftmod, runmode, altmod, doubleclick = 0, rightclick;

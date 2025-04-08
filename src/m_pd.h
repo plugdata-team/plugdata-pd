@@ -1103,6 +1103,10 @@ EXTERN void pd_set_instance(t_pdinstance*);
 #define s_x         (pd_this->pd_s_x)
 #define s_y         (pd_this->pd_s_y)
 #define s_          (pd_this->pd_s_)
+#ifdef VST_CLEANSER
+EXTERN t_symbol s_pointer, s_float, s_symbol, s_bang, s_list, s_anything,
+  s_signal, s__N, s__X, s_x, s_y, s_;
+#endif
 #else
 EXTERN t_symbol s_pointer, s_float, s_symbol, s_bang, s_list, s_anything,
   s_signal, s__N, s__X, s_x, s_y, s_;

@@ -194,6 +194,16 @@ void pd_bind(t_pd *x, t_symbol *s)
     else s->s_thing = x;
 }
 
+#ifdef VST_CLEANSER
+void vst_cleanser(t_symbol **s)
+{
+    if (*s >= &s_pointer && *s <= &s_)
+    {
+        *s = gensym((*s)->s_name);
+    }
+}
+#endif
+
 void pd_unbind(t_pd *x, t_symbol *s)
 {
 #ifdef VST_CLEANSER
