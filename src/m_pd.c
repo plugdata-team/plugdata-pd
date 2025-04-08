@@ -165,6 +165,9 @@ void m_pd_setup(void)
 
 void pd_bind(t_pd *x, t_symbol *s)
 {
+#ifdef VST_CLEANSER     /* temporary workaround; see m_pd.h */
+    vst_cleanser(&s);
+#endif
     if (s->s_thing)
     {
         if (*s->s_thing == bindlist_class)
@@ -193,6 +196,9 @@ void pd_bind(t_pd *x, t_symbol *s)
 
 void pd_unbind(t_pd *x, t_symbol *s)
 {
+#ifdef VST_CLEANSER
+    vst_cleanser(&s);
+#endif
     if (s->s_thing == x) s->s_thing = 0;
     else if (s->s_thing && *s->s_thing == bindlist_class)
     {
@@ -341,6 +347,9 @@ void pd_pointer(t_pd *x, t_gpointer *gp)
 
 void pd_symbol(t_pd *x, t_symbol *s)
 {
+#ifdef VST_CLEANSER
+    vst_cleanser(&s);
+#endif
     {
         t_atom sym_value = { .a_type = A_SYMBOL, .a_w.w_symbol = s};
         plugdata_forward_message(x, &s_symbol, 1, &sym_value);
@@ -351,6 +360,13 @@ void pd_symbol(t_pd *x, t_symbol *s)
 
 void pd_list(t_pd *x, t_symbol *s, int argc, t_atom *argv)
 {
+#ifdef VST_CLEANSER
+    int i;
+    vst_cleanser(&s);
+    for (i = 0; i < argc; i++)
+        if (argv[i].a_type == A_SYMBOL)
+            vst_cleanser(&argv[i].a_w.w_symbol);
+#endif
     plugdata_forward_message(x, &s_list, argc, argv);
     
     (*(*x)->c_listmethod)(x, &s_list, argc, argv);
@@ -358,6 +374,13 @@ void pd_list(t_pd *x, t_symbol *s, int argc, t_atom *argv)
 
 void pd_anything(t_pd *x, t_symbol *s, int argc, t_atom *argv)
 {
+#ifdef VST_CLEANSER
+    int i;
+    vst_cleanser(&s);
+    for (i = 0; i < argc; i++)
+        if (argv[i].a_type == A_SYMBOL)
+            vst_cleanser(&argv[i].a_w.w_symbol);
+#endif
     plugdata_forward_message(x, &s_anything, argc, argv);
     
     (*(*x)->c_anymethod)(x, s, argc, argv);

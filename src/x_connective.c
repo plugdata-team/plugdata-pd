@@ -1319,6 +1319,7 @@ static t_class *makefilename_class;
 typedef enum {
     NONE = 0,
     INT,
+    UINT,
     FLOAT,
     STRING,
     POINTER,
@@ -1349,15 +1350,19 @@ static const char* _formatscan(const char*str, t_printtype*typ) {
                 *typ = STRING;
                 return str;
             }
-            if (strchr("fgGeE",*str)!=0) {
+            if (strchr("fgGeEaA",*str)!=0) {
                 *typ = FLOAT;
                 return str;
             }
-            if (strchr("xXdiouc",*str)!=0) {
+            if (strchr("dic",*str)!=0) {
                 *typ = INT;
                 return str;
             }
-           if (strchr("p",*str)!=0) {
+            if (strchr("ouxX",*str)!=0) {
+                *typ = UINT;
+                return str;
+            }
+            if (strchr("p",*str)!=0) {
                 *typ = POINTER;
                 return str;
             }
@@ -1409,8 +1414,14 @@ static void makefilename_float(t_makefilename *x, t_floatarg f)
     case NONE:
         sprintf(buf, "%s",  x->x_format->s_name);
         break;
-    case INT: case POINTER:
+    case INT:
         sprintf(buf, x->x_format->s_name, (int)f);
+        break;
+    case UINT:
+        sprintf(buf, x->x_format->s_name, (unsigned int)f);
+        break;
+    case POINTER:
+        sprintf(buf, x->x_format->s_name, (t_int)f);
         break;
     case FLOAT:
         sprintf(buf, x->x_format->s_name, f);
@@ -1439,7 +1450,7 @@ static void makefilename_symbol(t_makefilename *x, t_symbol *s)
     case STRING: case POINTER:
         sprintf(buf, x->x_format->s_name, s->s_name);
         break;
-    case INT:
+    case INT: case UINT:
         sprintf(buf, x->x_format->s_name, 0);
         break;
     case FLOAT:
@@ -1463,7 +1474,7 @@ static void makefilename_bang(t_makefilename *x)
         return;
     }
     switch(x->x_accept) {
-    case INT:
+    case INT: case UINT:
         sprintf(buf, x->x_format->s_name, 0);
         break;
     case FLOAT:

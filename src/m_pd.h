@@ -407,14 +407,17 @@ EXTERN int binbuf_getnatom(const t_binbuf *x);
 EXTERN t_atom *binbuf_getvec(const t_binbuf *x);
 EXTERN int binbuf_resize(t_binbuf *x, int newsize);
 EXTERN void binbuf_eval(const t_binbuf *x, t_pd *target, int argc, const t_atom *argv);
+/* binbuf read/write flags */
+#define BINBUF_CR      (1<<0)
+#define BINBUF_SHEBANG (1<<1)
 EXTERN int binbuf_read(t_binbuf *b, const char *filename, const char *dirname,
-    int crflag);
+    int flag);
 EXTERN int binbuf_read_via_canvas(t_binbuf *b, const char *filename, const t_canvas *canvas,
-    int crflag);
+    int flag);
 EXTERN int binbuf_read_via_path(t_binbuf *b, const char *filename, const char *dirname,
-    int crflag);
+    int flag);
 EXTERN int binbuf_write(const t_binbuf *x, const char *filename, const char *dir,
-    int crflag);
+    int flag);
 EXTERN void binbuf_evalfile(t_symbol *name, t_symbol *dir);
 EXTERN t_symbol *binbuf_realizedollsym(t_symbol *s, int ac, const t_atom *av,
     int tonew);
@@ -545,6 +548,25 @@ EXTERN const t_parentwidgetbehavior *pd_getparentwidget(t_pd *x);
     automatically unless the CLASS_MULTICHANNEL flag is also set.
 */
 
+/* new names with pd_ prefix for class_new() etc.
+Use these if you want to protect against name clashes when
+using within libpd, for example when running in a VST.  If you only want
+to run in Pd as a standalone app the old names below will be OK.
+We only provide new names for the ones that seem likely to clash.  In the
+case of class_addbang, etc., the names are hidden by macros defined
+below.  We don't expect clashes there so we just define them back to the
+old names.  It's unclear where to stop with this name clash avoidance
+hooha, so here the choice is made to do as little as we seem to be able
+to get away with. */
+
+EXTERN t_class *pd_class_new(t_symbol *name, t_newmethod newmethod,
+    t_method freemethod, size_t size, int flags, t_atomtype arg1, ...);
+
+EXTERN void pd_class_addmethod(t_class *c, t_method fn, t_symbol *sel,
+    t_atomtype arg1, ...);
+
+/* ... and here are the traditional names for the same functions: */
+
 EXTERN t_class *class_new(t_symbol *name, t_newmethod newmethod,
     t_method freemethod, size_t size, int flags, t_atomtype arg1, ...);
 
@@ -617,6 +639,8 @@ EXTERN void class_setfreefn(t_class *c, t_classfreefn fn);
 
 /* ------------   printing --------------------------------- */
 
+/* post and pd_post are synonyms; pd_post is safer if dynamically linked */
+EXTERN void pd_post(const char *fmt, ...);
 EXTERN void post(const char *fmt, ...);
 EXTERN void startpost(const char *fmt, ...);
 EXTERN void poststring(const char *s);
@@ -1082,6 +1106,18 @@ EXTERN void pd_set_instance(t_pdinstance*);
 #else
 EXTERN t_symbol s_pointer, s_float, s_symbol, s_bang, s_list, s_anything,
   s_signal, s__N, s__X, s_x, s_y, s_;
+#endif
+
+#ifdef VST_CLEANSER
+/* LATER get rid of this, perhaps in 2035 .
+If we're in a VST plug-in and want to import plug-ins that use symbols like
+"s__X" directly, we need to provide them even though PDINSTANCE is set.  In
+this case we need to cleanse occurrences of the global symbols so that plug-ins
+don't bind to them or use them in messages.  So we expect the VST plug-in to
+provide those global symbols, along with a function to catch the extern using
+them and alias them to the per-instance version of the same symbol.  This should
+go along with a warning message that this will get removed someday. */
+void vst_cleanser(t_symbol **s);
 #endif
 
 EXTERN t_canvas *pd_getcanvaslist(void);
