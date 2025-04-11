@@ -476,10 +476,9 @@ void make_gem_classes_global()
 
 extern void text_save(t_gobj *z, t_binbuf *b);
 
-t_class *class_new(t_symbol *s, t_newmethod newmethod, t_method freemethod,
-    size_t size, int flags, t_atomtype type1, ...)
+t_class *class_donew(t_symbol *s, t_newmethod newmethod, t_method freemethod,
+    size_t size, int flags, t_atomtype type1, va_list ap)
 {
-    va_list ap;
     t_atomtype vec[MAXPDARG+1], *vp = vec;
     int count = 0, i;
     t_class *c;
@@ -487,7 +486,6 @@ t_class *class_new(t_symbol *s, t_newmethod newmethod, t_method freemethod,
     if (!typeflag) typeflag = CLASS_PATCHABLE;
     *vp = type1;
 
-    va_start(ap, type1);
     while (*vp)
     {
         if (count == MAXPDARG)
@@ -504,15 +502,13 @@ t_class *class_new(t_symbol *s, t_newmethod newmethod, t_method freemethod,
         count++;
         *vp = va_arg(ap, t_atomtype);
     }
-    va_end(ap);
 
     if (pd_objectmaker && newmethod)
     {
-        // don't add gem objects into global namespace
         if(class_prefixsym != gensym("Gem")) {
             /* add a "new" method by the name specified by the object */
             class_addmethod(pd_objectmaker, (t_method)newmethod, s,
-                            vec[0], vec[1], vec[2], vec[3], vec[4], vec[5]);
+                vec[0], vec[1], vec[2], vec[3], vec[4], vec[5]);
         }
         else {
             // plugdata modification:
@@ -533,26 +529,10 @@ t_class *class_new(t_symbol *s, t_newmethod newmethod, t_method freemethod,
                 too. */
             const char *loadstring = class_loadsym->s_name;
             size_t l1 = strlen(s->s_name), l2 = strlen(loadstring);
-            if (l2 > l1 && !strcmp(s->s_name, loadstring + (l2 - l1))) {
+            if (l2 > l1 && !strcmp(s->s_name, loadstring + (l2 - l1)))
                 class_addmethod(pd_objectmaker, (t_method)newmethod,
-                                class_loadsym,
-                                vec[0], vec[1], vec[2], vec[3], vec[4], vec[5]);
-            }
-        }
-        
-        // plugdata modification: it's very useful for us to just set loadstring to "else" when loading all else objects
-        if (s && class_prefixsym)
-        {
-            const char *loadstring = class_prefixsym->s_name;
-            size_t size = strlen(s->s_name) + strlen(loadstring) + 2;
-            char* full_path = t_getbytes(size);
-            snprintf(full_path, size, "%s/%s", loadstring, s->s_name);
-            
-            class_addmethod(pd_objectmaker, (t_method)newmethod,
-                            gensym(full_path),
-                            vec[0], vec[1], vec[2], vec[3], vec[4], vec[5]);
-            
-            freebytes(full_path, size);
+                    class_loadsym,
+                    vec[0], vec[1], vec[2], vec[3], vec[4], vec[5]);
         }
     }
     c = (t_class *)t_getbytes(sizeof(*c));
@@ -595,6 +575,29 @@ t_class *class_new(t_symbol *s, t_newmethod newmethod, t_method freemethod,
     post("class: %s", c->c_name->s_name);
 #endif
     return (c);
+}
+
+t_class *pd_class_new(t_symbol *s, t_newmethod newmethod, t_method freemethod,
+    size_t size, int flags, t_atomtype type1, ...)
+{
+    t_class *ret;
+    va_list ap;
+    va_start(ap, type1);
+    ret = class_donew(s, newmethod, freemethod, size, flags, type1, ap);
+    va_end(ap);
+    return (ret);
+}
+
+    /* traditional name: */
+t_class *class_new(t_symbol *s, t_newmethod newmethod, t_method freemethod,
+    size_t size, int flags, t_atomtype type1, ...)
+{
+    t_class *ret;
+    va_list ap;
+    va_start(ap, type1);
+    ret = class_donew(s, newmethod, freemethod, size, flags, type1, ap);
+    va_end(ap);
+    return (ret);
 }
 
 void class_free(t_class *c)
@@ -672,10 +675,9 @@ void class_addcreator(t_newmethod newmethod, t_symbol *s,
         vec[0], vec[1], vec[2], vec[3], vec[4], vec[5]);
 }
 
-void class_addmethod(t_class *c, t_method fn, t_symbol *sel,
-    t_atomtype arg1, ...)
+void class_doaddmethod(t_class *c, t_method fn, t_symbol *sel,
+    t_atomtype arg1, va_list ap)
 {
-    va_list ap;
     t_atomtype argtype = arg1;
     int nargs, i;
     if(!c)
@@ -751,8 +753,26 @@ phooey:
     bug("class_addmethod: %s_%s: bad argument types\n",
         (c->c_name)?(c->c_name->s_name):"<anon>", sel?(sel->s_name):"<nomethod>");
 done:
-    va_end(ap);
     return;
+}
+
+void class_addmethod(t_class *c, t_method fn, t_symbol *sel,
+    t_atomtype arg1, ...)
+{
+    va_list ap;
+    va_start(ap, arg1);
+    class_doaddmethod(c, fn, sel, arg1, ap);
+    va_end(ap);
+}
+
+    /* new name to avoid shared-lib name clashes */
+void pd_class_addmethod(t_class *c, t_method fn, t_symbol *sel,
+    t_atomtype arg1, ...)
+{
+    va_list ap;
+    va_start(ap, arg1);
+    class_doaddmethod(c, fn, sel, arg1, ap);
+    va_end(ap);
 }
 
     /* Instead of these, see the "class_addfloat", etc.,  macros in m_pd.h */
