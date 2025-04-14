@@ -490,6 +490,11 @@ void glist_init(t_glist *x)
     x->gl_privatedata = getbytes(sizeof(t_canvas_private));
 }
 
+t_class* get_canvas_class()
+{
+    return canvas_class;
+}
+
     /* make a new glist.  It will either be a "root" canvas or else
     it appears as a "text" object in another window (canvas_getcurrent()
     tells us which.) */

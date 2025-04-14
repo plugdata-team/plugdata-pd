@@ -814,6 +814,8 @@ EXTERN_STRUCT _garray;
 #define t_garray struct _garray
 
 EXTERN t_class *garray_class;
+EXTERN t_class* get_garray_class();
+
 PD_DEPRECATED EXTERN int garray_getfloatarray(t_garray *x, int *size, t_float **vec); /* use garray_getfloatwords() */
 EXTERN int garray_getfloatwords(t_garray *x, int *size, t_word **vec);
 EXTERN void garray_redraw(t_garray *x);

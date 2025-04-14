@@ -511,6 +511,8 @@ t_rtext *rtext_findhit(t_glist *gl, int xpix, int ypix,
 /* -------------------- functions on canvases ------------------------ */
 EXTERN t_class *canvas_class;
 
+EXTERN t_class* get_canvas_class();
+
 EXTERN t_canvas *canvas_new(void *dummy, t_symbol *sel, int argc, t_atom *argv);
 EXTERN t_symbol *canvas_makebindsym(t_symbol *s);
 EXTERN void canvas_fixlinesfor(t_canvas *x, t_text *text);

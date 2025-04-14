@@ -838,6 +838,11 @@ int garray_getfloatwords(t_garray *x, int *size, t_word **vec)
 }
     /* older, non-64-bit safe version, supplied for older externs */
 
+t_class* get_garray_class()
+{
+    return garray_class;
+}
+
 int garray_getfloatarray(t_garray *x, int *size, t_float **vec)
 {
     if (sizeof(t_word) != sizeof(t_float))
