@@ -1489,6 +1489,11 @@ const t_widgetbehavior text_widgetbehavior =
     text_click,
 };
 
+t_widgetbehavior* get_text_widgetbehavior()
+{
+    return &text_widgetbehavior;
+}
+
 static const t_widgetbehavior gatom_widgetbehavior =
 {
     text_getrect,

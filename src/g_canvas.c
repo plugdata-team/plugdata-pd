@@ -495,6 +495,16 @@ t_class* get_canvas_class()
     return canvas_class;
 }
 
+t_class* get_vinlet_class()
+{
+    return vinlet_class;
+}
+
+t_class* get_voutlet_class()
+{
+    return voutlet_class;
+}
+
     /* make a new glist.  It will either be a "root" canvas or else
     it appears as a "text" object in another window (canvas_getcurrent()
     tells us which.) */

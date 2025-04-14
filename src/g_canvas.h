@@ -389,6 +389,7 @@ EXTERN void canvas_setcursor(t_glist *x, unsigned int cursornum);
 
 extern t_canvas *canvas_whichfind;  /* last canvas we did a find in */
 EXTERN t_class *vinlet_class, *voutlet_class;
+
 extern int glist_valid;         /* incremented when pointers might be stale */
 
 #define PLOTSTYLE_POINTS 0     /* plotting styles for arrays */
@@ -441,7 +442,9 @@ EXTERN t_float glist_ytopixels(t_glist *x, t_float yval);
 EXTERN t_float glist_dpixtodx(t_glist *x, t_float dxpix);
 EXTERN t_float glist_dpixtody(t_glist *x, t_float dypix);
 
-EXTERN void glist_getnextxy(t_glist *gl, int *xval, int *yval);
+EXTERN t_widgetbehavior* get_text_widgetbehavior();
+
+    EXTERN void glist_getnextxy(t_glist *gl, int *xval, int *yval);
 EXTERN void glist_glist(t_glist *g, t_symbol *s, int argc, t_atom *argv);
 EXTERN t_glist *glist_addglist(t_glist *g, t_symbol *sym,
     t_float x1, t_float y1, t_float x2, t_float y2,
@@ -512,6 +515,8 @@ t_rtext *rtext_findhit(t_glist *gl, int xpix, int ypix,
 EXTERN t_class *canvas_class;
 
 EXTERN t_class* get_canvas_class();
+EXTERN t_class* get_vinlet_class();
+EXTERN t_class* get_voutlet_class();
 
 EXTERN t_canvas *canvas_new(void *dummy, t_symbol *sel, int argc, t_atom *argv);
 EXTERN t_symbol *canvas_makebindsym(t_symbol *s);
@@ -697,6 +702,7 @@ EXTERN t_symbol *iemgui_put_in_braces(t_symbol *s);
 
 /*-------------  g_clone.c ------------- */
 EXTERN t_class *clone_class;
+EXTERN t_class* get_clone_class();
 
 /*-------------  d_ugen.c ------------- */
 EXTERN void signal_setborrowed(t_signal *sig, t_signal *sig2);

@@ -321,6 +321,11 @@ static int template_cancreate(t_template *template)
 /* ------------------- scalars ---------------------- */
 
 t_class *scalar_class;
+
+t_class* get_scalar_class()
+{
+    return scalar_class;
+}
     /* make a new scalar and add to the glist.  We create a "gp" here which
     will be used for array items to point back here.  This gp doesn't do
     reference counting or "validation" updates though; the parent won't go away

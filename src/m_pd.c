@@ -2,17 +2,6 @@
 * For information on usage and redistribution, and for a DISCLAIMER OF ALL
 * WARRANTIES, see the file, "LICENSE.txt," in this distribution.  */
 
-#ifdef VST_CLEANSER
-EXTERN t_symbol s_pointer, s_float, s_symbol, s_bang, s_list, s_anything,
-  s_signal, s__N, s__X, s_x, s_y, s_;
-void vst_cleanser(t_symbol **s)
-{
-    if (*s >= &s_pointer && *s <= &s_)
-    {
-        *s = gensym((*s)->s_name);
-    }
-}
-#endif
 
 #include "m_pd.h"
 #include "m_imp.h"

@@ -842,6 +842,11 @@ static int ugen_index(t_dspcontext *dc, t_ugenbox *x)
 }
 extern t_class *clone_class;
 
+t_class* get_clone_class()
+{
+    return clone_class;
+}
+
 static const t_sample ugen_scalarzero;  /* zero for scalar-to-vector copying */
 
 extern int class_getdspflags(const t_class *c);

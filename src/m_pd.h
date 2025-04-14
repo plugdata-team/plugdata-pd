@@ -325,6 +325,8 @@ typedef void (*t_gotfn)(void *x, ...);
 EXTERN t_pd pd_objectmaker;     /* factory for creating "object" boxes */
 EXTERN t_pd pd_canvasmaker;     /* factory for creating canvases */
 
+EXTERN t_pd get_pd_objectmaker();
+
 /* --------- prototypes from the central message system ----------- */
 EXTERN void pd_typedmess(t_pd *x, t_symbol *s, int argc, t_atom *argv);
 EXTERN void pd_forwardmess(t_pd *x, int argc, t_atom *argv);
@@ -828,6 +830,7 @@ EXTERN void garray_setsaveit(t_garray *x, int saveit);
 EXTERN t_glist *garray_getglist(t_garray *x);
 EXTERN t_array *garray_getarray(t_garray *x);
 EXTERN t_class *scalar_class;
+EXTERN t_class* get_scalar_class();
 
 EXTERN t_float *value_get(t_symbol *s);
 EXTERN void value_release(t_symbol *s);

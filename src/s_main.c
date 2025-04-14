@@ -34,6 +34,11 @@ char *pd_version = "Pd-" stringify(PD_MAJOR_VERSION) "." \
 stringify(PD_MINOR_VERSION) "." stringify(PD_BUGFIX_VERSION) "\
  (" stringify(PD_TEST_VERSION) ")";
 
+EXTERN char* get_pd_version()
+{
+    return pd_version;
+}
+
 char pd_compiletime[] = __TIME__;
 char pd_compiledate[] = __DATE__;
 

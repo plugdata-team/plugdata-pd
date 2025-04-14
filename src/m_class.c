@@ -28,6 +28,11 @@ static void pd_defaultlist(t_pd *x, t_symbol *s, int argc, t_atom *argv);
 t_pd pd_objectmaker;    /* factory for creating "object" boxes */
 t_pd pd_canvasmaker;    /* factory for creating canvases */
 
+t_pd get_pd_objectmaker()
+{
+    return pd_objectmaker;
+}
+
 static t_symbol *class_extern_dir;
 
 #ifdef PDINSTANCE
