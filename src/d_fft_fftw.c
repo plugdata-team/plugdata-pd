@@ -82,7 +82,7 @@ static cfftw_info *cfftw_getplan(int n,int fwd)
             }
             cfftw_fwd = (cfftw_plans*)resizebytes(cfftw_fwd, cfftw_ninstances * sizeof(cfftw_plans), ninstances * sizeof(cfftw_plans));
             cfftw_bwd = (cfftw_plans*)resizebytes(cfftw_bwd, cfftw_ninstances * sizeof(cfftw_plans), ninstances * sizeof(cfftw_plans));
-            for (int i = cfftw_ninstances; i < pd_ninstances; ++i) {
+            for (int i = cfftw_ninstances; i < ninstances; ++i) {
                 for (int j = 0; j < MAXFFT + 1 - MINFFT; ++j) {
                     cfftw_fwd[i].info[j].plan = NULL;
                     cfftw_bwd[i].info[j].plan = NULL;
@@ -191,7 +191,7 @@ static rfftw_info *rfftw_getplan(int n,int fwd)
             }
             rfftw_fwd = (rfftw_plans*)resizebytes(rfftw_fwd, rfftw_ninstances * sizeof(rfftw_plans), ninstances * sizeof(rfftw_plans));
             rfftw_bwd = (rfftw_plans*)resizebytes(rfftw_bwd, rfftw_ninstances * sizeof(rfftw_plans), ninstances * sizeof(rfftw_plans));
-            for (int i = rfftw_ninstances; i < pd_ninstances; ++i) {
+            for (int i = rfftw_ninstances; i < ninstances; ++i) {
                 for (int j = 0; j < MAXFFT + 1 - MINFFT; ++j) {
                     rfftw_fwd[i].info[j].plan = NULL;
                     rfftw_bwd[i].info[j].plan = NULL;

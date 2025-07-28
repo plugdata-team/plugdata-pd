@@ -2262,7 +2262,7 @@ int plugdata_debugging_or_activity_enabled()
 void set_plugdata_debugging_enabled(int enabled_debugging)
 {
     atomic_store_explicit(&enable_debugging, enabled_debugging, memory_order_relaxed);
-    atomic_store_explicit(&enabled_debug_or_activity, enabled_debugging || atomic_load_explicit(&enable_activity, memory_order_relaxed), memory_order_relaxed);;
+    atomic_store_explicit(&enabled_debug_or_activity, enabled_debugging || atomic_load_explicit(&enable_activity, memory_order_relaxed), memory_order_relaxed);
 }
 
 void set_plugdata_activity_enabled(int enabled_activity)
