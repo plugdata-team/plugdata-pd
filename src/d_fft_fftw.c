@@ -57,7 +57,7 @@ static cfftw_plans* cfftw_fwd = &cfftw_fwd_inst, *cfftw_bwd = &cfftw_bwd_inst;
 #else
 static int cfftw_ninstances = 0;
 static cfftw_plans* cfftw_fwd, *cfftw_bwd;
-static pthread_mutex_t cfftw_mutex;
+static pthread_mutex_t fftw_mutex = PTHREAD_MUTEX_INITIALIZER;
 #endif
 
 static cfftw_info *cfftw_getplan(int n,int fwd)
@@ -69,13 +69,9 @@ static cfftw_info *cfftw_getplan(int n,int fwd)
 #ifndef PDINSTANCE
     info = (fwd?cfftw_fwd->info:cfftw_bwd->info)+(logn-MINFFT);
 #else
-    if(cfftw_ninstances == 0)
-    {
-        pthread_mutex_init(&cfftw_mutex, NULL);
-    }
     if(pd_this->pd_instanceno >= cfftw_ninstances) // just so we don't lock every single time
     {
-        pthread_mutex_lock(&cfftw_mutex);
+        pthread_mutex_lock(&fftw_mutex);
         if(pd_this->pd_instanceno >= cfftw_ninstances)
         {
             int ninstances = pd_this->pd_instanceno + 1;
@@ -95,7 +91,7 @@ static cfftw_info *cfftw_getplan(int n,int fwd)
             
             cfftw_ninstances = ninstances;
         }
-        pthread_mutex_unlock(&cfftw_mutex);
+        pthread_mutex_unlock(&fftw_mutex);
     }
 
     info = (fwd?cfftw_fwd[pd_this->pd_instanceno].info:cfftw_bwd[pd_this->pd_instanceno].info)+(logn-MINFFT);
@@ -109,10 +105,10 @@ static cfftw_info *cfftw_getplan(int n,int fwd)
             (fftwf_complex*) fftwf_malloc(sizeof(fftwf_complex) * n);
 
 #ifdef PDINSTANCE
-        pthread_mutex_lock(&cfftw_mutex); /* concurrent fftw plan creation is not thread safe, only fftw_execute is */
+        pthread_mutex_lock(&fftw_mutex); /* concurrent fftw plan creation is not thread safe, only fftw_execute is */
         info->plan = fftwf_plan_dft_1d(n, info->in, info->out,
             fwd?FFTW_FORWARD:FFTW_BACKWARD, FFTW_MEASURE);
-        pthread_mutex_unlock(&cfftw_mutex);
+        pthread_mutex_unlock(&fftw_mutex);
 #else
         info->plan = fftwf_plan_dft_1d(n, info->in, info->out,
             fwd?FFTW_FORWARD:FFTW_BACKWARD, FFTW_MEASURE);
@@ -170,7 +166,6 @@ static rfftw_plans* rfftw_fwd = &rfftw_fwd_inst, *rfftw_bwd = &rfftw_bwd_inst;
 #else
 static int rfftw_ninstances = 0;
 static rfftw_plans* rfftw_fwd = NULL, *rfftw_bwd = NULL;
-static pthread_mutex_t rfftw_mutex;
 #endif
 
 static rfftw_info *rfftw_getplan(int n,int fwd)
@@ -183,13 +178,9 @@ static rfftw_info *rfftw_getplan(int n,int fwd)
 #ifndef PDINSTANCE
     info = (fwd?rfftw_fwd->info:rfftw_bwd->info)+(logn-MINFFT);
 #else
-    if(rfftw_ninstances == 0)
-    {
-        pthread_mutex_init(&rfftw_mutex, NULL);
-    }
     if(pd_this->pd_instanceno >= rfftw_ninstances) // just so we don't lock every single time
     {
-        pthread_mutex_lock(&rfftw_mutex);
+        pthread_mutex_lock(&fftw_mutex);
         if(pd_this->pd_instanceno >= rfftw_ninstances)
         {
             int ninstances = pd_this->pd_instanceno + 1;
@@ -209,7 +200,7 @@ static rfftw_info *rfftw_getplan(int n,int fwd)
             
             rfftw_ninstances = ninstances;
         }
-        pthread_mutex_unlock(&rfftw_mutex);
+        pthread_mutex_unlock(&fftw_mutex);
     }
 
     info = (fwd?rfftw_fwd[pd_this->pd_instanceno].info:rfftw_bwd[pd_this->pd_instanceno].info)+(logn-MINFFT);
@@ -220,9 +211,9 @@ static rfftw_info *rfftw_getplan(int n,int fwd)
         info->in = (float*) fftwf_malloc(sizeof(float) * n);
         info->out = (float*) fftwf_malloc(sizeof(float) * n);
 #ifdef PDINSTANCE
-        pthread_mutex_lock(&rfftw_mutex); /* concurrent fftw plan creation is not thread safe, only fftw_execute is */
+        pthread_mutex_lock(&fftw_mutex); /* concurrent fftw plan creation is not thread safe, only fftw_execute is */
         info->plan = fftwf_plan_r2r_1d(n, info->in, info->out, fwd?FFTW_R2HC:FFTW_HC2R, FFTW_MEASURE);
-        pthread_mutex_unlock(&rfftw_mutex);
+        pthread_mutex_unlock(&fftw_mutex);
 #else
         info->plan = fftwf_plan_r2r_1d(n, info->in, info->out, fwd?FFTW_R2HC:FFTW_HC2R, FFTW_MEASURE);
 #endif
