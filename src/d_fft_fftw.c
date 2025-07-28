@@ -9,6 +9,7 @@
 #include "m_pd.h"
 #include "m_imp.h"
 #include <fftw3.h>
+#include <pthread.h>
 
 int ilog2(int n);
 
@@ -56,6 +57,7 @@ static cfftw_plans* cfftw_fwd = &cfftw_fwd_inst, *cfftw_bwd = &cfftw_bwd_inst;
 #else
 static int cfftw_ninstances = 0;
 static cfftw_plans* cfftw_fwd, *cfftw_bwd;
+static pthread_mutex_t cfftw_mutex;
 #endif
 
 static cfftw_info *cfftw_getplan(int n,int fwd)
@@ -67,21 +69,34 @@ static cfftw_info *cfftw_getplan(int n,int fwd)
 #ifndef PDINSTANCE
     info = (fwd?cfftw_fwd->info:cfftw_bwd->info)+(logn-MINFFT);
 #else
-    pd_globallock();
-    if(pd_ninstances > cfftw_ninstances)
+    if(cfftw_ninstances == 0)
     {
-      cfftw_fwd = (cfftw_plans*)resizebytes(cfftw_fwd, cfftw_ninstances * sizeof(cfftw_plans), pd_ninstances * sizeof(cfftw_plans));
-      cfftw_bwd = (cfftw_plans*)resizebytes(cfftw_bwd, cfftw_ninstances * sizeof(cfftw_plans), pd_ninstances * sizeof(cfftw_plans));
-      for (int i = cfftw_ninstances; i < pd_ninstances; ++i) {
-        for (int j = 0; j < MAXFFT + 1 - MINFFT; ++j) {
-          cfftw_fwd[i].info[j].plan = NULL;
-          cfftw_bwd[i].info[j].plan = NULL;
-        }
-      }
-
-      cfftw_ninstances = pd_ninstances;
+        pthread_mutex_init(&cfftw_mutex, NULL);
     }
-    pd_globalunlock();
+    if(pd_this->pd_instanceno >= cfftw_ninstances) // just so we don't lock every single time
+    {
+        pthread_mutex_lock(&cfftw_mutex);
+        if(pd_this->pd_instanceno >= cfftw_ninstances)
+        {
+            int ninstances = pd_this->pd_instanceno + 1;
+            if(!cfftw_fwd)
+            {
+                cfftw_fwd = getbytes(0);
+                cfftw_bwd = getbytes(0);
+            }
+            cfftw_fwd = (cfftw_plans*)resizebytes(cfftw_fwd, cfftw_ninstances * sizeof(cfftw_plans), ninstances * sizeof(cfftw_plans));
+            cfftw_bwd = (cfftw_plans*)resizebytes(cfftw_bwd, cfftw_ninstances * sizeof(cfftw_plans), ninstances * sizeof(cfftw_plans));
+            for (int i = cfftw_ninstances; i < pd_ninstances; ++i) {
+                for (int j = 0; j < MAXFFT + 1 - MINFFT; ++j) {
+                    cfftw_fwd[i].info[j].plan = NULL;
+                    cfftw_bwd[i].info[j].plan = NULL;
+                }
+            }
+            
+            cfftw_ninstances = ninstances;
+        }
+        pthread_mutex_unlock(&cfftw_mutex);
+    }
 
     info = (fwd?cfftw_fwd[pd_this->pd_instanceno].info:cfftw_bwd[pd_this->pd_instanceno].info)+(logn-MINFFT);
 #endif
@@ -93,10 +108,15 @@ static cfftw_info *cfftw_getplan(int n,int fwd)
         info->out =
             (fftwf_complex*) fftwf_malloc(sizeof(fftwf_complex) * n);
 
-        pd_globallock(); /* concurrent fftw plan creation is not thread safe, only fftw_execute is */
+#ifdef PDINSTANCE
+        pthread_mutex_lock(&cfftw_mutex); /* concurrent fftw plan creation is not thread safe, only fftw_execute is */
         info->plan = fftwf_plan_dft_1d(n, info->in, info->out,
             fwd?FFTW_FORWARD:FFTW_BACKWARD, FFTW_MEASURE);
-        pd_globalunlock();
+        pthread_mutex_unlock(&cfftw_mutex);
+#else
+        info->plan = fftwf_plan_dft_1d(n, info->in, info->out,
+            fwd?FFTW_FORWARD:FFTW_BACKWARD, FFTW_MEASURE);
+#endif
     }
 
     return info;
@@ -150,6 +170,7 @@ static rfftw_plans* rfftw_fwd = &rfftw_fwd_inst, *rfftw_bwd = &rfftw_bwd_inst;
 #else
 static int rfftw_ninstances = 0;
 static rfftw_plans* rfftw_fwd = NULL, *rfftw_bwd = NULL;
+static pthread_mutex_t rfftw_mutex;
 #endif
 
 static rfftw_info *rfftw_getplan(int n,int fwd)
@@ -162,26 +183,34 @@ static rfftw_info *rfftw_getplan(int n,int fwd)
 #ifndef PDINSTANCE
     info = (fwd?rfftw_fwd->info:rfftw_bwd->info)+(logn-MINFFT);
 #else
-    pd_globallock();
-    if(pd_ninstances > rfftw_ninstances)
+    if(rfftw_ninstances == 0)
     {
-        if(!rfftw_fwd)
-        {
-            rfftw_fwd = getbytes(0);
-            rfftw_bwd = getbytes(0);
-        }
-        rfftw_fwd = (rfftw_plans*)resizebytes(rfftw_fwd, rfftw_ninstances * sizeof(rfftw_plans), pd_ninstances * sizeof(rfftw_plans));
-        rfftw_bwd = (rfftw_plans*)resizebytes(rfftw_bwd, rfftw_ninstances * sizeof(rfftw_plans), pd_ninstances * sizeof(rfftw_plans));
-        for (int i = rfftw_ninstances; i < pd_ninstances; ++i) {
-            for (int j = 0; j < MAXFFT + 1 - MINFFT; ++j) {
-                rfftw_fwd[i].info[j].plan = NULL;
-                rfftw_bwd[i].info[j].plan = NULL;
-            }
-        }
-
-        rfftw_ninstances = pd_ninstances;
+        pthread_mutex_init(&rfftw_mutex, NULL);
     }
-    pd_globalunlock();
+    if(pd_this->pd_instanceno >= rfftw_ninstances) // just so we don't lock every single time
+    {
+        pthread_mutex_lock(&rfftw_mutex);
+        if(pd_this->pd_instanceno >= rfftw_ninstances)
+        {
+            int ninstances = pd_this->pd_instanceno + 1;
+            if(!rfftw_fwd)
+            {
+                rfftw_fwd = getbytes(0);
+                rfftw_bwd = getbytes(0);
+            }
+            rfftw_fwd = (rfftw_plans*)resizebytes(rfftw_fwd, rfftw_ninstances * sizeof(rfftw_plans), ninstances * sizeof(rfftw_plans));
+            rfftw_bwd = (rfftw_plans*)resizebytes(rfftw_bwd, rfftw_ninstances * sizeof(rfftw_plans), ninstances * sizeof(rfftw_plans));
+            for (int i = rfftw_ninstances; i < pd_ninstances; ++i) {
+                for (int j = 0; j < MAXFFT + 1 - MINFFT; ++j) {
+                    rfftw_fwd[i].info[j].plan = NULL;
+                    rfftw_bwd[i].info[j].plan = NULL;
+                }
+            }
+            
+            rfftw_ninstances = ninstances;
+        }
+        pthread_mutex_unlock(&rfftw_mutex);
+    }
 
     info = (fwd?rfftw_fwd[pd_this->pd_instanceno].info:rfftw_bwd[pd_this->pd_instanceno].info)+(logn-MINFFT);
 #endif
@@ -190,10 +219,13 @@ static rfftw_info *rfftw_getplan(int n,int fwd)
     {
         info->in = (float*) fftwf_malloc(sizeof(float) * n);
         info->out = (float*) fftwf_malloc(sizeof(float) * n);
-
-        pd_globallock(); /* concurrent fftw plan creation is not thread safe, only fftw_execute is */
+#ifdef PDINSTANCE
+        pthread_mutex_lock(&rfftw_mutex); /* concurrent fftw plan creation is not thread safe, only fftw_execute is */
         info->plan = fftwf_plan_r2r_1d(n, info->in, info->out, fwd?FFTW_R2HC:FFTW_HC2R, FFTW_MEASURE);
-        pd_globalunlock();
+        pthread_mutex_unlock(&rfftw_mutex);
+#else
+        info->plan = fftwf_plan_r2r_1d(n, info->in, info->out, fwd?FFTW_R2HC:FFTW_HC2R, FFTW_MEASURE);
+#endif
     }
     return info;
 }
