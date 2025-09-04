@@ -202,6 +202,7 @@ static void rfftw_term(void)
 
 void fftw_instance_setup()
 {
+#ifdef PDINSTANCE
     pthread_mutex_lock(&fftw_mutex);
     if(pd_this->pd_instanceno >= fftw_ninstances)
     {
@@ -265,6 +266,7 @@ void fftw_instance_setup()
             FFTW_BACKWARD, FFTW_MEASURE);
     }
     pthread_mutex_unlock(&fftw_mutex);
+#endif
 }
 
 static int mayer_refcount = 0;
