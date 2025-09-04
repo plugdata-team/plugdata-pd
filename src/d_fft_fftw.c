@@ -55,7 +55,7 @@ typedef struct {
 static cfftw_plans* cfftw_fwd_inst, cfftw_bwd_inst;
 static cfftw_plans* cfftw_fwd = &cfftw_fwd_inst, *cfftw_bwd = &cfftw_bwd_inst;
 #else
-static int cfftw_ninstances = 0;
+static int fftw_ninstances = 0;
 static cfftw_plans* cfftw_fwd, *cfftw_bwd;
 static pthread_mutex_t fftw_mutex = PTHREAD_MUTEX_INITIALIZER;
 #endif
@@ -69,31 +69,6 @@ static cfftw_info *cfftw_getplan(int n,int fwd)
 #ifndef PDINSTANCE
     info = (fwd?cfftw_fwd->info:cfftw_bwd->info)+(logn-MINFFT);
 #else
-    if(pd_this->pd_instanceno >= cfftw_ninstances) // just so we don't lock every single time
-    {
-        pthread_mutex_lock(&fftw_mutex);
-        if(pd_this->pd_instanceno >= cfftw_ninstances)
-        {
-            int ninstances = pd_this->pd_instanceno + 1;
-            if(!cfftw_fwd)
-            {
-                cfftw_fwd = getbytes(0);
-                cfftw_bwd = getbytes(0);
-            }
-            cfftw_fwd = (cfftw_plans*)resizebytes(cfftw_fwd, cfftw_ninstances * sizeof(cfftw_plans), ninstances * sizeof(cfftw_plans));
-            cfftw_bwd = (cfftw_plans*)resizebytes(cfftw_bwd, cfftw_ninstances * sizeof(cfftw_plans), ninstances * sizeof(cfftw_plans));
-            for (int i = cfftw_ninstances; i < ninstances; ++i) {
-                for (int j = 0; j < MAXFFT + 1 - MINFFT; ++j) {
-                    cfftw_fwd[i].info[j].plan = NULL;
-                    cfftw_bwd[i].info[j].plan = NULL;
-                }
-            }
-            
-            cfftw_ninstances = ninstances;
-        }
-        pthread_mutex_unlock(&fftw_mutex);
-    }
-
     info = (fwd?cfftw_fwd[pd_this->pd_instanceno].info:cfftw_bwd[pd_this->pd_instanceno].info)+(logn-MINFFT);
 #endif
 
@@ -164,7 +139,6 @@ typedef struct {
 static rfftw_plans* rfftw_fwd_inst, rfftw_bwd_inst;
 static rfftw_plans* rfftw_fwd = &rfftw_fwd_inst, *rfftw_bwd = &rfftw_bwd_inst;
 #else
-static int rfftw_ninstances = 0;
 static rfftw_plans* rfftw_fwd = NULL, *rfftw_bwd = NULL;
 #endif
 
@@ -178,31 +152,6 @@ static rfftw_info *rfftw_getplan(int n,int fwd)
 #ifndef PDINSTANCE
     info = (fwd?rfftw_fwd->info:rfftw_bwd->info)+(logn-MINFFT);
 #else
-    if(pd_this->pd_instanceno >= rfftw_ninstances) // just so we don't lock every single time
-    {
-        pthread_mutex_lock(&fftw_mutex);
-        if(pd_this->pd_instanceno >= rfftw_ninstances)
-        {
-            int ninstances = pd_this->pd_instanceno + 1;
-            if(!rfftw_fwd)
-            {
-                rfftw_fwd = getbytes(0);
-                rfftw_bwd = getbytes(0);
-            }
-            rfftw_fwd = (rfftw_plans*)resizebytes(rfftw_fwd, rfftw_ninstances * sizeof(rfftw_plans), ninstances * sizeof(rfftw_plans));
-            rfftw_bwd = (rfftw_plans*)resizebytes(rfftw_bwd, rfftw_ninstances * sizeof(rfftw_plans), ninstances * sizeof(rfftw_plans));
-            for (int i = rfftw_ninstances; i < ninstances; ++i) {
-                for (int j = 0; j < MAXFFT + 1 - MINFFT; ++j) {
-                    rfftw_fwd[i].info[j].plan = NULL;
-                    rfftw_bwd[i].info[j].plan = NULL;
-                }
-            }
-            
-            rfftw_ninstances = ninstances;
-        }
-        pthread_mutex_unlock(&fftw_mutex);
-    }
-
     info = (fwd?rfftw_fwd[pd_this->pd_instanceno].info:rfftw_bwd[pd_this->pd_instanceno].info)+(logn-MINFFT);
 #endif
 
@@ -249,6 +198,73 @@ static void rfftw_term(void)
         }
       }
     }
+}
+
+void fftw_instance_setup()
+{
+    pthread_mutex_lock(&fftw_mutex);
+    if(pd_this->pd_instanceno >= fftw_ninstances)
+    {
+        int ninstances = pd_this->pd_instanceno + 1;
+        if(!cfftw_fwd)
+        {
+            cfftw_fwd = getbytes(0);
+            cfftw_bwd = getbytes(0);
+            rfftw_fwd = getbytes(0);
+            rfftw_bwd = getbytes(0);
+        }
+        cfftw_fwd = (cfftw_plans*)resizebytes(cfftw_fwd, fftw_ninstances * sizeof(cfftw_plans), ninstances * sizeof(cfftw_plans));
+        cfftw_bwd = (cfftw_plans*)resizebytes(cfftw_bwd, fftw_ninstances * sizeof(cfftw_plans), ninstances * sizeof(cfftw_plans));
+        rfftw_fwd = (rfftw_plans*)resizebytes(rfftw_fwd, fftw_ninstances * sizeof(rfftw_plans), ninstances * sizeof(rfftw_plans));
+        rfftw_bwd = (rfftw_plans*)resizebytes(rfftw_bwd, fftw_ninstances * sizeof(rfftw_plans), ninstances * sizeof(rfftw_plans));
+        
+        for (int i = fftw_ninstances; i < ninstances; ++i) {
+            for (int j = 0; j < MAXFFT + 1 - MINFFT; ++j) {
+                cfftw_fwd[i].info[j].plan = NULL;
+                cfftw_bwd[i].info[j].plan = NULL;
+                rfftw_fwd[i].info[j].plan = NULL;
+                rfftw_bwd[i].info[j].plan = NULL;
+            }
+        }
+        fftw_ninstances = ninstances;
+    }
+    
+    // pre-initialise most common ffts, so we don't need to lock the audio thread so much
+    for(int order = 0; order < 14; order++)
+    {
+        int n = 1 << order;
+        cfftw_info* cfinfo = &cfftw_fwd[pd_this->pd_instanceno].info[order];
+        cfftw_info* cbinfo = &cfftw_bwd[pd_this->pd_instanceno].info[order];
+        cfftw_info* rfinfo = &rfftw_fwd[pd_this->pd_instanceno].info[order];
+        cfftw_info* rbinfo = &rfftw_bwd[pd_this->pd_instanceno].info[order];
+        
+        cfinfo->in =
+            (fftwf_complex*) fftwf_malloc(sizeof(fftwf_complex) * n);
+        cfinfo->out =
+            (fftwf_complex*) fftwf_malloc(sizeof(fftwf_complex) * n);
+        cbinfo->in =
+            (fftwf_complex*) fftwf_malloc(sizeof(fftwf_complex) * n);
+        cbinfo->out =
+            (fftwf_complex*) fftwf_malloc(sizeof(fftwf_complex) * n);
+        rfinfo->in =
+            (float*) fftwf_malloc(sizeof(float) * n);
+        rfinfo->out =
+            (float*) fftwf_malloc(sizeof(float) * n);
+        rbinfo->in =
+            (float*) fftwf_malloc(sizeof(float) * n);
+        rbinfo->out =
+            (float*) fftwf_malloc(sizeof(float) * n);
+        
+        cfinfo->plan = fftwf_plan_dft_1d(n, cfinfo->in, cfinfo->out,
+            FFTW_FORWARD, FFTW_MEASURE);
+        cbinfo->plan = fftwf_plan_dft_1d(n, cbinfo->in, cbinfo->out,
+            FFTW_BACKWARD, FFTW_MEASURE);
+        rfinfo->plan = fftwf_plan_r2r_1d(n, rfinfo->in, rfinfo->out,
+            FFTW_FORWARD, FFTW_MEASURE);
+        rbinfo->plan = fftwf_plan_r2r_1d(n, rbinfo->in, rbinfo->out,
+            FFTW_BACKWARD, FFTW_MEASURE);
+    }
+    pthread_mutex_unlock(&fftw_mutex);
 }
 
 static int mayer_refcount = 0;
