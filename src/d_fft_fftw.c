@@ -52,7 +52,7 @@ typedef struct {
 } cfftw_plans;
 
 #ifndef PDINSTANCE
-static cfftw_plans* cfftw_fwd_inst, cfftw_bwd_inst;
+static cfftw_plans cfftw_fwd_inst, cfftw_bwd_inst;
 static cfftw_plans* cfftw_fwd = &cfftw_fwd_inst, *cfftw_bwd = &cfftw_bwd_inst;
 #else
 static int fftw_ninstances = 0;
@@ -136,7 +136,7 @@ typedef struct {
 } rfftw_plans;
 
 #ifndef PDINSTANCE
-static rfftw_plans* rfftw_fwd_inst, rfftw_bwd_inst;
+static rfftw_plans rfftw_fwd_inst, rfftw_bwd_inst;
 static rfftw_plans* rfftw_fwd = &rfftw_fwd_inst, *rfftw_bwd = &rfftw_bwd_inst;
 #else
 static rfftw_plans* rfftw_fwd = NULL, *rfftw_bwd = NULL;
