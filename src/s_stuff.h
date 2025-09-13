@@ -382,6 +382,7 @@ EXTERN int* get_sys_schedadvance(void);
 
 EXTERN void sys_initmidiqueue(void);
 EXTERN void sched_tick(void);
+EXTERN void sched_tick_nodsp(void);
 EXTERN void sys_pollmidiqueue(void);
 EXTERN void sys_setchsr(int chin, int chout, int sr);
 
