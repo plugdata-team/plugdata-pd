@@ -231,7 +231,7 @@ void fftw_instance_setup()
     }
     
     // pre-initialise most common ffts, so we don't need to lock the audio thread so much
-    for(int order = 0; order < 14; order++)
+    for(int order = 0; order < 12; order++)
     {
         int n = 1 << order;
         cfftw_info* cfinfo = &cfftw_fwd[pd_this->pd_instanceno].info[order];
