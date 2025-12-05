@@ -48,7 +48,7 @@ extern "C" {
 #define EXTERN __declspec(dllimport) extern
 #endif /* PD_INTERNAL */
 #else
-#define EXTERN extern
+#define EXTERN __attribute__((used)) extern 
 #endif /* _WIN32 */
 #endif /* EXTERN */
 
