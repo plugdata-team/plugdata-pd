@@ -1879,11 +1879,6 @@ write-lock to be available. */
 void pd_globallock(void)
 {
 #ifdef PDINSTANCE
-    // Skip this check now because it's not thread safe, and not worth locking for
-    //if (!pd_this->pd_islocked)
-    //    bug("pd_globallock");
-    
-    pthread_rwlock_unlock(&sys_rwlock);
     pthread_rwlock_wrlock(&sys_rwlock);
 #endif /* PDINSTANCE */
 }
@@ -1892,7 +1887,6 @@ void pd_globalunlock(void)
 {
 #ifdef PDINSTANCE
     pthread_rwlock_unlock(&sys_rwlock);
-    pthread_rwlock_rdlock(&sys_rwlock);
 #endif /* PDINSTANCE */
 }
 

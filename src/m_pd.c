@@ -5,6 +5,7 @@
 #include "m_pd.h"
 #include "m_imp.h"
 #include "g_canvas.h"   /* just for LB_LOAD */
+#include <string.h>
 
 extern void clear_weak_references(void* ptr);
 

@@ -172,7 +172,6 @@ t_pdinstance *pdinstance_new(void)
     pd_set_instance(x);
     s_inter_newpdinstance();
     pdinstance_init(x);
-    sys_lock();
     pd_globallock();
     pd_instances = (t_pdinstance **)resizebytes(pd_instances,
         pd_ninstances * sizeof(*pd_instances),
@@ -196,7 +195,6 @@ t_pdinstance *pdinstance_new(void)
     text_template_init();
     garray_init();
     pd_globalunlock();
-    sys_unlock();
     return (x);
 }
 
@@ -208,7 +206,6 @@ void pdinstance_free(t_pdinstance *x)
     t_class *c;
     t_instanceinter *inter;
     pd_setinstance(x);
-    sys_lock();
     pd_globallock();
 
     instanceno = x->pd_instanceno;
@@ -266,7 +263,6 @@ void pdinstance_free(t_pdinstance *x)
     pd_ninstances--;
     pdinstance_renumber();
     pd_globalunlock();
-    sys_unlock();
     pd_setinstance(&pd_maininstance);
     s_inter_free(inter);  /* must happen after sys_unlock() */
 }
@@ -284,7 +280,6 @@ void mess_init(void)
     pd_set_instance(&pd_maininstance);
 #endif
     s_inter_newpdinstance();
-    sys_lock();
     pd_globallock();
     pdinstance_init(&pd_maininstance);
     class_extern_dir = &s_;
@@ -294,7 +289,6 @@ void mess_init(void)
         CLASS_DEFAULT, A_NULL);
     class_addanything(pd_objectmaker, (t_method)new_anything);
     pd_globalunlock();
-    sys_unlock();
 }
 
 static void pd_defaultanything(t_pd *x, t_symbol *s, int argc, t_atom *argv)
