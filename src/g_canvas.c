@@ -2241,6 +2241,13 @@ t_pd *glob_evalfile(t_pd *ignore, t_symbol *name, t_symbol *dir)
     patch is open, but don't want more than one copy. */
 void glob_open(t_pd *ignore, t_symbol *name, t_symbol *dir, t_floatarg f)
 {
+    /* plugdata handles the "pd open" message on the message thread instead
+       this way, the "open" message can never come in from the audio thread,
+       mitigating risk of calling class_new or class_addmethod concurrently
+     */
+    return;
+    
+    
     t_glist *gl;
     if (f != 0)
         for (gl = pd_getcanvaslist(); gl; gl = gl->gl_next)

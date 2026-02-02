@@ -1814,9 +1814,6 @@ void sys_stopgui(void)
 void s_inter_newpdinstance(void)
 {
     INTER = getbytes(sizeof(*INTER));
-#if PDTHREADS
-    pd_this->pd_islocked = 0;
-#endif
 #ifdef _WIN32
     INTER->i_freq = 0;
 #endif
@@ -1878,6 +1875,10 @@ write-lock to be available. */
 
 void pd_globallock(void)
 {
+    if(INTER && INTER->lock) {
+        INTER->lock_fn(INTER->lock);
+    }
+    
 #ifdef PDINSTANCE
     pthread_rwlock_wrlock(&sys_rwlock);
 #endif /* PDINSTANCE */
@@ -1887,6 +1888,26 @@ void pd_globalunlock(void)
 {
 #ifdef PDINSTANCE
     pthread_rwlock_unlock(&sys_rwlock);
+#endif /* PDINSTANCE */
+    
+    if(INTER && INTER->lock) {
+        INTER->unlock_fn(INTER->lock);
+    }
+}
+
+void pd_globallock_upgrade(void)
+{
+#ifdef PDINSTANCE
+    pthread_rwlock_unlock(&sys_rwlock);
+    pthread_rwlock_wrlock(&sys_rwlock);
+#endif /* PDINSTANCE */
+}
+
+void pd_globallock_downgrade(void)
+{
+#ifdef PDINSTANCE
+    pthread_rwlock_unlock(&sys_rwlock);
+    pthread_rwlock_rdlock(&sys_rwlock);
 #endif /* PDINSTANCE */
 }
 
@@ -1898,9 +1919,6 @@ void sys_lock(void)
     if(INTER && INTER->lock) {
         INTER->lock_fn(INTER->lock);
     }
-    
-    pd_this->pd_islocked++;
-    
 #ifdef PDINSTANCE
     pthread_rwlock_rdlock(&sys_rwlock);
 #endif
@@ -1912,9 +1930,6 @@ void sys_unlock(void)
 #ifdef PDINSTANCE
     pthread_rwlock_unlock(&sys_rwlock);
 #endif
-    
-    pd_this->pd_islocked--;
-    
     if(INTER && INTER->lock) {
         INTER->unlock_fn(INTER->lock);
     }

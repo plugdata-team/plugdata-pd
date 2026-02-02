@@ -21,8 +21,8 @@
 
 #include "m_private_utils.h"
 
-static t_symbol *class_loadsym;     /* name under which an extern is invoked */
-static t_symbol *class_prefixsym;   /* plugdata variable for setting a prefix to load many objects under */
+static PERTHREAD t_symbol *class_loadsym;     /* name under which an extern is invoked */
+static PERTHREAD t_symbol *class_prefixsym;   /* plugdata variable for setting a prefix to load many objects under */
 static void pd_defaultfloat(t_pd *x, t_float f);
 static void pd_defaultlist(t_pd *x, t_symbol *s, int argc, t_atom *argv);
 t_pd pd_objectmaker;    /* factory for creating "object" boxes */
@@ -964,7 +964,7 @@ static t_symbol *addfileextent(t_symbol *s)
 }
 
 #define MAXOBJDEPTH 1000
-static int tryingalready;
+static PERTHREAD int tryingalready;
 
 void canvas_popabstraction(t_canvas *x);
 
@@ -988,11 +988,7 @@ void new_anything(void *dummy, t_symbol *s, int argc, t_atom *argv)
     pd_this->pd_newest = 0;
     class_loadsym = s;
     
-    // This lock causes deadlocks...
-    // TODO: this is not very thread-safe, though it shouldn't be too horrible
-    // I should fix this though
-    
-    //pd_globallock();
+    pd_globallock_upgrade();
     
     if (sys_load_lib(canvas_getcurrent(), s->s_name))
     {
@@ -1002,7 +998,7 @@ void new_anything(void *dummy, t_symbol *s, int argc, t_atom *argv)
         return;
     }
     class_loadsym = 0;
-    //pd_globalunlock();
+    pd_globallock_downgrade();
 }
 
 void clear_class_loadsym()

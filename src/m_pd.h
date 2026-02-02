@@ -1019,9 +1019,6 @@ struct _pdinstance
     t_symbol  pd_s_y;
     t_symbol  pd_s_;
 #endif
-#if PDTHREADS
-    int pd_islocked;
-#endif
 };
 #define t_pdinstance struct _pdinstance
 EXTERN t_pdinstance pd_maininstance;

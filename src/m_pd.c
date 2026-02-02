@@ -256,7 +256,6 @@ t_pd *pd_findbyclass(t_symbol *s, const t_class *c)
 
 /* stack for maintaining bindings for the #X symbol during nestable loads.
 */
-
 typedef struct _gstack
 {
     t_pd *g_what;
@@ -264,9 +263,9 @@ typedef struct _gstack
     struct _gstack *g_next;
 } t_gstack;
 
-static t_gstack *gstack_head = 0;
-static t_pd *lastpopped;
-static t_symbol *pd_loadingabstraction;
+static PERTHREAD t_gstack *gstack_head = 0;
+static PERTHREAD t_pd *lastpopped;
+static PERTHREAD t_symbol *pd_loadingabstraction;
 
 int pd_setloadingabstraction(t_symbol *sym)
 {

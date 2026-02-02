@@ -151,11 +151,9 @@ void libpd_add_to_search_path(const char *path) {
 
 void *libpd_openfile(const char *name, const char *dir) {
   void *retval;
-  sys_lock();
-  //pd_globallock();
+  pd_globallock();
   retval = (void *)glob_evalfile(NULL, gensym(name), gensym(dir));
-  //pd_globalunlock();
-  sys_unlock();
+  pd_globalunlock();
   return retval;
 }
 
