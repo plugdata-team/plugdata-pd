@@ -646,6 +646,9 @@ PD_DEPRECATED EXTERN void verbose(int level, const char *fmt, ...) ATTRIBUTE_FOR
 EXTERN int sys_isabsolutepath(const char *dir);
 EXTERN void sys_bashfilename(const char *from, char *to);
 EXTERN void sys_unbashfilename(const char *from, char *to);
+
+int sys_issamepath(const char *a, const char *b);
+
 EXTERN int open_via_path(const char *dir, const char *name, const char *ext,
     char *dirresult, char **nameresult, unsigned int size, int bin);
 EXTERN int sched_geteventno(void);

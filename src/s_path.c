@@ -68,6 +68,49 @@ void sys_unbashfilename(const char *from, char *to)
     *to = 0;
 }
 
+/* check if paths point to the same file or directory, taking symlinks into account */
+int sys_issamepath(const char *a, const char *b)
+{
+#ifdef _WIN32
+    BY_HANDLE_FILE_INFORMATION ia, ib;
+    HANDLE ha, hb;
+    int result;
+
+    ha = CreateFileA(a, 0,
+                     FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE,
+                     NULL, OPEN_EXISTING, FILE_FLAG_BACKUP_SEMANTICS, NULL);
+    if (ha == INVALID_HANDLE_VALUE) return -1;
+
+    hb = CreateFileA(b, 0,
+                     FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE,
+                     NULL, OPEN_EXISTING, FILE_FLAG_BACKUP_SEMANTICS, NULL);
+    if (hb == INVALID_HANDLE_VALUE) { CloseHandle(ha); return -1; }
+
+    if (!GetFileInformationByHandle(ha, &ia) ||
+        !GetFileInformationByHandle(hb, &ib))
+    {
+        result = -1;
+    }
+    else
+    {
+        result = (ia.dwVolumeSerialNumber == ib.dwVolumeSerialNumber &&
+                  ia.nFileIndexHigh       == ib.nFileIndexHigh       &&
+                  ia.nFileIndexLow        == ib.nFileIndexLow) ? 1 : 0;
+    }
+
+    CloseHandle(ha);
+    CloseHandle(hb);
+    return result;
+#else
+    struct stat sa, sb;
+
+    if (stat(a, &sa) != 0) return -1;
+    if (stat(b, &sb) != 0) return -1;
+
+    return (sa.st_dev == sb.st_dev && sa.st_ino == sb.st_ino) ? 1 : 0;
+#endif
+}
+
 /* test if path is absolute or relative, based on leading /, env vars, ~, etc */
 int sys_isabsolutepath(const char *dir)
 {

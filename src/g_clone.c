@@ -65,7 +65,7 @@ int clone_match(t_pd *z, t_symbol *name, t_symbol *dir)
     if (!x->x_n)
         return (0);
     return (x->x_vec[0].c_gl->gl_name == name &&
-        canvas_getdir(x->x_vec[0].c_gl) == dir);
+            sys_issamepath(canvas_getdir(x->x_vec[0].c_gl)->s_name, dir->s_name));
 }
 
 void obj_sendinlet(t_object *x, int n, t_symbol *s, int argc, t_atom *argv);
