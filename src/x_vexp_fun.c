@@ -106,7 +106,7 @@
 #endif
 
 #if NO_ISNAN
-PD_INLINE t_float my_isnan(t_float f) { return ((f) != (f)); }
+PD_INLINE int my_isnan(t_float f) { return ((f) != (f)); }
 # undef isnan
 # define isnan my_isnan
 #endif
