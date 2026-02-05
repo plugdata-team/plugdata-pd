@@ -718,8 +718,10 @@ AS_IF([test "x${floatsize}" != "x" ],
    ],[AC_MSG_RESULT([default])
    ])
 
-AS_IF([test "x${floatsize}" = "x64" && test "x${deken_cpu}" != "x" && test "x${deken_os}" != "x" && test "x${deken_ext}" != "x"],[
-      EXTERNAL_EXTENSION="${deken_os}-${deken_cpu}-${floatsize}.${deken_ext}"
+
+AS_IF([test -n "${floatsize}" && test "${floatsize}" != "32" && test -n "${deken_cpu}" && test -n "${deken_os}" && test -n "${deken_ext}"],[
+      EXTERNAL_EXTENSION=[${deken_os}-${deken_cpu}-${floatsize}.${deken_ext}]
+      EXTERNAL_EXTENSION="$(echo ${EXTERNAL_EXTENSION} | tr [[A-Z]] [[a-z]] 2>/dev/null || echo ${EXTERNAL_EXTENSION})"
       AC_MSG_NOTICE([default external extension...${EXTERNAL_EXTENSION}])
       ])
 
