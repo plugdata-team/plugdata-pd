@@ -439,56 +439,6 @@ AC_ARG_ENABLE([watchdog],
 AS_IF([test "x$enable_watchdog" != "xyes"],[enable_watchdog=no])
 AM_CONDITIONAL(PD_WATCHDOG, test x$enable_watchdog = xyes)
 
-###### floatsize ########
-AC_ARG_WITH([floatsize],
-    [AS_HELP_STRING([--with-floatsize=<SIZE>],
-    [build binaries for the given floatsize;
-    SIZE can be 32 (single precision) or 64 (double precision)
-    ]
-    )],
-    [floatsize=${withval}]
-    )
-AC_MSG_CHECKING([float size])
-AS_CASE([${floatsize}],
-    [32],[],
-    [64],[],
-    [""],[],
-    [
-        AC_MSG_WARN([${floatsize}bit floats not supported...use fallback])
-        floatsize=""
-    ])
-AS_IF([test "x${floatsize}" != "x" ],
-   [
-    PD_CPPFLAGS="-DPD_FLOATSIZE=${floatsize} $PD_CPPFLAGS"
-    AC_MSG_RESULT([${floatsize}])
-   ],[AC_MSG_RESULT([default])
-   ])
-
-AS_IF([test "x${floatsize}" = "x64" && test "x${deken_cpu}" != "x" && test "x${deken_os}" != "x" && test "x${deken_ext}" != "x"],[
-      EXTERNAL_EXTENSION="${deken_os}-${deken_cpu}-${floatsize}.${deken_ext}"
-      AC_MSG_NOTICE([default external extension...${EXTERNAL_EXTENSION}])
-      ])
-
-pd_transform_name=$(echo ${program_transform_name} | sed -e 's|\$\$|$|')
-pd_transformed=$(echo pd | sed -e "${pd_transform_name}")
-
-AS_CASE([${floatsize}],
-    [""],[],
-    [32],[],
-    [
-      # if we specify a non-standard floatsize, make sure that the the program is also transformed.
-      # this is especially important on Windows (where we link against a pd.dll variant)
-      AS_IF([test "${pd_transformed}" = "pd" && test "${have_program_transform_name}" = "no"],[
-        program_transform_name="s/pd\$\$/pd${floatsize}/"
-        pd_transform_name=$(echo ${program_transform_name} | sed -e 's|\$\$|$|')
-        pd_transformed=$(echo pd | sed -e "${pd_transform_name}")
-      ])])
-
-# on Windows, we need to link against a (floatsize-decorated) pd.dll
-AS_IF([test "x${WINDOWS}" = "xyes" ],[
-   EXTERNAL_LDFLAGS="${EXTERNAL_LDFLAGS} -l${pd_transformed}"
-])
-
 ##### libpd #####
 AC_ARG_ENABLE([libpd],
     [AS_HELP_STRING([--enable-libpd], [additionally build libpd])])
@@ -742,6 +692,60 @@ AS_IF([test "x${DEKEN_CPU}" = "xyes" -o "x${DEKEN_CPU}" = "xno"],
 AC_SUBST([DEKEN_CPU])
 AS_IF([test "x${DEKEN_CPU}" != "x"], [deken_cpu="${DEKEN_CPU}"])
 
+
+###### floatsize ########
+AC_ARG_WITH([floatsize],
+    [AS_HELP_STRING([--with-floatsize=<SIZE>],
+    [build binaries for the given floatsize;
+    SIZE can be 32 (single precision) or 64 (double precision)
+    ]
+    )],
+    [floatsize=${withval}]
+    )
+AC_MSG_CHECKING([float size])
+AS_CASE([${floatsize}],
+    [32],[],
+    [64],[],
+    [""],[],
+    [
+        AC_MSG_WARN([${floatsize}bit floats not supported...use fallback])
+        floatsize=""
+    ])
+AS_IF([test "x${floatsize}" != "x" ],
+   [
+    PD_CPPFLAGS="-DPD_FLOATSIZE=${floatsize} $PD_CPPFLAGS"
+    AC_MSG_RESULT([${floatsize}])
+   ],[AC_MSG_RESULT([default])
+   ])
+
+AS_IF([test "x${floatsize}" = "x64" && test "x${deken_cpu}" != "x" && test "x${deken_os}" != "x" && test "x${deken_ext}" != "x"],[
+      EXTERNAL_EXTENSION="${deken_os}-${deken_cpu}-${floatsize}.${deken_ext}"
+      AC_MSG_NOTICE([default external extension...${EXTERNAL_EXTENSION}])
+      ])
+
+pd_transform_name=$(echo ${program_transform_name} | sed -e 's|\$\$|$|')
+pd_transformed=$(echo pd | sed -e "${pd_transform_name}")
+
+AS_CASE([${floatsize}],
+    [""],[],
+    [32],[],
+    [
+      # if we specify a non-standard floatsize, make sure that the the program is also transformed.
+      # this is especially important on Windows (where we link against a pd.dll variant)
+      AS_IF([test "${pd_transformed}" = "pd" && test "${have_program_transform_name}" = "no"],[
+        program_transform_name="s/pd\$\$/pd${floatsize}/"
+        pd_transform_name=$(echo ${program_transform_name} | sed -e 's|\$\$|$|')
+        pd_transformed=$(echo pd | sed -e "${pd_transform_name}")
+      ])])
+
+# on Windows, we need to link against a (floatsize-decorated) pd.dll
+AS_IF([test "x${WINDOWS}" = "xyes" ],[
+   EXTERNAL_LDFLAGS="${EXTERNAL_LDFLAGS} -l${pd_transformed}"
+])
+
+
+###### external extension (user override) ########
+ext=""
 AC_ARG_WITH([external-extension],
     [AS_HELP_STRING([--with-external-extension=<EXT>],
         [Extension to use for externals in extra/ (e.g. pd_linux, dll, d_fat,...)])],
