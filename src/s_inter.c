@@ -1730,13 +1730,13 @@ void sys_exit(int status);
     /* exit scheduler and shut down gracefully */
 void glob_exit(void *dummy, t_floatarg status)
 {
-    sys_exit(status);
+    //sys_exit(status);
 }
 
     /* force-quit */
 void glob_quit(void *dummy, t_floatarg status)
 {
-    exit(status);
+    //exit(status);
 }
 
     /* recursively descend to all canvases and send them "vis" messages
