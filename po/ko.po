@@ -8,17 +8,17 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Pure Data 0.53.0\n"
 "Report-Msgid-Bugs-To: pd-dev@iem.at\n"
-"POT-Creation-Date: 2024-08-28 18:42+0200\n"
-"PO-Revision-Date: 2023-04-26 08:48+0000\n"
-"Last-Translator: simmon <simmon@nplob.com>\n"
-"Language-Team: Korean <https://hosted.weblate.org/projects/pure-data/pure-"
-"data/ko/>\n"
+"POT-Creation-Date: 2025-07-30 15:04+0200\n"
+"PO-Revision-Date: 2025-08-01 09:02+0000\n"
+"Last-Translator: umläute <dev@umlaeute.mur.at>\n"
+"Language-Team: Korean <https://hosted.weblate.org/projects/pure-data/"
+"pure-data/ko/>\n"
 "Language: ko\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=1; plural=0;\n"
-"X-Generator: Weblate 4.18-dev\n"
+"X-Generator: Weblate 5.13-dev\n"
 
 msgid "linear"
 msgstr "선형"
@@ -133,6 +133,9 @@ msgstr "장치"
 msgid "Window"
 msgstr "창"
 
+msgid "Tools"
+msgstr ""
+
 msgid "Help"
 msgstr "도움말"
 
@@ -218,6 +221,10 @@ msgstr "출력 장치"
 msgid "Use Multiple Devices"
 msgstr "다수의 장치를 사용하기"
 
+#, fuzzy
+msgid "Rescan Devices"
+msgstr "입력 장치"
+
 msgid "Audio System"
 msgstr ""
 
@@ -290,6 +297,9 @@ msgstr "여백:"
 
 msgid "Y range: from"
 msgstr "Y값 범위: 최소"
+
+msgid "Object:"
+msgstr "오브젝트:"
 
 msgid "Data Properties"
 msgstr "데이터 속성"
@@ -848,11 +858,26 @@ msgstr "잔여 파일 '%s'을(를) 제거하지 못했습니다"
 msgid "Unable to rename downloaded file to '%s'"
 msgstr "다운로드 된 파일의 이름을 '%s'로 수정하지 못했습니다"
 
+#, fuzzy
+msgid "Search URLs:"
+msgstr "검색 결과"
+
+#, fuzzy
+msgid "Additional search URLs"
+msgstr "검색경로에 %s을(를) 추가했습니다"
+
+msgid "Ephemeral search URLs"
+msgstr ""
+
 msgid "Create"
 msgstr "생성"
 
 msgid "Check"
 msgstr "체크"
+
+#, fuzzy
+msgid "Deken Installation Target"
+msgstr "설치에 실패했습니다!"
 
 msgid "Installation options:"
 msgstr "설치 옵션:"
@@ -922,6 +947,19 @@ msgstr "TAR 파일"
 
 msgid "All Files"
 msgstr "모든 파일"
+
+#, tcl-format
+msgid "Installing incompatible architecture of '%s'."
+msgstr ""
+
+msgid "Replacing library with incompatible architecture!"
+msgstr ""
+
+#, tcl-format
+msgid ""
+"Do you want to replace the library '%1$s' in '%2$s' with a version that is "
+"incompatible with your computer?"
+msgstr ""
 
 #, tcl-format
 msgid "Uninstalling previous installation of '%s'"
@@ -1115,12 +1153,12 @@ msgstr "'%s'의 다운로드 취소됨: 설치 경로가 지정되지 않았습�
 msgid "Installing to non-existent directory failed"
 msgstr "존재하지 않는 설치경로이므로 설치에 실패하였습니다"
 
+msgid "Directory does not exist!"
+msgstr "경로가 존재하지 않습니다!"
+
 #, tcl-format
 msgid "Unable to install to '%s'"
 msgstr "'%s'에 설치하지 못했습니다"
-
-msgid "Directory does not exist!"
-msgstr "경로가 존재하지 않습니다!"
 
 msgid "Directory is not writable!"
 msgstr "경로에 쓸 수 없습니다!"
@@ -1160,6 +1198,10 @@ msgstr "[deken] deken-plugin.tcl (Pd 익스터널 검색)이 %s로부터 로드�
 #, tcl-format
 msgid "[deken] Platform detected: %s"
 msgstr "[deken] 플랫폼이 감지되었습니다: %s"
+
+#, tcl-format
+msgid "Could not find a menu for adding '%s'"
+msgstr ""
 
 #, tcl-format
 msgid "Searching on %s..."
@@ -1833,6 +1875,16 @@ msgstr "기본 플랫폼: %s"
 msgid "Print..."
 msgstr "인쇄..."
 
+msgid "single precision"
+msgstr ""
+
+msgid "double precision"
+msgstr ""
+
+#, tcl-format
+msgid "%dbit-floats"
+msgstr ""
+
 #, tcl-format
 msgid "ignoring '%s': doesn't exist"
 msgstr "'%s' 무시: 존재하지 않습니다"
@@ -1844,23 +1896,41 @@ msgstr "Pd에 대하여"
 msgid "couldn't read \"%s\" document"
 msgstr "\"%s\" 문서를 읽지 못했습니다"
 
+msgid "New"
+msgstr "새로 만들기"
+
+msgid "Open"
+msgstr "열기"
+
+msgid "Open Recent"
+msgstr "최근 패치를 열기"
+
 msgid "Save"
 msgstr "저장"
 
 msgid "Save As..."
 msgstr "다른 이름으로 저장..."
 
+msgid "Quit"
+msgstr "종료"
+
+msgid "Undo"
+msgstr "되돌리기"
+
+msgid "Redo"
+msgstr "되돌리기 취소"
+
+msgid "Cut"
+msgstr "잘라내기"
+
 msgid "Paste Replace"
 msgstr "붙여넣기 대체"
 
+msgid "Select All"
+msgstr "모두 선택"
+
 msgid "Duplicate"
 msgstr "복제"
-
-msgid "Zoom In"
-msgstr "확대"
-
-msgid "Zoom Out"
-msgstr "축소"
 
 msgid "Tidy Up"
 msgstr "선 정리"
@@ -1871,32 +1941,17 @@ msgstr "선택된 오브젝트를 연결(해제)"
 msgid "Triggerize"
 msgstr "트리거"
 
-msgid "Edit Mode"
-msgstr "편집 모드"
+msgid "Zoom In"
+msgstr "확대"
 
-msgid "Undo"
-msgstr "되돌리기"
-
-msgid "Redo"
-msgstr "되돌리기 취소"
-
-msgid "New"
-msgstr "새로 만들기"
-
-msgid "Open"
-msgstr "열기"
-
-msgid "Message..."
-msgstr "메시지..."
-
-msgid "Cut"
-msgstr "잘라내기"
-
-msgid "Select All"
-msgstr "모두 선택"
+msgid "Zoom Out"
+msgstr "축소"
 
 msgid "Clear Console"
 msgstr "콘솔 창 지우기"
+
+msgid "Edit Mode"
+msgstr "편집 모드"
 
 msgid "Object"
 msgstr "오브젝트"
@@ -1961,8 +2016,14 @@ msgstr "다음 창"
 msgid "Previous Window"
 msgstr "이전 창"
 
+msgid "Close subwindows"
+msgstr ""
+
 msgid "Parent Window"
 msgstr "부모 창"
+
+msgid "Message..."
+msgstr "메시지..."
 
 msgid "HTML Manual..."
 msgstr "HTML 매뉴얼..."
@@ -2018,12 +2079,6 @@ msgstr "모두 잊기..."
 msgid "Tabbed preferences"
 msgstr "환경설정"
 
-msgid "Open Recent"
-msgstr "최근 패치를 열기"
-
-msgid "Quit"
-msgstr "종료"
-
 #, tcl-format
 msgid "Do you want to save the changes you made in '%s'?"
 msgstr "'%s'에서 변경된 사항을 저장 하겠습니까?"
@@ -2055,6 +2110,10 @@ msgstr "오디오 켜기"
 
 msgid "Audio off"
 msgstr "오디오 끄기"
+
+#, fuzzy
+msgid "Find source"
+msgstr "지난 에러 찾기"
 
 msgid "Pd"
 msgstr "Pd"

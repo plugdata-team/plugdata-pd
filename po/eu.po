@@ -8,17 +8,17 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Pure Data 0.43\n"
 "Report-Msgid-Bugs-To: pd-dev@iem.at\n"
-"POT-Creation-Date: 2024-08-28 18:42+0200\n"
-"PO-Revision-Date: 2022-10-30 07:04+0000\n"
-"Last-Translator: Max Neupert <abonnements@revolwear.com>\n"
-"Language-Team: Basque <https://hosted.weblate.org/projects/pure-data/pure-"
-"data/eu/>\n"
+"POT-Creation-Date: 2025-07-30 15:04+0200\n"
+"PO-Revision-Date: 2025-08-01 09:02+0000\n"
+"Last-Translator: umläute <dev@umlaeute.mur.at>\n"
+"Language-Team: Basque <https://hosted.weblate.org/projects/pure-data/"
+"pure-data/eu/>\n"
 "Language: eu\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=n != 1;\n"
-"X-Generator: Weblate 4.14.2-dev\n"
+"X-Generator: Weblate 5.13-dev\n"
 
 msgid "linear"
 msgstr ""
@@ -147,6 +147,9 @@ msgstr "Media"
 msgid "Window"
 msgstr "Leihoa"
 
+msgid "Tools"
+msgstr ""
+
 msgid "Help"
 msgstr "Laguntza"
 
@@ -241,6 +244,10 @@ msgstr "Irteera gailuak"
 msgid "Use Multiple Devices"
 msgstr "Gailu anitz erabili"
 
+#, fuzzy
+msgid "Rescan Devices"
+msgstr "Sarrera gailuak"
+
 msgid "Audio System"
 msgstr ""
 
@@ -315,6 +322,9 @@ msgstr "Marjina:"
 
 msgid "Y range: from"
 msgstr "Y heina:"
+
+msgid "Object:"
+msgstr "Objektu:"
 
 #, fuzzy
 msgid "Data Properties"
@@ -890,10 +900,23 @@ msgstr ""
 msgid "Unable to rename downloaded file to '%s'"
 msgstr ""
 
+#, fuzzy
+msgid "Search URLs:"
+msgstr "Bilatu"
+
+msgid "Additional search URLs"
+msgstr ""
+
+msgid "Ephemeral search URLs"
+msgstr ""
+
 msgid "Create"
 msgstr ""
 
 msgid "Check"
+msgstr ""
+
+msgid "Deken Installation Target"
 msgstr ""
 
 msgid "Installation options:"
@@ -965,6 +988,19 @@ msgstr "TAR Fitxategiak"
 #, fuzzy
 msgid "All Files"
 msgstr "Fitxategi guztiak"
+
+#, tcl-format
+msgid "Installing incompatible architecture of '%s'."
+msgstr ""
+
+msgid "Replacing library with incompatible architecture!"
+msgstr ""
+
+#, tcl-format
+msgid ""
+"Do you want to replace the library '%1$s' in '%2$s' with a version that is "
+"incompatible with your computer?"
+msgstr ""
 
 #, tcl-format
 msgid "Uninstalling previous installation of '%s'"
@@ -1156,11 +1192,11 @@ msgstr ""
 msgid "Installing to non-existent directory failed"
 msgstr ""
 
-#, tcl-format
-msgid "Unable to install to '%s'"
+msgid "Directory does not exist!"
 msgstr ""
 
-msgid "Directory does not exist!"
+#, tcl-format
+msgid "Unable to install to '%s'"
 msgstr ""
 
 msgid "Directory is not writable!"
@@ -1199,6 +1235,10 @@ msgstr ""
 
 #, tcl-format
 msgid "[deken] Platform detected: %s"
+msgstr ""
+
+#, tcl-format
+msgid "Could not find a menu for adding '%s'"
 msgstr ""
 
 #, tcl-format
@@ -1854,6 +1894,16 @@ msgstr ""
 msgid "Print..."
 msgstr "Inprimatu..."
 
+msgid "single precision"
+msgstr ""
+
+msgid "double precision"
+msgstr ""
+
+#, tcl-format
+msgid "%dbit-floats"
+msgstr ""
+
 #, tcl-format
 msgid "ignoring '%s': doesn't exist"
 msgstr ""
@@ -1866,6 +1916,15 @@ msgstr "Pd-ri Buruz"
 msgid "couldn't read \"%s\" document"
 msgstr ""
 
+msgid "New"
+msgstr "Berria"
+
+msgid "Open"
+msgstr "Ireki"
+
+msgid "Open Recent"
+msgstr "Azkenaldi Ireki"
+
 msgid "Save"
 msgstr "Gorde"
 
@@ -1873,18 +1932,30 @@ msgstr "Gorde"
 msgid "Save As..."
 msgstr "Gorde Honela..."
 
+msgid "Quit"
+msgstr "Irten"
+
+#, fuzzy
+msgid "Undo"
+msgstr "Desegin"
+
+#, fuzzy
+msgid "Redo"
+msgstr "Berregin"
+
+msgid "Cut"
+msgstr "Mostu"
+
 msgid "Paste Replace"
 msgstr ""
 
 #, fuzzy
+msgid "Select All"
+msgstr "Guztia Aukeratu"
+
+#, fuzzy
 msgid "Duplicate"
 msgstr "Bikoiztu"
-
-msgid "Zoom In"
-msgstr ""
-
-msgid "Zoom Out"
-msgstr ""
 
 msgid "Tidy Up"
 msgstr "Txukuntzea"
@@ -1895,37 +1966,19 @@ msgstr ""
 msgid "Triggerize"
 msgstr ""
 
-#, fuzzy
-msgid "Edit Mode"
-msgstr "Edizio Modua"
+msgid "Zoom In"
+msgstr ""
 
-#, fuzzy
-msgid "Undo"
-msgstr "Desegin"
-
-#, fuzzy
-msgid "Redo"
-msgstr "Berregin"
-
-msgid "New"
-msgstr "Berria"
-
-msgid "Open"
-msgstr "Ireki"
-
-msgid "Message..."
-msgstr "Mezua..."
-
-msgid "Cut"
-msgstr "Mostu"
-
-#, fuzzy
-msgid "Select All"
-msgstr "Guztia Aukeratu"
+msgid "Zoom Out"
+msgstr ""
 
 #, fuzzy
 msgid "Clear Console"
 msgstr "Kontsola Garbitu"
+
+#, fuzzy
+msgid "Edit Mode"
+msgstr "Edizio Modua"
 
 msgid "Object"
 msgstr "Objektu"
@@ -1996,8 +2049,15 @@ msgstr "Leihoa"
 msgid "Previous Window"
 msgstr ""
 
+#, fuzzy
+msgid "Close subwindows"
+msgstr "Lehioa honetan itxi?"
+
 msgid "Parent Window"
 msgstr ""
+
+msgid "Message..."
+msgstr "Mezua..."
 
 msgid "HTML Manual..."
 msgstr ""
@@ -2056,12 +2116,6 @@ msgstr ""
 msgid "Tabbed preferences"
 msgstr "Hobespenak"
 
-msgid "Open Recent"
-msgstr "Azkenaldi Ireki"
-
-msgid "Quit"
-msgstr "Irten"
-
 #, tcl-format
 msgid "Do you want to save the changes you made in '%s'?"
 msgstr "'%s' fitxategian egin dituzun aldaketak gorde nahi dituzu?"
@@ -2092,6 +2146,10 @@ msgstr "Audioaren ezarpenak"
 
 msgid "Audio off"
 msgstr ""
+
+#, fuzzy
+msgid "Find source"
+msgstr "Azken Akatsa Bilatu"
 
 msgid "Pd"
 msgstr ""
@@ -2225,10 +2283,6 @@ msgstr ""
 
 #~ msgid "Signal"
 #~ msgstr "Seinalea"
-
-#, fuzzy
-#~ msgid "Close this window??"
-#~ msgstr "Lehioa honetan itxi?"
 
 #~ msgid "Output device 3:"
 #~ msgstr "Irtendako tresna 3:"

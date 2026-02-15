@@ -6,7 +6,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Pure Data 0.43\n"
 "Report-Msgid-Bugs-To: pd-dev@iem.at\n"
-"POT-Creation-Date: 2024-08-28 18:42+0200\n"
+"POT-Creation-Date: 2025-07-30 15:04+0200\n"
 "PO-Revision-Date: 2022-10-30 07:04+0000\n"
 "Last-Translator: Max Neupert <abonnements@revolwear.com>\n"
 "Language-Team: Bulgarian <https://hosted.weblate.org/projects/pure-data/pure-"
@@ -139,6 +139,9 @@ msgstr "Македония"
 msgid "Window"
 msgstr "Прозорец"
 
+msgid "Tools"
+msgstr ""
+
 msgid "Help"
 msgstr "Помощ"
 
@@ -231,6 +234,9 @@ msgstr ""
 msgid "Use Multiple Devices"
 msgstr ""
 
+msgid "Rescan Devices"
+msgstr ""
+
 msgid "Audio System"
 msgstr ""
 
@@ -303,6 +309,9 @@ msgid "Margin:"
 msgstr "Отбелязваща линия:"
 
 msgid "Y range: from"
+msgstr ""
+
+msgid "Object:"
 msgstr ""
 
 msgid "Data Properties"
@@ -874,10 +883,23 @@ msgstr ""
 msgid "Unable to rename downloaded file to '%s'"
 msgstr ""
 
+#, fuzzy
+msgid "Search URLs:"
+msgstr "Търсене из текста"
+
+msgid "Additional search URLs"
+msgstr ""
+
+msgid "Ephemeral search URLs"
+msgstr ""
+
 msgid "Create"
 msgstr ""
 
 msgid "Check"
+msgstr ""
+
+msgid "Deken Installation Target"
 msgstr ""
 
 msgid "Installation options:"
@@ -949,6 +971,19 @@ msgstr "TAR файлове"
 #, fuzzy
 msgid "All Files"
 msgstr "Всички файлове"
+
+#, tcl-format
+msgid "Installing incompatible architecture of '%s'."
+msgstr ""
+
+msgid "Replacing library with incompatible architecture!"
+msgstr ""
+
+#, tcl-format
+msgid ""
+"Do you want to replace the library '%1$s' in '%2$s' with a version that is "
+"incompatible with your computer?"
+msgstr ""
 
 #, tcl-format
 msgid "Uninstalling previous installation of '%s'"
@@ -1137,11 +1172,11 @@ msgstr ""
 msgid "Installing to non-existent directory failed"
 msgstr ""
 
-#, tcl-format
-msgid "Unable to install to '%s'"
+msgid "Directory does not exist!"
 msgstr ""
 
-msgid "Directory does not exist!"
+#, tcl-format
+msgid "Unable to install to '%s'"
 msgstr ""
 
 msgid "Directory is not writable!"
@@ -1180,6 +1215,10 @@ msgstr ""
 
 #, tcl-format
 msgid "[deken] Platform detected: %s"
+msgstr ""
+
+#, tcl-format
+msgid "Could not find a menu for adding '%s'"
 msgstr ""
 
 #, fuzzy, tcl-format
@@ -1833,6 +1872,16 @@ msgstr ""
 msgid "Print..."
 msgstr "_Редактиране..."
 
+msgid "single precision"
+msgstr ""
+
+msgid "double precision"
+msgstr ""
+
+#, tcl-format
+msgid "%dbit-floats"
+msgstr ""
+
 #, tcl-format
 msgid "ignoring '%s': doesn't exist"
 msgstr ""
@@ -1845,6 +1894,15 @@ msgstr "_Относно"
 msgid "couldn't read \"%s\" document"
 msgstr ""
 
+msgid "New"
+msgstr "Ново"
+
+msgid "Open"
+msgstr "Отваряне"
+
+msgid "Open Recent"
+msgstr ""
+
 msgid "Save"
 msgstr "Запазване"
 
@@ -1852,20 +1910,29 @@ msgstr "Запазване"
 msgid "Save As..."
 msgstr "Записване като..."
 
+msgid "Quit"
+msgstr "Изход"
+
+#, fuzzy
+msgid "Undo"
+msgstr "Уганда"
+
+msgid "Redo"
+msgstr "Червено"
+
+msgid "Cut"
+msgstr ""
+
 msgid "Paste Replace"
 msgstr ""
 
 #, fuzzy
+msgid "Select All"
+msgstr "Изтрива всички"
+
+#, fuzzy
 msgid "Duplicate"
 msgstr "Дата"
-
-#, fuzzy
-msgid "Zoom In"
-msgstr "Долу"
-
-#, fuzzy
-msgid "Zoom Out"
-msgstr "Долу"
 
 msgid "Tidy Up"
 msgstr ""
@@ -1877,35 +1944,20 @@ msgid "Triggerize"
 msgstr ""
 
 #, fuzzy
-msgid "Edit Mode"
-msgstr "Режим \"Редакция\""
+msgid "Zoom In"
+msgstr "Долу"
 
 #, fuzzy
-msgid "Undo"
-msgstr "Уганда"
-
-msgid "Redo"
-msgstr "Червено"
-
-msgid "New"
-msgstr "Ново"
-
-msgid "Open"
-msgstr "Отваряне"
-
-msgid "Message..."
-msgstr "Съобщение..."
-
-msgid "Cut"
-msgstr ""
-
-#, fuzzy
-msgid "Select All"
-msgstr "Изтрива всички"
+msgid "Zoom Out"
+msgstr "Долу"
 
 #, fuzzy
 msgid "Clear Console"
 msgstr "Изчистване на списъка"
+
+#, fuzzy
+msgid "Edit Mode"
+msgstr "Режим \"Редакция\""
 
 msgid "Object"
 msgstr ""
@@ -1977,8 +2029,15 @@ msgid "Previous Window"
 msgstr "Прозореца за изпращане на файлове"
 
 #, fuzzy
+msgid "Close subwindows"
+msgstr "Затваряне на този таб/прозорец"
+
+#, fuzzy
 msgid "Parent Window"
 msgstr "Прозореца за изпращане на файлове"
+
+msgid "Message..."
+msgstr "Съобщение..."
 
 msgid "HTML Manual..."
 msgstr ""
@@ -2036,12 +2095,6 @@ msgstr ""
 msgid "Tabbed preferences"
 msgstr "Настройки"
 
-msgid "Open Recent"
-msgstr ""
-
-msgid "Quit"
-msgstr "Изход"
-
 #, tcl-format
 msgid "Do you want to save the changes you made in '%s'?"
 msgstr ""
@@ -2070,6 +2123,9 @@ msgid "Audio on"
 msgstr ""
 
 msgid "Audio off"
+msgstr ""
+
+msgid "Find source"
 msgstr ""
 
 msgid "Pd"
@@ -2147,10 +2203,6 @@ msgstr ""
 #, fuzzy
 #~ msgid "for:"
 #~ msgstr "Порт:"
-
-#, fuzzy
-#~ msgid "Close this window??"
-#~ msgstr "Затваряне на този таб/прозорец"
 
 #, fuzzy
 #~ msgid "Filters"

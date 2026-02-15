@@ -78,6 +78,18 @@ int pd_snprintf(char *buf, size_t size, const char *fmt, ...)
 
 #endif
 
+#ifdef HAVE_STRNLEN
+size_t pd_strnlen(const char*s, size_t maxlen) {
+    return strnlen(s, maxlen);
+}
+#else
+size_t pd_strnlen(const char*s, size_t maxlen) {
+    size_t i;
+    for(i=0; i<maxlen && *s++; i++);
+    return i;
+}
+#endif
+
 /* escape characters for tcl/tk */
 char* pdgui_strnescape(char *dst, size_t dstlen, const char *src, size_t srclen)
 {
@@ -206,6 +218,21 @@ void startlogpost(const void *object, const int level, const char *fmt, ...)
     dologpost(object, level, buf);
 }
 
+/* pd_post is the same as post but less likely to give name clashes when
+used in a dynamic library such as a VST plug-in */
+void pd_post(const char *fmt, ...)
+{
+    char buf[MAXPDSTRING];
+    va_list ap;
+    t_int arg[8];
+    int i;
+    va_start(ap, fmt);
+    pd_vsnprintf(buf, MAXPDSTRING-1, fmt, ap);
+    va_end(ap);
+    strcat(buf, "\n");
+
+    dopost(buf);
+}
 
 void post(const char *fmt, ...)
 {
@@ -313,6 +340,7 @@ void verbose(int level, const char *fmt, ...)
 
 static const void *error_object;
 static char error_string[256];
+
 void canvas_finderror(const void *object);
 
 void pd_error(const void *object, const char *fmt, ...)
@@ -330,10 +358,11 @@ void pd_error(const void *object, const char *fmt, ...)
 
     doerror(object, buf);
 
-    if(object)
+    if(object) {
         error_object = object;
-    strncpy(error_string, buf, 256);
-    error_string[255] = 0;
+        strncpy(error_string, buf, 256);
+        error_string[255] = 0;
+    }
 
     if (object && !saidit)
     {

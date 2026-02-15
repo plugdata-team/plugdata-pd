@@ -137,7 +137,7 @@ typedef struct _block
     int x_overlap;
     int x_phase;        /* from 0 to period-1; when zero we run the block */
     int x_period;       /* submultiple of containing canvas */
-    int x_frequency;    /* supermultiple of comtaining canvas */
+    int x_frequency;    /* supermultiple of containing canvas */
     int x_count;        /* number of times parent block has called us */
     int x_chainonset;   /* beginning of code in DSP chain */
     int x_blocklength;  /* length of dspchain for this block */
@@ -147,14 +147,15 @@ typedef struct _block
     char x_reblock;     /* true if inlets and outlets are reblocking */
     int x_upsample;     /* upsampling-factor */
     int x_downsample;   /* downsampling-factor */
+    int x_offset;       /* offset block calculation */
     int x_return;       /* stop right after this block (for one-shots) */
 } t_block;
 
 static void block_set(t_block *x, t_floatarg fvecsize, t_floatarg foverlap,
-    t_floatarg fupsample);
+    t_floatarg fupsample, t_floatarg foffset);
 
 static void *block_new(t_floatarg fvecsize, t_floatarg foverlap,
-                       t_floatarg fupsample)
+                       t_floatarg fupsample, t_floatarg foffset)
 {
     t_block *x = (t_block *)pd_new(block_class);
     x->x_phase = 0;
@@ -162,16 +163,17 @@ static void *block_new(t_floatarg fvecsize, t_floatarg foverlap,
     x->x_frequency = 1;
     x->x_switched = 0;
     x->x_switchon = 1;
-    block_set(x, fvecsize, foverlap, fupsample);
+    block_set(x, fvecsize, foverlap, fupsample, foffset);
     return (x);
 }
 
 static void block_set(t_block *x, t_floatarg fcalcsize, t_floatarg foverlap,
-    t_floatarg fupsample)
+    t_floatarg fupsample, t_floatarg foffset)
 {
     int upsample, downsample;
     int calcsize = fcalcsize;
     int overlap = foverlap;
+    int offset = foffset;
     int dspstate = canvas_suspend_dsp();
     if (overlap < 1)
         overlap = 1;
@@ -182,12 +184,12 @@ static void block_set(t_block *x, t_floatarg fcalcsize, t_floatarg foverlap,
         upsample = downsample = 1;
     else if (fupsample >= 1) {
         upsample = fupsample;
-        downsample   = 1;
+        downsample = 1;
     }
     else
     {
         downsample = 1.0 / fupsample;
-        upsample   = 1;
+        upsample = 1;
     }
     if (overlap != (1 << ilog2(overlap)))
     {
@@ -205,10 +207,16 @@ static void block_set(t_block *x, t_floatarg fcalcsize, t_floatarg foverlap,
         upsample = 1;
     }
 
+    if (offset > calcsize)
+        offset %= calcsize;
+    else if (offset < 0)
+        offset = 0;
+
     x->x_calcsize = calcsize;
     x->x_overlap = overlap;
     x->x_upsample = upsample;
     x->x_downsample = downsample;
+    x->x_offset = offset;
     canvas_resume_dsp(dspstate);
 }
 
@@ -245,9 +253,9 @@ int canvas_getsignallength(t_canvas *x)
 }
 
 static void *switch_new(t_floatarg fvecsize, t_floatarg foverlap,
-                        t_floatarg fupsample)
+                        t_floatarg fupsample, t_floatarg foffset)
 {
-    t_block *x = (t_block *)(block_new(fvecsize, foverlap, fupsample));
+    t_block *x = (t_block *)block_new(fvecsize, foverlap, fupsample, foffset);
     x->x_switched = 1;
     x->x_switchon = 0;
     return (x);
@@ -338,11 +346,11 @@ static void block_dsp(t_block *x, t_signal **sp)
 void block_tilde_setup(void)
 {
     block_class = class_new(gensym("block~"), (t_newmethod)block_new, 0,
-            sizeof(t_block), 0, A_DEFFLOAT, A_DEFFLOAT, A_DEFFLOAT, 0);
+            sizeof(t_block), 0, A_DEFFLOAT, A_DEFFLOAT, A_DEFFLOAT, A_DEFFLOAT, 0);
     class_addcreator((t_newmethod)switch_new, gensym("switch~"),
-        A_DEFFLOAT, A_DEFFLOAT, A_DEFFLOAT, 0);
+        A_DEFFLOAT, A_DEFFLOAT, A_DEFFLOAT, A_DEFFLOAT, 0);
     class_addmethod(block_class, (t_method)block_set, gensym("set"),
-        A_DEFFLOAT, A_DEFFLOAT, A_DEFFLOAT, 0);
+        A_DEFFLOAT, A_DEFFLOAT, A_DEFFLOAT, A_DEFFLOAT, 0);
     class_addmethod(block_class, (t_method)block_dsp, gensym("dsp"), A_CANT, 0);
     class_addfloat(block_class, block_float);
     class_addbang(block_class, block_bang);
@@ -1085,7 +1093,7 @@ void ugen_done_graph(t_dspcontext *dc)
     t_dspcontext *parent_context = dc->dc_parentcontext;
     t_float parent_srate;
     int parent_vecsize, parent_overlap;
-    int period, frequency, calcsize;
+    int period, frequency, calcsize, offset;
     t_float srate;
     int chainblockbegin;    /* DSP chain onset before block prolog code */
     int chainblockend;      /* and after block epilog code */
@@ -1118,7 +1126,8 @@ void ugen_done_graph(t_dspcontext *dc)
         if (pd_class(zz) == block_class)
         {
             if (blk)
-                pd_error(blk, "conflicting block~ and/or switch~ objects in same window");
+                pd_error(blk,
+                    "conflicting block~ and/or switch~ objects in same window");
             else blk = (t_block *)zz;
         }
     }
@@ -1149,16 +1158,22 @@ void ugen_done_graph(t_dspcontext *dc)
         upsample   = blk->x_upsample;
         if (downsample > parent_vecsize)
             downsample = parent_vecsize;
-        period = (calcsize * downsample)/
+        period = (calcsize * downsample) /
             (parent_vecsize * realoverlap * upsample);
-        frequency = (parent_vecsize * realoverlap * upsample)/
+        frequency = (parent_vecsize * realoverlap * upsample) /
             (calcsize * downsample);
         srate = parent_srate * realoverlap * upsample / downsample;
         if (period < 1) period = 1;
         if (frequency < 1) frequency = 1;
+        if (blk->x_offset)
+                /* NB: add one full period to avoid negative phase values! */
+            offset = period - (((blk->x_offset * downsample) /
+                (parent_vecsize * realoverlap * upsample)) % period);
+        else
+            offset = 0;
         blk->x_frequency = frequency;
         blk->x_period = period;
-        blk->x_phase = THIS->u_phase & (period - 1);
+        blk->x_phase = (THIS->u_phase + offset) & (period - 1);
         if (! parent_context || (realoverlap != 1) ||
             (calcsize != parent_vecsize) ||
                 (downsample != 1) || (upsample != 1))
@@ -1173,6 +1188,7 @@ void ugen_done_graph(t_dspcontext *dc)
         calcsize = parent_vecsize;
         downsample = upsample = 1;
         period = frequency = 1;
+        offset = 0;
         if (!parent_context) reblock = 1;
         switched = 0;
     }
@@ -1204,7 +1220,51 @@ void ugen_done_graph(t_dspcontext *dc)
                 if (THIS->u_loud) post("set %lx->%lx", *sigp,
                     (*sigp)->s_borrowedfrom);
             }
+                /* catch a special situation where a DSP loop prevented this
+                outlet from being scheduled.  In this case just make a new
+                signal. */
+            else if ((*sigp)->s_nchans < 0)
+                *sigp = signal_new(parent_vecsize, 1, parent_srate, 0);
         }
+    }
+
+        /* JMZ
+           Pd allows for arbitrary block-sizes,
+           but the reblocking fails catastrophically if the parent vectorsize
+           and the child vectorsize do not align (that is: one is not an integer
+           multiple of the other)
+           since we only need to reblock if there are inlet~s or outlet~s,
+           we just unschedule patches with a bad blocksize AND iolet~s.
+         */
+    if (blk
+       && (dc->dc_ninlets || dc->dc_noutlets)
+       && ((parent_vecsize > calcsize)?(parent_vecsize % calcsize):(calcsize % parent_vecsize))
+       )
+    {
+        pd_error(blk, "%s: invalid reblocking from %d to %d detected (canvas was not scheduled)",
+                 switched?"switch~":"block~",
+                 parent_vecsize, calcsize);
+        for (u = dc->dc_ugenlist; u; u = u->u_next)
+        {
+            t_pd *zz = &u->u_obj->ob_pd;
+            if (pd_class(zz) == voutlet_class)
+            {
+                struct _voutlet *zz_out = (struct _voutlet *)zz;
+                t_signal **outsigs = dc->dc_iosigs;
+                if (outsigs) {
+                    outsigs += dc->dc_ninlets;
+                    voutlet_dspprolog(zz_out,
+                                      outsigs, calcsize,
+                                      THIS->u_phase + offset, period, frequency,
+                                      1, 1, 0, 1);
+                    voutlet_dspepilog(zz_out,
+                                      outsigs, calcsize,
+                                      THIS->u_phase + offset, period, frequency,
+                                      1, 1, 0, 1);
+                }
+            }
+        }
+        goto cleanup;
     }
 
     if (THIS->u_loud)
@@ -1226,11 +1286,11 @@ void ugen_done_graph(t_dspcontext *dc)
 
         if (pd_class(zz) == vinlet_class)
             vinlet_dspprolog((struct _vinlet *)zz,
-                dc->dc_iosigs, calcsize, THIS->u_phase, period,
+                dc->dc_iosigs, calcsize, THIS->u_phase + offset, period,
                     frequency, downsample, upsample, reblock, switched);
         else if (pd_class(zz) == voutlet_class)
             voutlet_dspprolog((struct _voutlet *)zz,
-                outsigs, calcsize, THIS->u_phase, period, frequency,
+                outsigs, calcsize, THIS->u_phase + offset, period, frequency,
                     downsample, upsample, reblock, switched);
     }
     chainblockbegin = THIS->u_dspchainsize;
@@ -1306,7 +1366,7 @@ void ugen_done_graph(t_dspcontext *dc)
             t_signal **iosigs = dc->dc_iosigs;
             if (iosigs) iosigs += dc->dc_ninlets;
             voutlet_dspepilog((struct _voutlet *)zz,
-                iosigs, calcsize, THIS->u_phase, period, frequency,
+                iosigs, calcsize, THIS->u_phase + offset, period, frequency,
                     downsample, upsample, reblock, switched);
         }
     }
@@ -1329,6 +1389,7 @@ void ugen_done_graph(t_dspcontext *dc)
         post("... ugen_done_graph done.");
     }
         /* now delete everything. */
+ cleanup:
     while (dc->dc_ugenlist)
     {
         for (uout = dc->dc_ugenlist->u_out, n = dc->dc_ugenlist->u_nout;

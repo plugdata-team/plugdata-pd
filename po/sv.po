@@ -6,15 +6,17 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Pure Data 0.43\n"
 "Report-Msgid-Bugs-To: pd-dev@iem.at\n"
-"POT-Creation-Date: 2024-08-28 18:42+0200\n"
-"PO-Revision-Date: 2009-08-22 11:20+0100\n"
-"Last-Translator: Johannes Burström <johannes@ljud.org>\n"
-"Language-Team: Swedish <https://hosted.weblate.org/projects/pure-data/pure-"
-"data/sv/>\n"
+"POT-Creation-Date: 2025-07-30 15:04+0200\n"
+"PO-Revision-Date: 2025-08-01 09:02+0000\n"
+"Last-Translator: umläute <dev@umlaeute.mur.at>\n"
+"Language-Team: Swedish <https://hosted.weblate.org/projects/pure-data/"
+"pure-data/sv/>\n"
 "Language: sv\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=n != 1;\n"
+"X-Generator: Weblate 5.13-dev\n"
 "X-Poedit-Language: Swedish\n"
 "X-Poedit-Country: Sweden\n"
 "X-Poedit-SourceCharset: utf-8\n"
@@ -138,6 +140,9 @@ msgstr "Media"
 msgid "Window"
 msgstr "Fönster"
 
+msgid "Tools"
+msgstr ""
+
 msgid "Help"
 msgstr "Hjälp"
 
@@ -228,6 +233,9 @@ msgstr ""
 msgid "Use Multiple Devices"
 msgstr ""
 
+msgid "Rescan Devices"
+msgstr ""
+
 msgid "Audio System"
 msgstr ""
 
@@ -306,6 +314,9 @@ msgstr "Marginal:"
 #, fuzzy
 msgid "Y range: from"
 msgstr "Omfång (y), från:"
+
+msgid "Object:"
+msgstr "Objekt:"
 
 #, fuzzy
 msgid "Data Properties"
@@ -873,10 +884,23 @@ msgstr ""
 msgid "Unable to rename downloaded file to '%s'"
 msgstr ""
 
+#, fuzzy
+msgid "Search URLs:"
+msgstr "Sök i"
+
+msgid "Additional search URLs"
+msgstr ""
+
+msgid "Ephemeral search URLs"
+msgstr ""
+
 msgid "Create"
 msgstr ""
 
 msgid "Check"
+msgstr ""
+
+msgid "Deken Installation Target"
 msgstr ""
 
 msgid "Installation options:"
@@ -948,6 +972,19 @@ msgstr "TAR-Filer"
 #, fuzzy
 msgid "All Files"
 msgstr "Alla filer"
+
+#, tcl-format
+msgid "Installing incompatible architecture of '%s'."
+msgstr ""
+
+msgid "Replacing library with incompatible architecture!"
+msgstr ""
+
+#, tcl-format
+msgid ""
+"Do you want to replace the library '%1$s' in '%2$s' with a version that is "
+"incompatible with your computer?"
+msgstr ""
 
 #, tcl-format
 msgid "Uninstalling previous installation of '%s'"
@@ -1140,11 +1177,11 @@ msgstr ""
 msgid "Installing to non-existent directory failed"
 msgstr ""
 
-#, tcl-format
-msgid "Unable to install to '%s'"
+msgid "Directory does not exist!"
 msgstr ""
 
-msgid "Directory does not exist!"
+#, tcl-format
+msgid "Unable to install to '%s'"
 msgstr ""
 
 msgid "Directory is not writable!"
@@ -1183,6 +1220,10 @@ msgstr ""
 
 #, tcl-format
 msgid "[deken] Platform detected: %s"
+msgstr ""
+
+#, tcl-format
+msgid "Could not find a menu for adding '%s'"
 msgstr ""
 
 #, fuzzy, tcl-format
@@ -1837,6 +1878,16 @@ msgstr ""
 msgid "Print..."
 msgstr "Skriv ut..."
 
+msgid "single precision"
+msgstr ""
+
+msgid "double precision"
+msgstr ""
+
+#, tcl-format
+msgid "%dbit-floats"
+msgstr ""
+
 #, tcl-format
 msgid "ignoring '%s': doesn't exist"
 msgstr ""
@@ -1848,25 +1899,41 @@ msgstr "Om Pd"
 msgid "couldn't read \"%s\" document"
 msgstr ""
 
+msgid "New"
+msgstr "Ny"
+
+msgid "Open"
+msgstr "Öppna"
+
+msgid "Open Recent"
+msgstr "Öppna senaste"
+
 msgid "Save"
 msgstr "Spara"
 
 msgid "Save As..."
 msgstr "Spara som..."
 
+msgid "Quit"
+msgstr "Avsluta"
+
+msgid "Undo"
+msgstr "Ångra"
+
+msgid "Redo"
+msgstr "Gör om"
+
+msgid "Cut"
+msgstr "Klipp ut"
+
 msgid "Paste Replace"
 msgstr ""
 
+msgid "Select All"
+msgstr "Markera allt"
+
 msgid "Duplicate"
 msgstr "Duplicera"
-
-#, fuzzy
-msgid "Zoom In"
-msgstr "Zooma"
-
-#, fuzzy
-msgid "Zoom Out"
-msgstr "Zooma"
 
 msgid "Tidy Up"
 msgstr "Städa upp"
@@ -1877,34 +1944,20 @@ msgstr ""
 msgid "Triggerize"
 msgstr ""
 
-msgid "Edit Mode"
-msgstr "Redigeringsläge"
-
-msgid "Undo"
-msgstr "Ångra"
-
-msgid "Redo"
-msgstr "Gör om"
-
-msgid "New"
-msgstr "Ny"
-
-msgid "Open"
-msgstr "Öppna"
+#, fuzzy
+msgid "Zoom In"
+msgstr "Zooma"
 
 #, fuzzy
-msgid "Message..."
-msgstr "Meddelande"
-
-msgid "Cut"
-msgstr "Klipp ut"
-
-msgid "Select All"
-msgstr "Markera allt"
+msgid "Zoom Out"
+msgstr "Zooma"
 
 #, fuzzy
 msgid "Clear Console"
 msgstr "Rensa konsoll"
+
+msgid "Edit Mode"
+msgstr "Redigeringsläge"
 
 msgid "Object"
 msgstr "Objekt"
@@ -1973,8 +2026,16 @@ msgstr "Föräldrafönster"
 msgid "Previous Window"
 msgstr "Föräldrafönster"
 
+#, fuzzy
+msgid "Close subwindows"
+msgstr "Stäng fönstret?"
+
 msgid "Parent Window"
 msgstr "Föräldrafönster"
+
+#, fuzzy
+msgid "Message..."
+msgstr "Meddelande"
 
 msgid "HTML Manual..."
 msgstr "HTML-manual..."
@@ -2031,12 +2092,6 @@ msgstr ""
 msgid "Tabbed preferences"
 msgstr "Inställningar"
 
-msgid "Open Recent"
-msgstr "Öppna senaste"
-
-msgid "Quit"
-msgstr "Avsluta"
-
 #, tcl-format
 msgid "Do you want to save the changes you made in '%s'?"
 msgstr "Vill du spara dina ändringar i '%s'?"
@@ -2066,6 +2121,10 @@ msgstr ""
 
 msgid "Audio off"
 msgstr ""
+
+#, fuzzy
+msgid "Find source"
+msgstr "Sök senaste fel"
 
 msgid "Pd"
 msgstr ""
@@ -2171,6 +2230,3 @@ msgstr ""
 #, fuzzy
 #~ msgid "Filters"
 #~ msgstr "Fil"
-
-#~ msgid "Close this window??"
-#~ msgstr "Stäng fönstret?"

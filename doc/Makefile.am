@@ -34,6 +34,7 @@ nobase_dist_libpd_DATA = \
      ./1.manual/resources/2.1.12.png \
      ./1.manual/resources/2.1.13.png \
      ./1.manual/resources/2.1.14.png \
+     ./1.manual/resources/2.1.15.png \
      ./1.manual/resources/2.1.2.png \
      ./1.manual/resources/2.1.3.png \
      ./1.manual/resources/2.1.4.png \
@@ -353,6 +354,7 @@ nobase_dist_libpd_DATA = \
      ./5.reference/clone-abs-a.pd \
      ./5.reference/clone-abs-b.pd \
      ./5.reference/clone-abs-c.pd \
+     ./5.reference/clone-abs-d.pd \
      ./5.reference/clone-help.pd \
      ./5.reference/cnv-help.pd \
      ./5.reference/cos~-help.pd \
@@ -526,6 +528,7 @@ nobase_dist_libpd_DATA = \
      ./8.topics/slop-tilde-1-curves.png \
      ./8.topics/slop-tilde.htm \
      ./sound/bell.aiff \
+     ./sound/stereo.wav \
      ./sound/voice.wav \
      ./sound/voice2.wav \
      $(empty)

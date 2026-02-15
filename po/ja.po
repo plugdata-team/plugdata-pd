@@ -7,17 +7,17 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Pure Data 0.53.0\n"
 "Report-Msgid-Bugs-To: pd-dev@iem.at\n"
-"POT-Creation-Date: 2024-08-28 18:42+0200\n"
-"PO-Revision-Date: 2024-07-08 17:20+0200\n"
+"POT-Creation-Date: 2025-07-30 15:04+0200\n"
+"PO-Revision-Date: 2025-08-01 09:02+0000\n"
 "Last-Translator: umläute <dev@umlaeute.mur.at>\n"
-"Language-Team: Japanese <https://hosted.weblate.org/projects/pure-data/pure-"
-"data/ja/>\n"
+"Language-Team: Japanese <https://hosted.weblate.org/projects/pure-data/"
+"pure-data/ja/>\n"
 "Language: ja\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=1; plural=0;\n"
-"X-Generator: Poedit 3.4.4\n"
+"X-Generator: Weblate 5.13-dev\n"
 
 msgid "linear"
 msgstr "線形"
@@ -132,6 +132,9 @@ msgstr "メディア"
 msgid "Window"
 msgstr "ウィンドウ"
 
+msgid "Tools"
+msgstr ""
+
 msgid "Help"
 msgstr "ヘルプ"
 
@@ -217,6 +220,10 @@ msgstr "出力デバイス"
 msgid "Use Multiple Devices"
 msgstr "複数のデバイスを使用する"
 
+#, fuzzy
+msgid "Rescan Devices"
+msgstr "入力デバイス"
+
 msgid "Audio System"
 msgstr ""
 
@@ -288,6 +295,9 @@ msgstr "余白:"
 
 msgid "Y range: from"
 msgstr "Y範囲: はじまり"
+
+msgid "Object:"
+msgstr "オブジェクト:"
 
 msgid "Data Properties"
 msgstr "データプロパティ"
@@ -847,11 +857,26 @@ msgstr "不明なファイル '%s' を削除できません"
 msgid "Unable to rename downloaded file to '%s'"
 msgstr "ダウンロードしたファイルの名前を '%s' に変更できません"
 
+#, fuzzy
+msgid "Search URLs:"
+msgstr "検索結果"
+
+#, fuzzy
+msgid "Additional search URLs"
+msgstr "検索パスに %s を追加しました"
+
+msgid "Ephemeral search URLs"
+msgstr ""
+
 msgid "Create"
 msgstr "作成"
 
 msgid "Check"
 msgstr "チェック"
+
+#, fuzzy
+msgid "Deken Installation Target"
+msgstr "インストールに失敗!"
 
 msgid "Installation options:"
 msgstr "インストールオプション:"
@@ -921,6 +946,19 @@ msgstr "TAR ファイル"
 
 msgid "All Files"
 msgstr "全てのファイル"
+
+#, tcl-format
+msgid "Installing incompatible architecture of '%s'."
+msgstr ""
+
+msgid "Replacing library with incompatible architecture!"
+msgstr ""
+
+#, tcl-format
+msgid ""
+"Do you want to replace the library '%1$s' in '%2$s' with a version that is "
+"incompatible with your computer?"
+msgstr ""
 
 #, tcl-format
 msgid "Uninstalling previous installation of '%s'"
@@ -1120,12 +1158,12 @@ msgstr ""
 msgid "Installing to non-existent directory failed"
 msgstr "存在しないディレクトリのためインストールに失敗しました"
 
+msgid "Directory does not exist!"
+msgstr "ディレクトリが存在しません!"
+
 #, tcl-format
 msgid "Unable to install to '%s'"
 msgstr "'%s' にインストールできません"
-
-msgid "Directory does not exist!"
-msgstr "ディレクトリが存在しません!"
 
 msgid "Directory is not writable!"
 msgstr "ディレクトリが書き込み禁止になっています!"
@@ -1166,6 +1204,10 @@ msgstr ""
 #, tcl-format
 msgid "[deken] Platform detected: %s"
 msgstr "[deken] プラットフォームが検出されました: %s"
+
+#, tcl-format
+msgid "Could not find a menu for adding '%s'"
+msgstr ""
 
 #, tcl-format
 msgid "Searching on %s..."
@@ -1835,6 +1877,16 @@ msgstr "デフォルトのプラットフォーム: %s"
 msgid "Print..."
 msgstr "プリント..."
 
+msgid "single precision"
+msgstr ""
+
+msgid "double precision"
+msgstr ""
+
+#, tcl-format
+msgid "%dbit-floats"
+msgstr ""
+
 #, tcl-format
 msgid "ignoring '%s': doesn't exist"
 msgstr "無視 '%s': 存在しません"
@@ -1846,23 +1898,41 @@ msgstr "Pdについて"
 msgid "couldn't read \"%s\" document"
 msgstr "\"%s \"ドキュメントを読み込みできません"
 
+msgid "New"
+msgstr "新規"
+
+msgid "Open"
+msgstr "開く"
+
+msgid "Open Recent"
+msgstr "最近使った項目を開く"
+
 msgid "Save"
 msgstr "保存"
 
 msgid "Save As..."
 msgstr "名前を付けて保存..."
 
+msgid "Quit"
+msgstr "終了"
+
+msgid "Undo"
+msgstr "取り消し"
+
+msgid "Redo"
+msgstr "やり直し"
+
+msgid "Cut"
+msgstr "カット"
+
 msgid "Paste Replace"
 msgstr "ペーストして置き換え"
 
+msgid "Select All"
+msgstr "すべてを選択"
+
 msgid "Duplicate"
 msgstr "複製"
-
-msgid "Zoom In"
-msgstr "ズームイン"
-
-msgid "Zoom Out"
-msgstr "ズームアウト"
 
 msgid "Tidy Up"
 msgstr "整理する"
@@ -1873,32 +1943,17 @@ msgstr "選択箇所を接続・切断"
 msgid "Triggerize"
 msgstr "トリガーオブジェクトの自動生成"
 
-msgid "Edit Mode"
-msgstr "編集モード"
+msgid "Zoom In"
+msgstr "ズームイン"
 
-msgid "Undo"
-msgstr "取り消し"
-
-msgid "Redo"
-msgstr "やり直し"
-
-msgid "New"
-msgstr "新規"
-
-msgid "Open"
-msgstr "開く"
-
-msgid "Message..."
-msgstr "メッセージ..."
-
-msgid "Cut"
-msgstr "カット"
-
-msgid "Select All"
-msgstr "すべてを選択"
+msgid "Zoom Out"
+msgstr "ズームアウト"
 
 msgid "Clear Console"
 msgstr "コンソールクリア"
+
+msgid "Edit Mode"
+msgstr "編集モード"
 
 msgid "Object"
 msgstr "オブジェクト"
@@ -1963,8 +2018,14 @@ msgstr "次のウインドウ"
 msgid "Previous Window"
 msgstr "前のウィンドウ"
 
+msgid "Close subwindows"
+msgstr ""
+
 msgid "Parent Window"
 msgstr "親ウィンドウ"
+
+msgid "Message..."
+msgstr "メッセージ..."
 
 msgid "HTML Manual..."
 msgstr "HTMLマニュアル..."
@@ -2020,12 +2081,6 @@ msgstr "全てを忘れる..."
 msgid "Tabbed preferences"
 msgstr "環境設定"
 
-msgid "Open Recent"
-msgstr "最近使った項目を開く"
-
-msgid "Quit"
-msgstr "終了"
-
 #, tcl-format
 msgid "Do you want to save the changes you made in '%s'?"
 msgstr "'%s'で行った変更を保存しますか？"
@@ -2055,6 +2110,10 @@ msgstr "オーディオ オン"
 
 msgid "Audio off"
 msgstr "オーディオ オフ"
+
+#, fuzzy
+msgid "Find source"
+msgstr "最後のエラーを検索する"
 
 msgid "Pd"
 msgstr "Pd"

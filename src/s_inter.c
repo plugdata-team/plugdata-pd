@@ -87,14 +87,14 @@ static int stderr_isatty;
 #endif
 
 #ifndef WISH
-#    if defined _WIN32
-#        define WISH "wish85.exe"
-#    elif defined __APPLE__
-// leave undefined to use dummy search path, otherwise
-// this should be a full path to wish on mac
-#    else
-#        define WISH "wish"
-#    endif
+# if defined _WIN32
+#  define WISH "wish86.exe"
+# elif defined __APPLE__
+   // leave undefined to use dummy search path, otherwise
+   // this should be a full path to wish on mac
+#else
+#  define WISH "wish"
+# endif
 #endif
 
 #define LOCALHOST "localhost"
@@ -131,6 +131,16 @@ typedef struct _guiqueue
     struct _guiqueue *gq_next;
 } t_guiqueue;
 
+#if PDTHREADS
+typedef struct _messqueue
+{
+    t_pd *m_obj;
+    void *m_data;
+    t_messfn m_fn;
+    struct _messqueue *m_next;
+} t_messqueue;
+#endif
+
 struct _instanceinter
 {
     int i_nfdpoll;
@@ -153,6 +163,12 @@ struct _instanceinter
 #ifdef _WIN32
     LARGE_INTEGER i_inittime;
     double i_freq;
+#endif
+#if PDTHREADS
+    pthread_mutex_t i_mutex;
+    pthread_mutex_t i_messqueue_mutex;
+    t_messqueue *i_messqueue_head;
+    t_messqueue *i_messqueue_tail;
 #endif
 
     unsigned char i_recvbuf[NET_MAXPACKETSIZE];
@@ -1305,6 +1321,10 @@ static int sys_do_startgui(const char *libdir)
             sockfd = socket(ai->ai_family, ai->ai_socktype, ai->ai_protocol);
             if (sockfd < 0)
                 continue;
+#ifndef _WIN32
+            if(fcntl(sockfd, F_SETFD, FD_CLOEXEC) < 0)
+                perror("close-on-exec");
+#endif
         #if 1
             if (socket_set_boolopt(sockfd, IPPROTO_TCP, TCP_NODELAY, 1) < 0)
                 fprintf(stderr, "setsockopt (TCP_NODELAY) failed");
@@ -1359,6 +1379,10 @@ static int sys_do_startgui(const char *libdir)
             sockfd = socket(ai->ai_family, ai->ai_socktype, ai->ai_protocol);
             if (sockfd < 0)
                 continue;
+#ifndef _WIN32
+            if(fcntl(sockfd, F_SETFD, FD_CLOEXEC) < 0)
+                perror("close-on-exec");
+#endif
         #if 1
             /* ask OS to allow another process to reopen this port after we close it */
             if (socket_set_boolopt(sockfd, SOL_SOCKET, SO_REUSEADDR, 1) < 0)
@@ -1671,8 +1695,10 @@ void sys_setrealtime(const char *libdir)
                 close our copy - otherwise it might hang waiting for some
                 stupid child process (as seems to happen if jackd auto-starts
                 for us.) */
+#ifndef _WIN32
             if(fcntl(pipe9[1], F_SETFD, FD_CLOEXEC) < 0)
               perror("close-on-exec");
+#endif
             sys_watchfd = pipe9[1];
                 /* We also have to start the ping loop in the GUI;
                 this is done later when the socket is open. */
@@ -1788,7 +1814,10 @@ int sys_startgui(const char *libdir)
     INTER->i_guihead = INTER->i_guitail = 0;
     INTER->i_waitingforping = 0;
     if (sys_do_startgui(libdir))
+    {
+        INTER->i_havetkproc = 0;
         return (-1);
+    }
     return (0);
 }
 
@@ -1798,7 +1827,10 @@ void sys_stopgui(void)
     t_canvas *x;
     for (x = pd_getcanvaslist(); x; x = x->gl_next)
         canvas_vis(x, 0);
-
+    sys_vgui("%s", "exit\n");
+        /* flush twice just in case contents in FIFO wrapped around: */
+    sys_flushtogui();
+    sys_flushtogui();
     if (INTER->i_guisock >= 0)
     {
         sys_closesocket(INTER->i_guisock);
@@ -1809,11 +1841,26 @@ void sys_stopgui(void)
     INTER->i_havetkproc = 0;
 }
 
+    /* message to pd to start or stop the gui.  If the symbol
+    argument is nonempty it is the "libdir" from which to start a new GUI.
+    if it's just "" we stop whatever gui might be running. */
+void glob_vis(void *dummy, t_symbol *s)
+{
+    if (*s->s_name && !INTER->i_havetkproc)
+        sys_startgui(s->s_name);
+    else if (!*s->s_name && INTER->i_havetkproc)
+        sys_stopgui();
+}
+
 /* ----------- mutexes for thread safety --------------- */
 
 void s_inter_newpdinstance(void)
 {
     INTER = getbytes(sizeof(*INTER));
+#if PDTHREADS
+    pthread_mutex_init(&INTER->i_mutex, NULL);
+    pthread_mutex_init(&INTER->i_messqueue_mutex, NULL);
+#endif
 #ifdef _WIN32
     INTER->i_freq = 0;
 #endif
@@ -1832,6 +1879,19 @@ void s_inter_free(t_instanceinter *inter)
         inter->i_fdpoll = 0;
         inter->i_nfdpoll = 0;
     }
+#if PDTHREADS
+    pthread_mutex_destroy(&inter->i_mutex);
+        /* flush message queue */
+    while (inter->i_messqueue_head)
+    {
+        t_messqueue *m = inter->i_messqueue_head, *next = m->m_next;
+            /* m_fn is responsible for freeing m_data */
+        m->m_fn(NULL, m->m_data);
+        freebytes(m, sizeof(*m));
+        inter->i_messqueue_head = next;
+    }
+    pthread_mutex_destroy(&inter->i_messqueue_mutex);
+#endif
     freebytes(inter, sizeof(*inter));
 }
 
@@ -1941,6 +2001,55 @@ int sys_trylock(void)
     return 1;
 }
 
+void pd_queue_mess(struct _pdinstance *instance, t_pd *obj, void *data, t_messfn fn)
+{
+    t_instanceinter *inter = instance->pd_inter;
+    t_messqueue *m = (t_messqueue *)getbytes(sizeof(*m));
+    m->m_obj = obj;
+    m->m_data = data;
+    m->m_fn = fn;
+    m->m_next = 0;
+    pthread_mutex_lock(&inter->i_messqueue_mutex);
+    if (inter->i_messqueue_tail) /* add to tail */
+        inter->i_messqueue_tail = (inter->i_messqueue_tail->m_next = m);
+    else /* empty queue */
+        inter->i_messqueue_head = inter->i_messqueue_tail = m;
+    pthread_mutex_unlock(&inter->i_messqueue_mutex);
+}
+
+void pd_queue_cancel(t_pd *obj)
+{
+    t_messqueue *m;
+    pthread_mutex_lock(&INTER->i_messqueue_mutex);
+    for (m = INTER->i_messqueue_head; m; m = m->m_next)
+    {
+        if (m->m_obj == obj)
+            m->m_obj = NULL; /* mark as canceled */
+    }
+    pthread_mutex_unlock(&INTER->i_messqueue_mutex);
+}
+
+void messqueue_dispatch(void)
+{
+    t_messqueue *m, *next;
+        /* first unlink all messages */
+    pthread_mutex_lock(&INTER->i_messqueue_mutex);
+    m = INTER->i_messqueue_head;
+    INTER->i_messqueue_head = INTER->i_messqueue_tail = NULL;
+    pthread_mutex_unlock(&INTER->i_messqueue_mutex);
+        /* then dispatch (without lock!) */
+    while (m)
+    {
+            /* NB: if the message has been canceled, m_obj is NULL;
+            we still need to call m_fn because it is responsible
+            for freeing the data! */
+        next = m->m_next;
+        m->m_fn(m->m_obj, m->m_data);
+        freebytes(m, sizeof(*m));
+        m = next;
+    }
+}
+
 #else /* PDTHREADS */
 
 #ifdef TEST_LOCKING /* run standalone Pd with this to find deadlocks */
@@ -1962,6 +2071,16 @@ void sys_unlock(void) {}
 #endif
 void pd_globallock(void) {}
 void pd_globalunlock(void) {}
+
+    /* doesn't really make sense without threads... */
+void pd_queue_mess(struct _pdinstance instance, t_pd *obj, void *data, t_messfn fn)
+{
+    fn(obj, data);
+}
+
+void pd_queue_cancel(t_pd *obj) {}
+
+void messqueue_dispatch(void) {}
 
 #endif /* PDTHREADS */
 

@@ -110,6 +110,7 @@ namespace import ::dialog_array::pdtk_array_listview_closeWindow
 # should all have been properly initialized by the time startup plugins are
 # loaded.
 
+set PD_APPLICATION_NAME "Pd"
 set PD_MAJOR_VERSION 0
 set PD_MINOR_VERSION 0
 set PD_BUGFIX_VERSION 0
@@ -220,7 +221,7 @@ array set childwindows {}  ;# all child windows based on mytoplevel IDs
 array set parentwindows {} ;# topmost parent window ID based on mytoplevel IDs
 
 # variables for holding the menubar to allow for configuration by plugins
-set ::pdwindow_menubar ".menubar"
+set ::pdwindow_menubar ".pdmenu"
 set ::patch_menubar   ".menubar"
 set ::dialog_menubar   ""
 
@@ -310,7 +311,8 @@ proc init_for_platform {} {
             # some platforms have a menubar on the top, so place below them
             set ::menubarsize 0
             # trying loading icon in the GUI directory
-            if {$::tcl_version >= 8.5} {
+            # the X-server on IRIX (and IRIX64) cannot handle this, so we exclude that platform
+            if {$::tcl_version >= 8.5 && [ string first IRIX $::tcl_platform(os) ] == -1} {
                 set icon [file join $::sys_guidir pd.gif]
                 if {[file readable $icon]} {
                     catch {

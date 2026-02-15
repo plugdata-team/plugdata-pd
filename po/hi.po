@@ -6,7 +6,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Pure Data 0.43\n"
 "Report-Msgid-Bugs-To: pd-dev@iem.at\n"
-"POT-Creation-Date: 2024-08-28 18:42+0200\n"
+"POT-Creation-Date: 2025-07-30 15:04+0200\n"
 "PO-Revision-Date: 2005-05-04 12:50+0530\n"
 "Last-Translator: Rajesh Ranjan <rranjan@redhat.com>\n"
 "Language-Team: Hindi <https://hosted.weblate.org/projects/pure-data/pure-"
@@ -138,6 +138,9 @@ msgstr "मेसीडोनिया"
 msgid "Window"
 msgstr "विंडो (_W)"
 
+msgid "Tools"
+msgstr ""
+
 msgid "Help"
 msgstr "मदद"
 
@@ -232,6 +235,9 @@ msgstr ""
 msgid "Use Multiple Devices"
 msgstr ""
 
+msgid "Rescan Devices"
+msgstr ""
+
 msgid "Audio System"
 msgstr ""
 
@@ -304,6 +310,9 @@ msgid "Margin:"
 msgstr "मार्कर पंक्ति:"
 
 msgid "Y range: from"
+msgstr ""
+
+msgid "Object:"
 msgstr ""
 
 msgid "Data Properties"
@@ -883,10 +892,23 @@ msgstr ""
 msgid "Unable to rename downloaded file to '%s'"
 msgstr ""
 
+#, fuzzy
+msgid "Search URLs:"
+msgstr "पाठ खोजें..."
+
+msgid "Additional search URLs"
+msgstr ""
+
+msgid "Ephemeral search URLs"
+msgstr ""
+
 msgid "Create"
 msgstr ""
 
 msgid "Check"
+msgstr ""
+
+msgid "Deken Installation Target"
 msgstr ""
 
 msgid "Installation options:"
@@ -958,6 +980,19 @@ msgstr "टीएआर फाइलें"
 #, fuzzy
 msgid "All Files"
 msgstr "सभी फाइलें"
+
+#, tcl-format
+msgid "Installing incompatible architecture of '%s'."
+msgstr ""
+
+msgid "Replacing library with incompatible architecture!"
+msgstr ""
+
+#, tcl-format
+msgid ""
+"Do you want to replace the library '%1$s' in '%2$s' with a version that is "
+"incompatible with your computer?"
+msgstr ""
 
 #, tcl-format
 msgid "Uninstalling previous installation of '%s'"
@@ -1149,11 +1184,11 @@ msgstr ""
 msgid "Installing to non-existent directory failed"
 msgstr ""
 
-#, tcl-format
-msgid "Unable to install to '%s'"
+msgid "Directory does not exist!"
 msgstr ""
 
-msgid "Directory does not exist!"
+#, tcl-format
+msgid "Unable to install to '%s'"
 msgstr ""
 
 msgid "Directory is not writable!"
@@ -1192,6 +1227,10 @@ msgstr ""
 
 #, tcl-format
 msgid "[deken] Platform detected: %s"
+msgstr ""
+
+#, tcl-format
+msgid "Could not find a menu for adding '%s'"
 msgstr ""
 
 #, fuzzy, tcl-format
@@ -1846,6 +1885,16 @@ msgstr ""
 msgid "Print..."
 msgstr "संपादित करें (_E)..."
 
+msgid "single precision"
+msgstr ""
+
+msgid "double precision"
+msgstr ""
+
+#, tcl-format
+msgid "%dbit-floats"
+msgstr ""
+
 #, tcl-format
 msgid "ignoring '%s': doesn't exist"
 msgstr ""
@@ -1858,6 +1907,15 @@ msgstr "के बारे में (_A)"
 msgid "couldn't read \"%s\" document"
 msgstr ""
 
+msgid "New"
+msgstr "नया"
+
+msgid "Open"
+msgstr "खोलें"
+
+msgid "Open Recent"
+msgstr ""
+
 msgid "Save"
 msgstr "सहेजें"
 
@@ -1865,20 +1923,30 @@ msgstr "सहेजें"
 msgid "Save As..."
 msgstr "इस रूप में सहेजें"
 
+msgid "Quit"
+msgstr "बाहर"
+
+#, fuzzy
+msgid "Undo"
+msgstr "यूगांडा"
+
+#, fuzzy
+msgid "Redo"
+msgstr "लाल:"
+
+msgid "Cut"
+msgstr ""
+
 msgid "Paste Replace"
 msgstr ""
 
 #, fuzzy
+msgid "Select All"
+msgstr "रंग चुनें"
+
+#, fuzzy
 msgid "Duplicate"
 msgstr "तारीख़"
-
-#, fuzzy
-msgid "Zoom In"
-msgstr "नीचे"
-
-#, fuzzy
-msgid "Zoom Out"
-msgstr "नीचे"
 
 msgid "Tidy Up"
 msgstr ""
@@ -1890,37 +1958,20 @@ msgid "Triggerize"
 msgstr ""
 
 #, fuzzy
-msgid "Edit Mode"
-msgstr "मोड"
+msgid "Zoom In"
+msgstr "नीचे"
 
 #, fuzzy
-msgid "Undo"
-msgstr "यूगांडा"
-
-#, fuzzy
-msgid "Redo"
-msgstr "लाल:"
-
-msgid "New"
-msgstr "नया"
-
-msgid "Open"
-msgstr "खोलें"
-
-#, fuzzy
-msgid "Message..."
-msgstr "संदेश"
-
-msgid "Cut"
-msgstr ""
-
-#, fuzzy
-msgid "Select All"
-msgstr "रंग चुनें"
+msgid "Zoom Out"
+msgstr "नीचे"
 
 #, fuzzy
 msgid "Clear Console"
 msgstr "सूची साफ करें"
+
+#, fuzzy
+msgid "Edit Mode"
+msgstr "मोड"
 
 msgid "Object"
 msgstr ""
@@ -1994,8 +2045,16 @@ msgid "Previous Window"
 msgstr "भेजें विंडो"
 
 #, fuzzy
+msgid "Close subwindows"
+msgstr "इस tab/window बंद करें"
+
+#, fuzzy
 msgid "Parent Window"
 msgstr "भेजें विंडो"
+
+#, fuzzy
+msgid "Message..."
+msgstr "संदेश"
 
 msgid "HTML Manual..."
 msgstr ""
@@ -2053,12 +2112,6 @@ msgstr ""
 msgid "Tabbed preferences"
 msgstr "प्राथमिकताएं..."
 
-msgid "Open Recent"
-msgstr ""
-
-msgid "Quit"
-msgstr "बाहर"
-
 #, tcl-format
 msgid "Do you want to save the changes you made in '%s'?"
 msgstr ""
@@ -2087,6 +2140,9 @@ msgid "Audio on"
 msgstr ""
 
 msgid "Audio off"
+msgstr ""
+
+msgid "Find source"
 msgstr ""
 
 msgid "Pd"
@@ -2165,10 +2221,6 @@ msgstr ""
 #, fuzzy
 #~ msgid "for:"
 #~ msgstr "पोर्टः"
-
-#, fuzzy
-#~ msgid "Close this window??"
-#~ msgstr "इस tab/window बंद करें"
 
 #, fuzzy
 #~ msgid "Filters"

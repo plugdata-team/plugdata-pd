@@ -6,17 +6,17 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Pure Data 0.54.1\n"
 "Report-Msgid-Bugs-To: pd-dev@iem.at\n"
-"POT-Creation-Date: 2024-08-28 18:42+0200\n"
-"PO-Revision-Date: 2024-08-28 18:54+0200\n"
-"Last-Translator: phlostically <phlostically@mailinator.com>\n"
-"Language-Team: Esperanto <https://hosted.weblate.org/projects/pure-data/pure-"
-"data/eo/>\n"
+"POT-Creation-Date: 2025-07-30 15:04+0200\n"
+"PO-Revision-Date: 2025-08-01 09:02+0000\n"
+"Last-Translator: umläute <dev@umlaeute.mur.at>\n"
+"Language-Team: Esperanto <https://hosted.weblate.org/projects/pure-data/"
+"pure-data/eo/>\n"
 "Language: eo\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=n != 1;\n"
-"X-Generator: Poedit 3.4.4\n"
+"X-Generator: Weblate 5.13-dev\n"
 
 msgid "linear"
 msgstr "lineara"
@@ -130,6 +130,9 @@ msgstr "Aŭdvidaĵo"
 msgid "Window"
 msgstr "Fenestro"
 
+msgid "Tools"
+msgstr ""
+
 msgid "Help"
 msgstr "Helpo"
 
@@ -214,6 +217,10 @@ msgstr "Eligaj aparatoj"
 msgid "Use Multiple Devices"
 msgstr "Uzi plurajn aparatojn"
 
+#, fuzzy
+msgid "Rescan Devices"
+msgstr "Enigaj aparatoj"
+
 msgid "Audio System"
 msgstr "Sonsistemo"
 
@@ -285,6 +292,9 @@ msgstr "Marĝeno:"
 
 msgid "Y range: from"
 msgstr "Y-gamo: de"
+
+msgid "Object:"
+msgstr "Objekto:"
 
 msgid "Data Properties"
 msgstr "Datenaj atributoj"
@@ -827,11 +837,25 @@ msgstr ""
 msgid "Unable to rename downloaded file to '%s'"
 msgstr ""
 
+#, fuzzy
+msgid "Search URLs:"
+msgstr "Serĉaj rezultoj"
+
+msgid "Additional search URLs"
+msgstr ""
+
+msgid "Ephemeral search URLs"
+msgstr ""
+
 msgid "Create"
 msgstr "Krei"
 
 msgid "Check"
 msgstr "Kontroli"
+
+#, fuzzy
+msgid "Deken Installation Target"
+msgstr "Malsukcesis instali!"
 
 msgid "Installation options:"
 msgstr "Opcioj pri instalado:"
@@ -899,6 +923,19 @@ msgstr "TAR-dosieroj"
 
 msgid "All Files"
 msgstr "Ĉiuj dosieroj"
+
+#, tcl-format
+msgid "Installing incompatible architecture of '%s'."
+msgstr ""
+
+msgid "Replacing library with incompatible architecture!"
+msgstr ""
+
+#, tcl-format
+msgid ""
+"Do you want to replace the library '%1$s' in '%2$s' with a version that is "
+"incompatible with your computer?"
+msgstr ""
 
 #, tcl-format
 msgid "Uninstalling previous installation of '%s'"
@@ -1087,12 +1124,12 @@ msgstr ""
 msgid "Installing to non-existent directory failed"
 msgstr ""
 
+msgid "Directory does not exist!"
+msgstr "Dosierujo ne ekzistas!"
+
 #, tcl-format
 msgid "Unable to install to '%s'"
 msgstr "Ne povas instali al «%s»"
-
-msgid "Directory does not exist!"
-msgstr "Dosierujo ne ekzistas!"
 
 msgid "Directory is not writable!"
 msgstr "Ne eblas skribi en dosierujon!"
@@ -1130,6 +1167,10 @@ msgstr ""
 
 #, tcl-format
 msgid "[deken] Platform detected: %s"
+msgstr ""
+
+#, tcl-format
+msgid "Could not find a menu for adding '%s'"
 msgstr ""
 
 #, tcl-format
@@ -1782,6 +1823,17 @@ msgstr "(implicita lingvo: %s)"
 msgid "Print..."
 msgstr "Presi…"
 
+msgid "single precision"
+msgstr ""
+
+#, fuzzy
+msgid "double precision"
+msgstr "EKSPERIMENTA duobla (64-bita) glitkomo"
+
+#, fuzzy, tcl-format
+msgid "%dbit-floats"
+msgstr "%d-bita glitkomo EKSPERIMENTA"
+
 #, tcl-format
 msgid "ignoring '%s': doesn't exist"
 msgstr ""
@@ -1793,23 +1845,41 @@ msgstr "Pri Pd"
 msgid "couldn't read \"%s\" document"
 msgstr ""
 
+msgid "New"
+msgstr "Nova"
+
+msgid "Open"
+msgstr "Malfermi"
+
+msgid "Open Recent"
+msgstr "Malfermi lastajn"
+
 msgid "Save"
 msgstr "Konservi"
 
 msgid "Save As..."
 msgstr "Konservi kiel…"
 
+msgid "Quit"
+msgstr "Forlasi"
+
+msgid "Undo"
+msgstr "Malfari"
+
+msgid "Redo"
+msgstr "Refari"
+
+msgid "Cut"
+msgstr "Eltondi"
+
 msgid "Paste Replace"
 msgstr ""
 
+msgid "Select All"
+msgstr "Elekti ĉiujn"
+
 msgid "Duplicate"
 msgstr ""
-
-msgid "Zoom In"
-msgstr "Enzomi"
-
-msgid "Zoom Out"
-msgstr "Elzomi"
 
 msgid "Tidy Up"
 msgstr ""
@@ -1820,32 +1890,17 @@ msgstr ""
 msgid "Triggerize"
 msgstr ""
 
-msgid "Edit Mode"
-msgstr "Redakta reĝimo"
+msgid "Zoom In"
+msgstr "Enzomi"
 
-msgid "Undo"
-msgstr "Malfari"
-
-msgid "Redo"
-msgstr "Refari"
-
-msgid "New"
-msgstr "Nova"
-
-msgid "Open"
-msgstr "Malfermi"
-
-msgid "Message..."
-msgstr "Mesaĝo…"
-
-msgid "Cut"
-msgstr "Eltondi"
-
-msgid "Select All"
-msgstr "Elekti ĉiujn"
+msgid "Zoom Out"
+msgstr "Elzomi"
 
 msgid "Clear Console"
 msgstr "Forviŝi konzolon"
+
+msgid "Edit Mode"
+msgstr "Redakta reĝimo"
 
 msgid "Object"
 msgstr "Objekto"
@@ -1910,8 +1965,14 @@ msgstr "Sekva fenestro"
 msgid "Previous Window"
 msgstr "Malsekva fenestro"
 
+msgid "Close subwindows"
+msgstr ""
+
 msgid "Parent Window"
 msgstr "Patra fenestro"
+
+msgid "Message..."
+msgstr "Mesaĝo…"
 
 msgid "HTML Manual..."
 msgstr "HTML-manlibro…"
@@ -1963,12 +2024,6 @@ msgstr "Forgesi ĉion…"
 msgid "Tabbed preferences"
 msgstr "Langetaj preferoj"
 
-msgid "Open Recent"
-msgstr "Malfermi lastajn"
-
-msgid "Quit"
-msgstr "Forlasi"
-
 #, tcl-format
 msgid "Do you want to save the changes you made in '%s'?"
 msgstr ""
@@ -1998,6 +2053,10 @@ msgstr ""
 
 msgid "Audio off"
 msgstr ""
+
+#, fuzzy
+msgid "Find source"
+msgstr "Trovi lastan eraron"
 
 msgid "Pd"
 msgstr "Pd"

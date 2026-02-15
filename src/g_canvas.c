@@ -96,7 +96,7 @@ void gobj_delete(t_gobj *x, t_glist *glist)
 
 int gobj_shouldvis(t_gobj *x, struct _glist *glist)
 {
-    t_object *ob;
+    t_object *ob = pd_checkobject(&x->g_pd);
     int has_parent = !glist->gl_havewindow && glist->gl_isgraph
         && glist->gl_owner && !glist->gl_isclone;
         /* if our parent is a graph, and if that graph itself isn't
@@ -111,15 +111,26 @@ int gobj_shouldvis(t_gobj *x, struct _glist *glist)
             /* for some reason the bounds check on arrays and scalars
                don't seem to apply here.  Perhaps this was in order to allow
                arrays to reach outside their containers?  I no longer understand
-               this. */
+               this - LATER try to get the real bounds rectangle because this
+               could cause trouble for GOPs with losts of scalars inside. */
         if (pd_class(&x->g_pd) == scalar_class
             || pd_class(&x->g_pd) == garray_class)
                 return (1);
+            /* get bounds rectangle of GOP area */
         gobj_getrect(&glist->gl_gobj, glist->gl_owner, &x1, &y1, &x2, &y2);
         if (x1 > x2)
             m = x1, x1 = x2, x2 = m;
         if (y1 > y2)
             m = y1, y1 = y2, y2 = m;
+            /* if it's a text box, try to skip getting the bounds rectangle
+            because that will cause an rtext to be created for us.  Most of the
+            time an invisible text box will have (x,y) outside of the rectangle
+            and we can just check that. */
+        if (ob && ((gx1 = text_xpix(ob, glist)) < x1 || gx1 > x2))
+            return (0);
+        if (ob && ((gy1 = text_ypix(ob, glist)) < y1) || gy1 > y2)
+            return (0);
+            /* If that passed, get the entire rectangle and test again. */
         gobj_getrect(x, glist, &gx1, &gy1, &gx2, &gy2);
 #if 0
         post("graph %d %d %d %d, %s %d %d %d %d",
@@ -304,6 +315,17 @@ t_symbol *canvas_realizedollar(t_canvas *x, t_symbol *s)
     return (ret);
 }
 
+t_symbol *canvas_getsymbol_realized(t_canvas *canvas, const t_atom *a)
+{
+    t_symbol *s;
+    if ((a->a_type != A_SYMBOL) && (a->a_type != A_DOLLSYM))
+        return &s_symbol;
+    s = a->a_w.w_symbol;
+    if (a->a_type == A_DOLLSYM && canvas != NULL)
+        s = canvas_realizedollar(canvas, s);
+    return s;
+}
+
 t_symbol *canvas_getcurrentdir(void)
 {
     t_canvasenvironment *e = canvas_getenv(canvas_getcurrent());
@@ -390,7 +412,7 @@ t_outconnect *linetraverser_next(t_linetraverser *t)
             t->tr_ob = ob;
             t->tr_nout = obj_noutlets(ob);
             outno = 0;
-            if (glist_isvisible(t->tr_x))
+            if (glist_isvisible(t->tr_x) && gobj_shouldvis(y, t->tr_x))
                 gobj_getrect(y, t->tr_x,
                     &t->tr_x11, &t->tr_y11, &t->tr_x12, &t->tr_y12);
             else t->tr_x11 = t->tr_y11 = t->tr_x12 = t->tr_y12 = 0;
@@ -603,6 +625,7 @@ static void canvas_coords(t_glist *x, t_symbol *s, int argc, t_atom *argv)
 }
 
 
+void canvas_startmotion(t_canvas *x);
     /* make a new glist and add it to this glist.  It will appear as
     a "graph", not a text object.  */
 t_glist *glist_addglist(t_glist *g, t_symbol *sym,
@@ -642,6 +665,20 @@ t_glist *glist_addglist(t_glist *g, t_symbol *sym,
     }
     if (x1 == x2 || y1 == y2)
         x1 = 0, x2 = 100, y1 = 1, y2 = -1;
+
+    if (menu && px1 >= px2 && py1 >= py2)
+    {
+        /* when creating the graph from menu (even indirectly via garray)
+           position it near the mouse.
+         */
+        int xpos = (int)px1, ypos = (int)py2;
+        glist_getnextxy(g, &xpos, &ypos);
+        px1 = (t_float)xpos;
+        px2 = px1 + GLIST_DEFGRAPHWIDTH;
+        py1 = (t_float)ypos;
+        py2 = py1 + GLIST_DEFGRAPHHEIGHT;
+    }
+
     if (px1 >= px2 || py1 >= py2)
         px1 = 100, py1 = 20, px2 = 100 + GLIST_DEFGRAPHWIDTH,
             py2 = 20 + GLIST_DEFGRAPHHEIGHT;
@@ -673,6 +710,21 @@ t_glist *glist_addglist(t_glist *g, t_symbol *sym,
     if (!menu)
         pd_pushsym(&x->gl_pd);
     glist_add(g, &x->gl_gobj);
+
+        /* when creating the graph from menu (even indirectly via garray)
+           switch to edit-mode and stick it to the mouse-pointer
+           so user can position it whereever they want
+         */
+    if(menu) {
+        pd_vmess((t_pd*)g, gensym("editmode"), "i", 1);
+        glist_noselect(g);
+        glist_select(g, (t_gobj*)x);
+        if(x->gl_editor) {
+            /* poor man's replacement for glist_nograb() */
+            x->gl_editor->e_grab = 0;
+        }
+        canvas_startmotion(g);
+    }
     return (x);
 }
 
@@ -824,13 +876,10 @@ void canvas_drawredrect(t_canvas *x, int doit)
             x2 = x1 + x->gl_zoom * x->gl_pixwidth,
             y1 = x->gl_zoom * x->gl_ymargin,
             y2 = y1 + x->gl_zoom * x->gl_pixheight;
-        pdgui_vmess(0, "crr iiiiiiiiii rr ri rr rr",
-            glist_getcanvas(x), "create", "line",
-            x1,y1, x1,y2, x2,y2, x2,y1, x1,y1,
-            "-fill", "#ff8080",
-            "-width", x->gl_zoom,
-            "-capstyle", "projecting",
-            "-tags", "GOP"); /* better: "-tags", 1, &"GOP" */
+        pdgui_vmess(0, "rcr iik iiiiiiiiii",
+            "pdtk_canvas_create_line", glist_getcanvas(x), "GOP",
+            0, x->gl_zoom, THISGUI->i_gopcolor,
+            x1,y1, x1,y2, x2,y2, x2,y1, x1,y1);
     }
     else
         pdgui_vmess(0, "crs", glist_getcanvas(x), "delete", "GOP");
@@ -889,6 +938,19 @@ void canvas_redraw(t_canvas *x)
     }
 }
 
+    /* if anyone resizes a canvas GOP area (via canvas_donecanvasdialog()
+    or graph_goprect(), for example) some rtexts might find themselves
+    belonging to a different canvas than before and hell will break loose.
+    So we just nuke all rtexts.  (They're re-created laster as needed).*/
+void glist_clearrtexts(t_glist *x)
+{
+    t_glist *gl2 = glist_getcanvas(x);
+    if ((t_glist*)glist_textedfor(gl2) == x)
+        glist_settexted(gl2, 0);
+    if (gl2->gl_editor)
+        while (gl2->gl_editor->e_rtext)
+            rtext_free(gl2->gl_editor->e_rtext);
+}
 
     /* we call this on a non-toplevel glist to "open" it into its
     own window. */
@@ -896,19 +958,26 @@ void glist_menu_open(t_glist *x)
 {
     if (glist_isvisible(x) && !glist_istoplevel(x))
     {
-        t_glist *gl2 = x->gl_owner;
+        t_glist *gl2 = glist_getcanvas(x);
         if (!gl2)
             bug("glist_menu_open");  /* shouldn't happen but not dangerous */
         else
         {
                 /* erase ourself in parent window */
             gobj_vis(&x->gl_gobj, gl2, 0);
+                /* and blow away all rtexts in parent window -- we can do
+                this because rtexts that are still needed will be recreated
+                on demand by glist_getrtext() */
+            glist_clearrtexts(gl2);
                     /* get rid of our editor (and subeditors) */
             if (x->gl_editor)
                 canvas_destroy_editor(x);
             x->gl_havewindow = 1;
-                    /* redraw ourself in parent window (blanked out this time) */
-            gobj_vis(&x->gl_gobj, gl2, 1);
+                    /* redraw entire parent window because new rtexts when
+                    they reappear need to recreate the texts with their new
+                    tags.  Also the GOP itseld will now appear as a blank
+                     rectangle.  */
+            canvas_redraw(gl2);
         }
     }
     canvas_vis(x, 1);
@@ -1224,7 +1293,7 @@ static void *subcanvas_new(t_symbol *s)
         /* check if subpatch is supposed to be connected (on the 1st inlet) */
     if(z && z->gl_editor && z->gl_editor->e_connectbuf)
     {
-        t_atom*argv = binbuf_getvec(z->gl_editor->e_connectbuf);
+        t_atom *argv = binbuf_getvec(z->gl_editor->e_connectbuf);
         int argc = binbuf_getnatom(z->gl_editor->e_connectbuf);
         t_symbol *sob = 0;
         if ((argc == 7)
@@ -1239,18 +1308,18 @@ static void *subcanvas_new(t_symbol *s)
                     int outno = (int)atom_getfloat(argv+3);
                     t_gobj*outobj=z->gl_list;
                         /* get handle to object */
-                    while(index1-->0 && outobj)
+                    while (index1-->0 && outobj)
                         outobj=outobj->g_next;
-                    if(outobj && pd_checkobject(&outobj->g_pd))
+                    if (outobj && pd_checkobject(&outobj->g_pd))
                     {
-                        if (obj_issignaloutlet(pd_checkobject(&outobj->g_pd), outno))
-                            sob = gensym("inlet~");
-                        else
-                            sob = gensym("inlet");
+                        if (obj_issignaloutlet(pd_checkobject(&outobj->g_pd),
+                            outno))
+                               sob = gensym("inlet~");
+                        else sob = gensym("inlet");
                     }
                 }
         }
-        if(sob)
+        if (sob)
         {
                 /* JMZ: weirdo hardcoded numbers, taken from
                  * glist_getnextxy(): 40
@@ -1990,6 +2059,7 @@ static void canvas_f(t_canvas *x, t_symbol *s, int argc, t_atom *argv)
     }
     if (!x->gl_list)
         return;
+        /* apply the format to the most recently created object */
     for (g = x->gl_list; (g2 = g->g_next); g = g2)
         ;
     if ((ob = pd_checkobject(&g->g_pd)))
@@ -2189,6 +2259,10 @@ void g_canvas_newpdinstance(void)
     THISGUI->i_forcenewpath = 0;
     THISGUI->i_dspstate = 0;
     THISGUI->i_dollarzero = 1000;
+    THISGUI->i_foregroundcolor = 0x000000;
+    THISGUI->i_backgroundcolor = 0xFFFFFF;
+    THISGUI->i_selectcolor = 0x0000FF;
+    THISGUI->i_gopcolor = 0xFF0000;
     g_editor_newpdinstance();
     g_template_newpdinstance();
 }
@@ -2259,4 +2333,84 @@ void glob_open(t_pd *ignore, t_symbol *name, t_symbol *dir, t_floatarg f)
     }
     if (!glob_evalfile(ignore, name, dir))
         pdgui_vmess("::pdwindow::busyrelease", 0);
+}
+
+/* close visible subwindows */
+static void glist_closesubsfor(t_glist *glist)
+{
+    t_gobj *g;
+    for (g = glist->gl_list; g; g = g->g_next)
+    {
+        if (g->g_pd == canvas_class)
+        {
+            t_glist *gl2 = (t_glist *)g;
+            if (gl2->gl_havewindow)
+                canvas_vis(gl2, 0);
+            glist_closesubsfor(gl2);
+        }
+    }
+}
+
+/* close all visible non-root windows */
+void glob_closesubs(t_pd *ignore)
+{
+    t_glist *gl;
+    for (gl = pd_this->pd_canvaslist; gl; gl = gl->gl_next)
+        glist_closesubsfor(gl);
+            /* if there's anyone open, move it to front */
+    for (gl = pd_getcanvaslist(); gl; gl = gl->gl_next)
+        if (strcmp(gl->gl_name->s_name, "_float_template") &&
+            strcmp(gl->gl_name->s_name, "_float_array_template") &&
+                strcmp(gl->gl_name->s_name, "_text_template"))
+                    canvas_vis(gl, 1);
+}
+
+static void glist_dorevis(t_glist *glist)
+{
+    t_gobj *g;
+    if (glist->gl_havewindow)
+    {
+        canvas_vis(glist, 0);
+        canvas_vis(glist, 1);
+    }
+    for (g = glist->gl_list; g; g = g->g_next)
+        if (g->g_pd == canvas_class)
+            glist_dorevis((t_glist *)g);
+}
+
+    /* normalize a color symbol to a hex color string */
+static unsigned int normalize_color(t_symbol *s)
+{
+    if ('#' == s->s_name[0])
+    {
+        char colname[MAXPDSTRING];
+        int col = (int)strtol(s->s_name+1, 0, 16);
+        return col & 0xFFFFFF;
+    }
+    pd_error(0,
+ "'pd colors' message: non-hexadecimal '%s' (should be as in '#0000ff')",
+       s->s_name);
+    return (-1);
+}
+
+void glob_colors(void *dummy, t_symbol *fg, t_symbol *bg, t_symbol *sel,
+    t_symbol *gop)
+{
+    t_glist *gl;
+    unsigned int c_fg = normalize_color(fg);
+    unsigned int c_bg = normalize_color(bg);
+    unsigned int c_sel = normalize_color(sel);
+    unsigned int c_gop =
+        (gop && gop->s_name[0]) ? normalize_color(gop) : THISGUI->i_gopcolor;
+
+    if ((-1 == c_fg) || (-1 == c_bg) || (-1 == c_sel) || (-1 == c_gop)) {
+        pd_error(0, "skipping color update");
+        return;
+    }
+    THISGUI->i_foregroundcolor = c_fg;
+    THISGUI->i_backgroundcolor = c_bg;
+    THISGUI->i_selectcolor = c_sel;
+    THISGUI->i_gopcolor = c_gop;
+    for (gl = pd_this->pd_canvaslist; gl; gl = gl->gl_next)
+        glist_dorevis(gl);
 }

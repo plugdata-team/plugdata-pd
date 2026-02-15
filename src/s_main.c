@@ -53,6 +53,7 @@ void alsa_adddev(const char *name);
 #endif
 int sys_oktoloadfiles(int done);
 void sys_doneglobinit( void);
+char sys_devicename[MAXPDSTRING] = "Pure Data";
 
 int sys_debuglevel;
 int sys_verbose;
@@ -96,7 +97,7 @@ static int sys_listplease;
 
 int sys_externalschedlib;
 char sys_externalschedlibname[MAXPDSTRING];
-static int sys_batch;
+int sys_batch;
 const char *pd_extraflags = 0;
 int sys_run_scheduler(const char *externalschedlibname,
     const char *sys_extraflagsstring);
@@ -391,6 +392,8 @@ int sys_main(int argc, const char **argv)
         /* for prefs override */
         if (!strcmp(argv[i], "-noprefs"))
             noprefs = 1;
+        if (!strcmp(argv[i], "-prefs"))
+            noprefs = 0;
         else if (!strcmp(argv[i], "-prefsfile") && i < argc-1)
             prefsfile = argv[i+1];
         /* for external scheduler (to ignore audio api in sys_loadpreferences) */
@@ -425,7 +428,7 @@ int sys_main(int argc, const char **argv)
     sys_init_midi();
     sys_init_audio();
          /* load dynamic libraries specified with "-lib" args */
-    if (sys_oktoloadfiles(0))
+    if (sys_oktoloadfiles(0) || noprefs)
     {
         for  (nl = STUFF->st_externlist; nl; nl = nl->nl_next)
             if (!sys_load_lib(0, nl->nl_string))
@@ -482,6 +485,7 @@ static char *(usagemessage[]) = {
 "-callback        -- use callbacks if possible\n",
 "-nocallback      -- use polling-mode (true by default)\n",
 "-listdev         -- list audio and MIDI devices\n",
+"-devicename      -- device name for this pd session used by audio and midi APIs\n",
 
 #ifdef USEAPI_OSS
 "-oss             -- use OSS audio API\n",
@@ -887,8 +891,7 @@ int sys_argparse(int argc, const char **argv)
         {
             if (argc < 2)
                 goto usage;
-            as.a_api = API_JACK;
-            jack_client_name(argv[1]);
+            pd_snprintf(sys_devicename, MAXPDSTRING-1, argv[1]);
             argc -= 2; argv +=2;
         }
 #else
@@ -969,6 +972,13 @@ int sys_argparse(int argc, const char **argv)
         {
             sys_listplease = 1;
             argc--; argv++;
+        }
+        else if (!strcmp(*argv, "-devicename"))
+        {
+            if (argc < 2)
+                goto usage;
+            pd_snprintf(sys_devicename, MAXPDSTRING-1, argv[1]);
+            argc -= 2; argv +=2;
         }
         else if (!strcmp(*argv, "-soundindev") ||
             !strcmp(*argv, "-audioindev"))
@@ -1422,6 +1432,8 @@ int sys_argparse(int argc, const char **argv)
         }
         else if (!strcmp(*argv, "-noprefs")) /* did this earlier */
             argc--, argv++;
+        else if (!strcmp(*argv, "-prefs")) /* did this earlier */
+            argc--, argv++;
         else if (!strcmp(*argv, "-prefsfile") && argc > 1) /* this too */
             argc -= 2, argv +=2;
         else
@@ -1431,8 +1443,13 @@ int sys_argparse(int argc, const char **argv)
             return (1);
         }
     }
-    if (sys_batch)
+    if (sys_batch)  /* if batch, turn off gui, real-time, audio and MIDI */
+    {
         sys_dontstartgui = 1;
+        sys_hipriority = 0;
+        as.a_noutdev = as.a_nchoutdev = as.a_nindev = as.a_nchindev = 0;
+        sys_nmidiin = sys_nmidiout = 0;
+    }
     if (sys_dontstartgui)
         sys_printtostderr = 1;
 #ifdef _WIN32

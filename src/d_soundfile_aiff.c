@@ -5,6 +5,7 @@
 /* ref: http://www-mmsp.ece.mcgill.ca/Documents/AudioFormats/AIFF/AIFF.html */
 
 #include "d_soundfile.h"
+#include "s_stuff.h"
 #include <math.h>
 
 /* AIFF (Audio Interchange File Format) and AIFF-C (AIFF Compressed)
@@ -277,8 +278,8 @@ static int aiff_isheader(const char *buf, size_t size)
     /** loop through chunks to find comm and data */
 static int aiff_readheader(t_soundfile *sf)
 {
-    int nchannels = 1, bytespersample = 2, samplerate = 44100, bigendian = 1,
-        swap = !sys_isbigendian(), isaiffc = 0, commfound = 0;
+    int nchannels = 1, bytespersample = 2, samplerate = DEFAULTSRATE,
+        bigendian = 1, swap = !sys_isbigendian(), isaiffc = 0, commfound = 0;
     off_t headersize = AIFFHEADSIZE;
     size_t bytelimit = AIFFMAXBYTES;
     union
@@ -584,7 +585,7 @@ static int aiff_updateheader(t_soundfile *sf, size_t nframes)
 
 static int aiff_hasextension(const char *filename, size_t size)
 {
-    int len = strnlen(filename, size);
+    int len = pd_strnlen(filename, size);
     if (len >= 5 &&
         (!strncmp(filename + (len - 4), ".aif", 4) ||
          !strncmp(filename + (len - 4), ".AIF", 4)))
@@ -600,7 +601,7 @@ static int aiff_hasextension(const char *filename, size_t size)
 
 static int aiff_addextension(char *filename, size_t size)
 {
-    int len = strnlen(filename, size);
+    int len = pd_strnlen(filename, size);
     if (len + 4 >= size)
         return 0;
     strcpy(filename + len, ".aif");

@@ -40,11 +40,12 @@
 static jack_nframes_t jack_out_max;
 static jack_nframes_t jack_filled = 0;
 static int jack_started = 0;
+static int jack_isopening = 0;
+static int jack_isclosing = 0;
 static jack_port_t *input_port[MAX_JACK_PORTS];
 static jack_port_t *output_port[MAX_JACK_PORTS];
 static jack_client_t *jack_client = NULL;
-static char * desired_client_name = NULL;
-static const char *jack_client_names[MAX_CLIENTS];
+const char *jack_client_names[MAX_CLIENTS];
 static volatile int jack_dio_error;
 static volatile int jack_didshutdown;
 static t_audiocallback jack_callback;
@@ -172,13 +173,17 @@ static int callbackprocess(jack_nframes_t nframes, void *arg)
 
 static int jack_srate(jack_nframes_t srate, void *arg)
 {
-    sys_lock();
-    if (srate != STUFF->st_dacsr)
+        /* prevent recursion/deadlock in jack_open_audio()! */
+    if (!jack_isopening)
     {
-        STUFF->st_dacsr = srate;
-        canvas_update_dsp();
+        sys_lock();
+        if (srate != STUFF->st_dacsr)
+        {
+            STUFF->st_dacsr = srate;
+            canvas_update_dsp();
+        }
+        sys_unlock();
     }
-    sys_unlock();
     return 0;
 }
 
@@ -214,7 +219,8 @@ typedef struct _jclient {
     int output;
     struct _jclient *next;
 } t_jclient;
-static const char** jack_get_clients(void)
+
+static const char **jack_get_clients(void)
 {
     int jack_physicalsource = -1;
     int jack_physicalsink = -1;
@@ -251,7 +257,8 @@ static const char** jack_get_clients(void)
             tmp_client_name[ match_info.rm_eo - match_info.rm_so ] = '\0';
 
                 /* check if we already have this port */
-            for(tmp_client=available_clients; tmp_client; tmp_client=tmp_client->next)
+            for (tmp_client=available_clients; tmp_client;
+                tmp_client=tmp_client->next)
             {
                 last_client = tmp_client;
                 if(strcmp(tmp_client_name, tmp_client->name) == 0) {
@@ -276,7 +283,7 @@ static const char** jack_get_clients(void)
                 /* remember the capabilities of this client;
                  * we keep input and output separate,
                  * so we can distinguish between physical inputs and outputs
-                 * (e.g. a client that has physical outputs but no physical inputs)
+                 * (e.g. a client with physical outputs but no physical inputs)
                  */
             if(port && jack_port_flags) {
                 int flags = jack_port_flags(port);
@@ -299,21 +306,24 @@ static const char** jack_get_clients(void)
             tmp_client = tmp_client->next)
         {
 #if 0
-            printf("JACK client#%d: '%s' source:%d sink:%d\n", num_clients, tmp_client->name, tmp_client->output, tmp_client->input);
+            printf("JACK client#%d: '%s' source:%d sink:%d\n", num_clients,
+                tmp_client->name, tmp_client->output, tmp_client->input);
 #endif
             jack_client_names[num_clients] = tmp_client->name;
             tmp_client->name = 0; /* so we don't free it later */
             if(tmp_client->input) {
                 if(jack_defaultsink < 0)
                     jack_defaultsink = num_clients;
-                if ((jack_physicalsink < 0) && (tmp_client->input & JackPortIsPhysical))
-                    jack_physicalsink = num_clients;
+                if ((jack_physicalsink < 0) && (tmp_client->input &
+                    JackPortIsPhysical))
+                        jack_physicalsink = num_clients;
             }
             if(tmp_client->output) {
                 if(jack_defaultsource < 0)
                     jack_defaultsource = num_clients;
-                if ((jack_physicalsource < 0) && (tmp_client->output & JackPortIsPhysical))
-                    jack_physicalsource = num_clients;
+                if ((jack_physicalsource < 0) && (tmp_client->output &
+                    JackPortIsPhysical))
+                        jack_physicalsource = num_clients;
             }
             num_clients++;
         }
@@ -403,9 +413,14 @@ static int jack_connect_ports(const char* source, const char* sink)
 
 static void pd_jack_error_callback(const char *desc)
 {
-    sys_lock();
-    logpost(0, PD_DEBUG, "JACK error: %s", desc);
-    sys_unlock();
+        /* ignore error messages when closing the client. Also prevents deadlock,
+        see jack_close_audio(). */
+    if (!jack_isclosing)
+    {
+        sys_lock();
+        logpost(0, PD_DEBUG, "JACK error: %s", desc);
+        sys_unlock();
+    }
     return;
 }
 
@@ -449,10 +464,8 @@ int jack_open_audio(int inchans, int outchans, t_audiocallback callback)
     /* try to become a client of the JACK server.  (If no JACK server exists,
         jack_client_open() don't start one up by default.  It's not clear
         whether or not this is desirable; see long Pd list thread started by
-        yvan volochine, June 2013) */
-    if (!desired_client_name || !strlen(desired_client_name))
-        jack_client_name("pure_data");
-    jack_client = jack_client_open (desired_client_name, JackNoStartServer,
+        yvan volochine, June 2013) */    
+    jack_client = jack_client_open(sys_devicename, JackNoStartServer,
       &status, NULL);
     if (status & JackFailure) {
         pd_error(0, "JACK: couldn't connect to server, is JACK running?");
@@ -461,10 +474,8 @@ int jack_open_audio(int inchans, int outchans, t_audiocallback callback)
         /* jack spits out enough messages already, do not warn */
         STUFF->st_inchannels = STUFF->st_outchannels = 0;
         return 1;
-    }
-    if (status & JackNameNotUnique)
-        jack_client_name(jack_get_client_name(jack_client));
-    logpost(NULL, PD_VERBOSE, "JACK: registered as '%s'", desired_client_name);
+    } 
+    logpost(NULL, PD_VERBOSE, "JACK: registered as '%s'", jack_get_client_name(jack_client));
 
     STUFF->st_inchannels = inchans;
     STUFF->st_outchannels = outchans;
@@ -483,11 +494,12 @@ int jack_open_audio(int inchans, int outchans, t_audiocallback callback)
     jack_set_xrun_callback (jack_client, jack_xrun, NULL);
 #endif
 
-    /* tell the JACK server to call `jack_srate()' whenever
-       the sample rate of the system changes.
-    */
-
+        /* tell the JACK server to call `jack_srate()' whenever the
+        sample rate of the system changes. Curiously, this immediately
+        fires the callback, so we need to guard it. See jack_srate() */
+    jack_isopening = 1;
     jack_set_sample_rate_callback (jack_client, jack_srate, 0);
+    jack_isopening = 0;
 
     /* tell the JACK server to call `jack_bsize()' whenever
        the buffer size of the system changes.
@@ -579,6 +591,7 @@ int jack_open_audio(int inchans, int outchans, t_audiocallback callback)
 
     /* tell the JACK server that we are ready to roll */
 
+        /* this calls the jack_block_size() callback */
     if (jack_activate (jack_client))
     {
         pd_error(0, "cannot activate client");
@@ -593,11 +606,16 @@ int jack_open_audio(int inchans, int outchans, t_audiocallback callback)
 
 void jack_close_audio(void)
 {
-    if (jack_client){
+    if (jack_client)
+    {
+        jack_isclosing = 1;
         jack_deactivate (jack_client);
         jack_client_close(jack_client);
+        jack_isclosing = 0;
         jack_client = 0;
     }
+        /* unset error callback to prevent deadlock in jack_open_audio() via jack_client_open(). */
+    jack_set_error_function(0);
     if (jack_inbuf)
         free(jack_inbuf), jack_inbuf = 0;
     if (jack_outbuf)
@@ -617,6 +635,7 @@ void jack_close_audio(void)
 
 void sys_do_close_audio(void);
 
+    /* Always called with Pd locked! */
 int jack_reopen_audio(void)
 {
         /* we don't actually try to reopen (yet?) */
@@ -636,14 +655,14 @@ int jack_send_dacs(void)
     t_sample *muxbuffer;
     t_sample *fp, *fp2, *jp;
     int j, ch;
-    const size_t muxbufsize = DEFDACBLKSIZE *
-        (STUFF->st_inchannels > STUFF->st_outchannels ?
-         STUFF->st_inchannels : STUFF->st_outchannels);
+    size_t muxbufsize;
     int retval = SENDDACS_YES;
         /* this shouldn't really happen... */
     if (!jack_client || (!STUFF->st_inchannels && !STUFF->st_outchannels))
         return (SENDDACS_NO);
 
+        /* NB: do not cache st_inchannels or st_outchannels because audio settings
+        may change in sched_idletask(), see below. */
     while (
         (sys_ringbuf_getreadavailable(&jack_inring) <
             (long)(STUFF->st_inchannels * DEFDACBLKSIZE*sizeof(t_sample))) ||
@@ -652,12 +671,20 @@ int jack_send_dacs(void)
     {
         if (jack_didshutdown)
         {
+            sys_lock();
             jack_reopen_audio(); /* handle server shutdown */
+            sys_unlock();
             return (SENDDACS_NO);
         }
 #ifdef THREADSIGNAL
         if (sched_idletask())
+        {
+                /* we might have received a "dsp" message or audio dialog message! */
+            if (!jack_client || sched_get_using_audio() != SCHED_AUDIO_POLL)
+                return SENDDACS_NO;
+                /* otherwise check the ringbuffer again */
             continue;
+        }
             /* only go to sleep if there is nothing else to do. */
         sys_semaphore_wait(jack_sem);
         retval = SENDDACS_SLEPT;
@@ -671,8 +698,12 @@ int jack_send_dacs(void)
         jack_dio_error = 0;
     }
     jack_started = 1;
-
+        /* only setup the muxbuffer after the ringbuffer is ready! */
+    muxbufsize = DEFDACBLKSIZE *
+        (STUFF->st_inchannels > STUFF->st_outchannels ?
+            STUFF->st_inchannels : STUFF->st_outchannels);
     ALLOCA(t_sample, muxbuffer, muxbufsize, MAX_ALLOCA_SAMPLES);
+        /* read input */
     if (STUFF->st_inchannels)
     {
         sys_ringbuf_read(&jack_inring, muxbuffer,
@@ -686,6 +717,7 @@ int jack_send_dacs(void)
                     jp[j] = *fp2;
         }
     }
+        /* write output */
     if (STUFF->st_outchannels)
     {
         for (fp = muxbuffer, ch = 0; ch < STUFF->st_outchannels; ch++, fp++)
@@ -728,18 +760,6 @@ void jack_listdevs(void)
 void jack_autoconnect(int v)
 {
     jack_should_autoconnect = v;
-}
-
-void jack_client_name(const char *name)
-{
-    if (desired_client_name) {
-        free(desired_client_name);
-        desired_client_name = NULL;
-    }
-    if (name) {
-        desired_client_name = (char*)getbytes(strlen(name) + 1);
-        strcpy(desired_client_name, name);
-    }
 }
 
 int jack_get_blocksize(void)
