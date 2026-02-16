@@ -377,7 +377,7 @@ static void rtext_formattext(t_rtext *x, int *widthp, int *heightp,
         int inchars_b  = x->x_bufsize - inindex_b;
         int inchars_c  = x_bufsize_c  - inindex_c;
         int maxindex_c = (inchars_c > widthlimit_c ? widthlimit_c : inchars_c);
-        int maxindex_b = u8_offset(x->x_buf + inindex_b, maxindex_c);
+        int maxindex_b = u8_offset(x->x_buf + inindex_b, inchars_b, maxindex_c);
         int eatchar = 1;
         int foundit_b  = firstone(x->x_buf + inindex_b, '\n', maxindex_b);
         int foundit_c;
@@ -413,7 +413,7 @@ static void rtext_formattext(t_rtext *x, int *widthp, int *heightp,
         {
             int actualx = (findx < 0 ? 0 :
                 (findx > foundit_c ? foundit_c : findx));
-            *indexp = inindex_b + u8_offset(x->x_buf + inindex_b, actualx);
+            *indexp = inindex_b + u8_offset(x->x_buf + inindex_b, inchars_b, actualx);
             reportedindex = 1;
         }
         strncpy(tempbuf+ *outchars_b_p, x->x_buf + inindex_b, foundit_b);

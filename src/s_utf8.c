@@ -178,17 +178,18 @@ int u8_wc_toutf8_nul(char *dest, uint32_t ch)
 }
 
 /* charnum => byte offset */
-int u8_offset(const char *str, int charnum)
+int u8_offset(const char *str, int len, int charnum)
 {
     const char *string = str;
-
-    while (charnum > 0 && *string != '\0') {
+    const char *end = str + len;
+    
+    while (charnum > 0 && string < end) {
         if (*string++ & 0x80) {
-            if (!isutf(*string)) {
+            if (string < end && !isutf(*string)) {
                 ++string;
-                if (!isutf(*string)) {
+                if (string < end && !isutf(*string)) {
                     ++string;
-                    if (!isutf(*string)) {
+                    if (string < end && !isutf(*string)) {
                         ++string;
                     }
                 }
@@ -196,7 +197,6 @@ int u8_offset(const char *str, int charnum)
         }
         --charnum;
     }
-
     return (int)(string - str);
 }
 
@@ -209,11 +209,11 @@ int u8_charnum(const char *s, int offset)
 
     while (string < end && *string != '\0') {
         if (*string++ & 0x80) {
-            if (!isutf(*string)) {
+            if (string < end && !isutf(*string)) {
                 ++string;
-                if (!isutf(*string)) {
+                if (string < end &&  !isutf(*string)) {
                     ++string;
-                    if (!isutf(*string)) {
+                    if (string < end &&  !isutf(*string)) {
                         ++string;
                     }
                 }
