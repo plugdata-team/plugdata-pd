@@ -210,10 +210,17 @@ void glist_grab(t_glist *x, t_gobj *y, t_glistmotionfn motionfn,
     x2->gl_editor->e_ywas = ypos;
 }
 
+int is_reference_valid(void* ptr);
+
 t_canvas *glist_getcanvas(t_glist *x)
 {
-    while (x->gl_owner && !x->gl_isclone && !x->gl_havewindow && x->gl_isgraph)
-            x = x->gl_owner;
+    while (x->gl_owner && !x->gl_isclone && !x->gl_havewindow && x->gl_isgraph) {
+        // TODO: this fixes a crash, but check pd-master to see if they find a better fix
+        // (you can trigger the crash by closing sizingtest canvas with ASAN enabled)
+        if(!is_reference_valid(x->gl_owner)) break;
+        
+        x = x->gl_owner;
+    }
     return((t_canvas *)x);
 }
 
