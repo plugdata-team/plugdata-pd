@@ -19,6 +19,7 @@
 #include <string.h>
 #include <stdio.h>
 
+#include "m_class_probe.h"
 #include "m_private_utils.h"
 
 static PERTHREAD t_symbol *class_loadsym;     /* name under which an extern is invoked */
@@ -141,6 +142,22 @@ static void class_addmethodtolist(t_class *c, t_methodentry **methodlist,
     m->me_name = sel;
     m->me_fun = (t_gotfn)fn;
     memcpy(m->me_arg, args, MAXPDARG+1);
+
+    if (c != pd_objectmaker && plugdata_object_probe_enabled() && sel->s_name[0] != '$' && *args != A_CANT)
+    {
+        c->c_nmethod++;
+        /* Mangle the entry we just added to "$sel" so pd_typedmess can reach it */
+        char mangled[MAXPDSTRING];
+        pd_snprintf(mangled, MAXPDSTRING, "$%s", sel->s_name);
+        m->me_name = dogensym(mangled, 0, pdinstance);
+
+        /* Add A_GIMME wrapper under the real selector */
+        unsigned char gimme_args[MAXPDARG+1] = {A_GIMME, A_NULL};
+        set_plugdata_object_probe_enabled(0); /* prevent recursion */
+        class_addmethodtolist(c, methodlist, nmethod + 1,
+            (t_gotfn)probe_named_wrapper, sel, gimme_args, pdinstance);
+        set_plugdata_object_probe_enabled(1);
+    }
 }
 
 #ifdef PDINSTANCE
@@ -585,6 +602,17 @@ t_class *class_donew(t_symbol *s, t_newmethod newmethod, t_method freemethod,
 #if 0       /* enable this if you want to see a list of all classes */
     post("class: %s", c->c_name->s_name);
 #endif
+
+    if (plugdata_object_probe_enabled())
+    {
+        class_addmethod(c, (t_method)NULL, gensym("$PLUGDATA_BANG_PROBE"), A_NULL);
+        class_addmethod(c, (t_method)NULL, gensym("$PLUGDATA_FLOAT_PROBE"), A_NULL);
+        class_addmethod(c, (t_method)NULL, gensym("$PLUGDATA_SYMBOL_PROBE"), A_NULL);
+        class_addmethod(c, (t_method)NULL, gensym("$PLUGDATA_POINTER_PROBE"), A_NULL);
+        class_addmethod(c, (t_method)NULL, gensym("$PLUGDATA_LIST_PROBE"), A_NULL);
+        class_addmethod(c, (t_method)NULL, gensym("$PLUGDATA_ANY_PROBE"), A_NULL);
+    }
+
     return (c);
 }
 
@@ -786,13 +814,15 @@ void pd_class_addmethod(t_class *c, t_method fn, t_symbol *sel,
     class_doaddmethod(c, fn, sel, arg1, ap);
     va_end(ap);
 }
-
-
     /* Instead of these, see the "class_addfloat", etc.,  macros in m_pd.h */
 void class_addbang(t_class *c, t_method fn)
 {
     if(!c)
         return;
+    if(plugdata_object_probe_enabled()) {
+        plugdata_fwd_bang(c, fn);
+        return;
+    }
     c->c_bangmethod = (t_bangmethod)fn;
 }
 
@@ -800,6 +830,10 @@ void class_addpointer(t_class *c, t_method fn)
 {
     if(!c)
         return;
+    if(plugdata_object_probe_enabled()) {
+        plugdata_fwd_pointer(c, fn);
+        return;
+    }
     c->c_pointermethod = (t_pointermethod)fn;
 }
 
@@ -807,6 +841,10 @@ void class_doaddfloat(t_class *c, t_method fn)
 {
     if(!c)
         return;
+    if(plugdata_object_probe_enabled()) {
+        plugdata_fwd_float(c, fn);
+        return;
+    }
     c->c_floatmethod = (t_floatmethod)fn;
 }
 
@@ -814,6 +852,10 @@ void class_addsymbol(t_class *c, t_method fn)
 {
     if(!c)
         return;
+    if(plugdata_object_probe_enabled()) {
+        plugdata_fwd_symbol(c, fn);
+        return;
+    }
     c->c_symbolmethod = (t_symbolmethod)fn;
 }
 
@@ -821,6 +863,10 @@ void class_addlist(t_class *c, t_method fn)
 {
     if(!c)
         return;
+    if(plugdata_object_probe_enabled()) {
+        plugdata_fwd_list(c, fn);
+        return;
+    }
     c->c_listmethod = (t_listmethod)fn;
 }
 
@@ -828,6 +874,10 @@ void class_addanything(t_class *c, t_method fn)
 {
     if(!c)
         return;
+    if(plugdata_object_probe_enabled()) {
+        plugdata_fwd_anything(c, fn);
+        return;
+    }
     c->c_anymethod = (t_anymethod)fn;
 }
 
@@ -1090,8 +1140,6 @@ void pd_typedmess(t_pd *x, t_symbol *s, int argc, t_atom *argv)
     t_floatarg ad[MAXPDARG+1], *dp = ad;
     int niarg = 0;
     int nfarg = 0;
-
-    plugdata_forward_message(x, s, argc, argv);
 
         /* check for messages that are handled by fixed slots in the class
         structure. */

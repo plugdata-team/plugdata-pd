@@ -356,8 +356,6 @@ void pd_doloadbang(void)
 
 void pd_bang(t_pd *x)
 {
-    plugdata_forward_message(x, &s_bang, 0, NULL);
-    
     (*(*x)->c_bangmethod)(x);
 }
 
@@ -367,19 +365,13 @@ void pd_float(t_pd *x, t_float f)
         ((t_floatmethodr)(*(*x)->c_floatmethod))(x, f);
 		return;
 	}
-    
-    {
-        t_atom fl_value = { .a_type = A_FLOAT, .a_w.w_float = f};
-        plugdata_forward_message(x, &s_float, 1, &fl_value);
-    }
+
     
     (*(*x)->c_floatmethod)(x, f);
 }
 
 void pd_pointer(t_pd *x, t_gpointer *gp)
 {
-    plugdata_forward_message(x, &s_pointer, 0, NULL);
-    
     (*(*x)->c_pointermethod)(x, gp);
 }
 
@@ -388,11 +380,6 @@ void pd_symbol(t_pd *x, t_symbol *s)
 #ifdef VST_CLEANSER
     vst_cleanser(&s);
 #endif
-    {
-        t_atom sym_value = { .a_type = A_SYMBOL, .a_w.w_symbol = s};
-        plugdata_forward_message(x, &s_symbol, 1, &sym_value);
-    }
-    
     (*(*x)->c_symbolmethod)(x, s);
 }
 
@@ -406,8 +393,6 @@ void pd_list(t_pd *x, t_symbol *s, int argc, t_atom *argv)
         if (argv[i].a_type == A_SYMBOL)
             vst_cleanser(&argv[i].a_w.w_symbol);
 #endif
-    plugdata_forward_message(x, &s_list, argc, argv);
-    
     (*(*x)->c_listmethod)(x, &s_list, argc, argv);
 }
 
@@ -420,8 +405,6 @@ void pd_anything(t_pd *x, t_symbol *s, int argc, t_atom *argv)
         if (argv[i].a_type == A_SYMBOL)
             vst_cleanser(&argv[i].a_w.w_symbol);
 #endif
-    plugdata_forward_message(x, &s_anything, argc, argv);
-    
     (*(*x)->c_anymethod)(x, s, argc, argv);
 }
 

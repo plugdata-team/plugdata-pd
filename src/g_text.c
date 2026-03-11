@@ -1831,6 +1831,8 @@ void text_getfont(t_text *x, t_glist *thisglist,
   *guifontsizep = sys_hostfontsize(font, glist_getzoom(x->x_glist));
 */
 
+void set_plugdata_object_probe_enabled(int);
+
 void g_text_setup(void)
 {
     text_class = class_new(gensym("text"), 0, 0, sizeof(t_text),
@@ -1845,6 +1847,7 @@ void g_text_setup(void)
     class_addlist(message_class, message_list);
     class_addanything(message_class, message_list);
 
+    set_plugdata_object_probe_enabled(1); // Only listen for methods
     class_addmethod(message_class, (t_method)message_click, gensym("click"),
         A_FLOAT, A_FLOAT, A_FLOAT, A_FLOAT, A_FLOAT, 0);
     class_addmethod(message_class, (t_method)message_set, gensym("set"),
@@ -1861,6 +1864,7 @@ void g_text_setup(void)
         gensym("adddollar"), A_FLOAT, 0);
     class_addmethod(message_class, (t_method)message_adddollsym,
         gensym("adddollsym"), A_SYMBOL, 0);
+    set_plugdata_object_probe_enabled(0);
 
     messresponder_class = class_new(gensym("messresponder"), 0, 0,
         sizeof(t_text), CLASS_PD, 0);
@@ -1870,6 +1874,7 @@ void g_text_setup(void)
     class_addlist(messresponder_class, messresponder_list);
     class_addanything(messresponder_class, messresponder_anything);
 
+    set_plugdata_object_probe_enabled(1);
     gatom_class = class_new(gensym("gatom"), 0, (t_method)gatom_free,
         sizeof(t_gatom), CLASS_NOINLET | CLASS_PATCHABLE, 0);
     class_addbang(gatom_class, gatom_bang);
@@ -1883,4 +1888,6 @@ void g_text_setup(void)
     class_setwidget(gatom_class, &gatom_widgetbehavior);
     class_setpropertiesfn(gatom_class, gatom_properties);
     class_sethelpsymbol(gatom_class, gensym("gui-boxes"));
+    set_plugdata_object_probe_enabled(0);
+
 }

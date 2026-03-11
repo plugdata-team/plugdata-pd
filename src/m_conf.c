@@ -53,8 +53,12 @@ void d_osc_setup(void);
 void d_soundfile_setup(void);
 void d_ugen_setup(void);
 
+void set_plugdata_object_probe_enabled(int);
+
 void conf_init(void)
 {
+
+    set_plugdata_object_probe_enabled(1);
     g_array_setup();
     g_canvas_setup();
     g_guiconnect_setup();
@@ -66,13 +70,23 @@ void conf_init(void)
     g_slider_setup();
     g_toggle_setup();
     g_vumeter_setup();
+    set_plugdata_object_probe_enabled(0);
+
 /* iemlib */
     g_io_setup();
+
+    set_plugdata_object_probe_enabled(1);
     g_scalar_setup();
     g_template_setup();
+    set_plugdata_object_probe_enabled(0);
+    
     g_text_setup();
     g_traversal_setup();
+
+    set_plugdata_object_probe_enabled(1);
     clone_setup();
+    set_plugdata_object_probe_enabled(0);
+
     m_pd_setup();
     x_acoustics_setup();
     x_interface_setup();

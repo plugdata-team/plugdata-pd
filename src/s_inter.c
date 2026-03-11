@@ -2252,7 +2252,7 @@ void plugdata_gui_message(const char* message, va_list args)
         pd_this->pd_inter->gui_callback(INTER->callback_target, "elsepanel", 3, atoms);
     }
     else if (hash == gui_message_hash_table[10]) { // editor_open
-        if(strncmp(message, "editor_open .%lx %dx%d {%s: %s} %d", strlen("editor_open .%lx %dx%d {%s: %s} %d")) == 0)
+        if(strncmp(message, "editor_open .%llx %dx%d {%s: %s} %d", strlen("editor_open .%llx %dx%d {%s: %s} %d")) == 0)
         {
             unsigned long long ptr = va_arg(args, unsigned long long);
             int width = va_arg(args, int);
@@ -2369,9 +2369,15 @@ void plugdata_forward_message(void* x, t_symbol *s, int argc, t_atom *argv)
     }
 }
 
+
+static atomic_bool enable_probe = 0;
 static atomic_bool enable_debugging = 0;
 static atomic_bool enable_activity = 0;
 static atomic_bool enabled_debug_or_activity = 0;
+
+int plugdata_object_probe_enabled() {
+    return atomic_load_explicit(&enable_probe, memory_order_relaxed);
+}
 
 int plugdata_debugging_enabled() {
     return atomic_load_explicit(&enable_debugging, memory_order_relaxed);
@@ -2385,6 +2391,11 @@ int plugdata_activity_enabled() {
 int plugdata_debugging_or_activity_enabled()
 {
     return atomic_load_explicit(&enabled_debug_or_activity, memory_order_relaxed);
+}
+
+void set_plugdata_object_probe_enabled(int enabled_probe)
+{
+    atomic_store_explicit(&enable_probe, enabled_probe, memory_order_relaxed);
 }
 
 void set_plugdata_debugging_enabled(int enabled_debugging)
