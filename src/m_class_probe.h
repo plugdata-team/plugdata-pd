@@ -30,7 +30,7 @@ static void probe_bang(t_pd *x)
 static void probe_float(t_pd *x, t_float f)
 {
     t_class *c = *((t_class **)x);
-    ((t_floatmethod)CLASS_METHOD(c, t_floatmethod, PROBE_IDX_FLOAT))(x, f);
+    CLASS_METHOD(c, t_floatmethod, PROBE_IDX_FLOAT)(x, f);
     t_atom a; SETFLOAT(&a, f);
     plugdata_forward_message(x, &s_float, 1, &a);
 }
@@ -84,7 +84,7 @@ static inline void plugdata_fwd_bang(t_class *c, t_method fn)
 
 static inline void plugdata_fwd_float(t_class *c, t_method fn)
 {
-    CLASS_SETMETHOD(c, PROBE_IDX_BANG, fn);
+    CLASS_SETMETHOD(c, PROBE_IDX_FLOAT, fn);
     c->c_floatmethod = probe_float;
 }
 
