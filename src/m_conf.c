@@ -74,12 +74,8 @@ void conf_init(void)
 
 /* iemlib */
     g_io_setup();
-
-    set_plugdata_object_probe_enabled(1);
     g_scalar_setup();
     g_template_setup();
-    set_plugdata_object_probe_enabled(0);
-    
     g_text_setup();
     g_traversal_setup();
 
