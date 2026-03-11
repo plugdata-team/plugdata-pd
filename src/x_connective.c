@@ -261,10 +261,10 @@ static void plugdata_send_activity_to_parent(t_canvas* canvas)
 {
     if(!canvas || !plugdata_activity_enabled()) return;
     
-    plugdata_forward_message(canvas, gensym("_activity"), 0, NULL);
+    plugdata_forward_message(1, canvas, gensym("_activity"), 0, NULL);
     while((canvas = canvas->gl_owner))
     {
-        plugdata_forward_message(canvas, gensym("_activity"), 0, NULL);
+        plugdata_forward_message(1, canvas, gensym("_activity"), 0, NULL);
     }
 }
 

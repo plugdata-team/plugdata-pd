@@ -2362,10 +2362,10 @@ void plugdata_gui_message(const char* message, va_list args)
     }
 }
 
-void plugdata_forward_message(void* x, t_symbol *s, int argc, t_atom *argv)
+void plugdata_forward_message(int type, void* x, t_symbol *s, int argc, t_atom *argv)
 {
     if(EXPECT_LIKELY(INTER->callback_target)) {
-        INTER->message_callback(INTER->callback_target, (void*)x, s, argc, argv);
+        INTER->message_callback(INTER->callback_target, type, (void*)x, s, argc, argv);
     }
 }
 

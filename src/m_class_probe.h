@@ -24,7 +24,7 @@ static void probe_bang(t_pd *x)
 {
     t_class *c = *((t_class **)x);
     CLASS_METHOD(c, t_bangmethod, PROBE_IDX_BANG)(x);
-    plugdata_forward_message(x, &s_bang, 0, NULL);
+    plugdata_forward_message(0, x, &s_bang, 0, NULL);
 }
 
 static void probe_float(t_pd *x, t_float f)
@@ -32,7 +32,7 @@ static void probe_float(t_pd *x, t_float f)
     t_class *c = *((t_class **)x);
     CLASS_METHOD(c, t_floatmethod, PROBE_IDX_FLOAT)(x, f);
     t_atom a; SETFLOAT(&a, f);
-    plugdata_forward_message(x, &s_float, 1, &a);
+    plugdata_forward_message(0, x, &s_float, 1, &a);
 }
 
 static void probe_symbol(t_pd *x, t_symbol *s)
@@ -40,7 +40,7 @@ static void probe_symbol(t_pd *x, t_symbol *s)
     t_class *c = *((t_class **)x);
     CLASS_METHOD(c, t_symbolmethod, PROBE_IDX_SYMBOL)(x, s);
     t_atom a; SETSYMBOL(&a, s);
-    plugdata_forward_message(x, &s_symbol, 1, &a);
+    plugdata_forward_message(0, x, &s_symbol, 1, &a);
 }
 
 static void probe_pointer(t_pd *x, t_gpointer *gp)
@@ -48,21 +48,21 @@ static void probe_pointer(t_pd *x, t_gpointer *gp)
     t_class *c = *((t_class **)x);
     CLASS_METHOD(c, t_pointermethod, PROBE_IDX_POINTER)(x, gp);
     t_atom a; SETPOINTER(&a, gp);
-    plugdata_forward_message(x, &s_pointer, 1, &a);
+    plugdata_forward_message(0, x, &s_pointer, 1, &a);
 }
 
 static void probe_list(t_pd *x, t_symbol *s, int argc, t_atom *argv)
 {
     t_class *c = *((t_class **)x);
     CLASS_METHOD(c, t_listmethod, PROBE_IDX_LIST)(x, s, argc, argv);
-    plugdata_forward_message(x, &s_list, argc, argv);
+    plugdata_forward_message(0, x, &s_list, argc, argv);
 }
 
 static void probe_any(t_pd *x, t_symbol *s, int argc, t_atom *argv)
 {
     t_class *c = *((t_class **)x);
     CLASS_METHOD(c, t_anymethod, PROBE_IDX_ANY)(x, s, argc, argv);
-    plugdata_forward_message(x, s, argc, argv);
+    plugdata_forward_message(0, x, s, argc, argv);
 }
 
 static inline void probe_named_wrapper(t_pd *x, t_symbol *s, int argc, t_atom *argv)
@@ -73,7 +73,7 @@ static inline void probe_named_wrapper(t_pd *x, t_symbol *s, int argc, t_atom *a
     strncpy(mangled + 1, s->s_name, MAXPDSTRING - 2);
     mangled[MAXPDSTRING - 1] = '\0';
     pd_typedmess(x, gensym(mangled), argc, argv);
-    plugdata_forward_message(x, s, argc, argv);
+    plugdata_forward_message(0, x, s, argc, argv);
 }
 
 static inline void plugdata_fwd_bang(t_class *c, t_method fn)
