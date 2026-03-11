@@ -12,6 +12,8 @@ EXTERN void set_plugdata_object_probe_enabled(int);
 #define PROBE_IDX_LIST    4
 #define PROBE_IDX_ANY     5
 
+#define PROBE_MANGLE_PREFIX '\x01'
+
 #ifdef PDINSTANCE
 #define CLASS_METHOD(c, type, idx) ((type)(c)->c_methods[pd_this->pd_instanceno][(idx)].me_fun)
 #define CLASS_SETMETHOD(c, idx, method) (c)->c_methods[pd_this->pd_instanceno][(idx)].me_fun = (t_gotfn)method
@@ -69,7 +71,7 @@ static inline void probe_named_wrapper(t_pd *x, t_symbol *s, int argc, t_atom *a
 {
     /* Call the original, stored under "$sel" */
     char mangled[MAXPDSTRING];
-    mangled[0] = '$';
+    mangled[0] = PROBE_MANGLE_PREFIX;
     strncpy(mangled + 1, s->s_name, MAXPDSTRING - 2);
     mangled[MAXPDSTRING - 1] = '\0';
     pd_typedmess(x, gensym(mangled), argc, argv);

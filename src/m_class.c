@@ -143,12 +143,11 @@ static void class_addmethodtolist(t_class *c, t_methodentry **methodlist,
     m->me_fun = (t_gotfn)fn;
     memcpy(m->me_arg, args, MAXPDARG+1);
 
-    if (c != pd_objectmaker && plugdata_object_probe_enabled() && sel->s_name[0] != '$' && *args != A_CANT)
+    if (c != pd_objectmaker && plugdata_object_probe_enabled() && sel->s_name[0] != PROBE_MANGLE_PREFIX && *args != A_CANT)
     {
         c->c_nmethod++;
-        /* Mangle the entry we just added to "$sel" so pd_typedmess can reach it */
         char mangled[MAXPDSTRING];
-        pd_snprintf(mangled, MAXPDSTRING, "$%s", sel->s_name);
+        pd_snprintf(mangled, MAXPDSTRING, "%c%s", PROBE_MANGLE_PREFIX, sel->s_name);
         m->me_name = dogensym(mangled, 0, pdinstance);
 
         /* Add A_GIMME wrapper under the real selector */
@@ -605,12 +604,12 @@ t_class *class_donew(t_symbol *s, t_newmethod newmethod, t_method freemethod,
 
     if (plugdata_object_probe_enabled())
     {
-        class_addmethod(c, (t_method)NULL, gensym("$PLUGDATA_BANG_PROBE"), A_NULL);
-        class_addmethod(c, (t_method)NULL, gensym("$PLUGDATA_FLOAT_PROBE"), A_NULL);
-        class_addmethod(c, (t_method)NULL, gensym("$PLUGDATA_SYMBOL_PROBE"), A_NULL);
-        class_addmethod(c, (t_method)NULL, gensym("$PLUGDATA_POINTER_PROBE"), A_NULL);
-        class_addmethod(c, (t_method)NULL, gensym("$PLUGDATA_LIST_PROBE"), A_NULL);
-        class_addmethod(c, (t_method)NULL, gensym("$PLUGDATA_ANY_PROBE"), A_NULL);
+        class_addmethod(c, (t_method)NULL, gensym("\x01_PLUGDATA_BANG_PROBE"), A_NULL);
+        class_addmethod(c, (t_method)NULL, gensym("\x01_PLUGDATA_FLOAT_PROBE"), A_NULL);
+        class_addmethod(c, (t_method)NULL, gensym("\x01_PLUGDATA_SYMBOL_PROBE"), A_NULL);
+        class_addmethod(c, (t_method)NULL, gensym("\x01_PLUGDATA_POINTER_PROBE"), A_NULL);
+        class_addmethod(c, (t_method)NULL, gensym("\x01_PLUGDATA_LIST_PROBE"), A_NULL);
+        class_addmethod(c, (t_method)NULL, gensym("\x01_PLUGDATA_ANY_PROBE"), A_NULL);
     }
 
     return (c);
