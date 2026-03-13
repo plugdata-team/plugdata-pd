@@ -985,7 +985,8 @@ void glist_menu_open(t_glist *x)
 
 int glist_isvisible(t_glist *x)
 {
-    return ((!x->gl_loading) && glist_getcanvas(x)->gl_mapped);
+    /* change for plugdata: consider every canvas visible if it has gl_havewindow set*/
+    return ((!x->gl_loading) && glist_getcanvas(x)->gl_havewindow);
 }
 
 int glist_istoplevel(t_glist *x)
