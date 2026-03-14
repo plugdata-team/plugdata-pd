@@ -2095,7 +2095,7 @@ uint32_t gui_message_hash(const char* str) {
     return hash;
 }
 
-#define NUM_GUI_HASHES 20
+#define NUM_GUI_HASHES 21
 uint32_t gui_message_hash_table[NUM_GUI_HASHES];
 
 
@@ -2106,6 +2106,7 @@ void prepare_hashes()
         "pdtk_undomenu",
         "pdtk_canvas_reflecttitle",
         "pdtk_canvas_raise",
+        "pdtk_canvas_new",
         "destroy",
         "pdtk_savepanel",
         "pdtk_openpanel",
@@ -2167,10 +2168,8 @@ void plugdata_gui_message(const char* message, va_list args)
         pd_this->pd_inter->gui_callback(INTER->callback_target, "canvas_title", 3, atoms);
         return;
     }
-    //plugdata TODO: uncomment pdtk_canvas_new message in a later version
-    //this is a temporary measure to make sure patches don't open up a dozen of subpatch windows, since plugdata <0.9.1 always set the gl_mapped flag
-    else if (hash == gui_message_hash_table[2] // pdtk_canvas_raise
-        /*|| strncmp(message, "pdtk_canvas_new", strlen("pdtk_canvas_new")) == 0 */) {
+    else if (hash == gui_message_hash_table[2] || hash == gui_message_hash_table[3]) // pdtk_canvas_raise/pdtk_canvas_new
+    {
         void* canvas = va_arg(args, void*);
         t_atom atoms[2];
         SETPOINTER(atoms, canvas);
@@ -2179,7 +2178,7 @@ void plugdata_gui_message(const char* message, va_list args)
         pd_this->pd_inter->gui_callback(INTER->callback_target, "canvas_vis", 2, atoms);
         return;
     }
-    else if (hash == gui_message_hash_table[3]) { // destroy
+    else if (hash == gui_message_hash_table[4]) { // destroy
         void* canvas = va_arg(args, void*);
         t_atom atoms[2];
         SETPOINTER(atoms, canvas);
@@ -2189,7 +2188,7 @@ void plugdata_gui_message(const char* message, va_list args)
         return;
     }
 
-    else if (hash == gui_message_hash_table[4]) { // pdtk_savepanel
+    else if (hash == gui_message_hash_table[5]) { // pdtk_savepanel
 
         char const* snd = va_arg(args, char const*);
         char const* path = va_arg(args, char const*);
@@ -2201,7 +2200,7 @@ void plugdata_gui_message(const char* message, va_list args)
         
         pd_this->pd_inter->gui_callback(INTER->callback_target, "openpanel", 3, atoms);
     }
-    else if (hash == gui_message_hash_table[5]) { // pdtk_openpanel
+    else if (hash == gui_message_hash_table[6]) { // pdtk_openpanel
         char const* snd = va_arg(args, char const*);
         char const* path = va_arg(args, char const*);
         int mode = va_arg(args, int);
@@ -2214,14 +2213,14 @@ void plugdata_gui_message(const char* message, va_list args)
         
         pd_this->pd_inter->gui_callback(INTER->callback_target, "openpanel", 4, atoms);
     }
-    else if (hash == gui_message_hash_table[6]) { // ::pd_menucommands::menu_openfile
+    else if (hash == gui_message_hash_table[7]) { // ::pd_menucommands::menu_openfile
         const char* file = va_arg(args, const char*);
         
         t_atom atoms;
         SETSYMBOL(&atoms, gensym(file));
         INTER->gui_callback(INTER->callback_target, "openfile", 1, &atoms);
     }
-    else if (hash == gui_message_hash_table[7]) { // openfile_open
+    else if (hash == gui_message_hash_table[8]) { // openfile_open
         const char* filename = va_arg(args, const char*);
 
         t_atom atom;
@@ -2229,7 +2228,7 @@ void plugdata_gui_message(const char* message, va_list args)
         INTER->gui_callback(INTER->callback_target, "openfile", 1, &atom);
     }
     // These are tcl/tk functions ELSE defines for spawning a file browser
-    else if (hash == gui_message_hash_table[8]) { // panel_save
+    else if (hash == gui_message_hash_table[9]) { // panel_save
         char const* snd = va_arg(args, char const*);
         char const* path = va_arg(args, char const*);
                 
@@ -2240,7 +2239,7 @@ void plugdata_gui_message(const char* message, va_list args)
         
         pd_this->pd_inter->gui_callback(INTER->callback_target, "elsepanel", 3, atoms);
     }
-    else if (hash == gui_message_hash_table[9]) { // panel_open
+    else if (hash == gui_message_hash_table[10]) { // panel_open
         char const* snd = va_arg(args, char const*);
         char const* path = va_arg(args, char const*);
         
@@ -2251,7 +2250,7 @@ void plugdata_gui_message(const char* message, va_list args)
         
         pd_this->pd_inter->gui_callback(INTER->callback_target, "elsepanel", 3, atoms);
     }
-    else if (hash == gui_message_hash_table[10]) { // editor_open
+    else if (hash == gui_message_hash_table[11]) { // editor_open
         if(strncmp(message, "editor_open .%llx %dx%d {%s: %s} %d", strlen("editor_open .%llx %dx%d {%s: %s} %d")) == 0)
         {
             unsigned long long ptr = va_arg(args, unsigned long long);
@@ -2287,7 +2286,7 @@ void plugdata_gui_message(const char* message, va_list args)
             pd_this->pd_inter->gui_callback(INTER->callback_target, "cyclone_editor", 5, atoms);
         }
     }
-    else if (hash == gui_message_hash_table[11]) { // editor_append
+    else if (hash == gui_message_hash_table[12]) { // editor_append
         unsigned long long ptr = va_arg(args, unsigned long long);
         char const* text = va_arg(args, char const*);
         
@@ -2296,7 +2295,7 @@ void plugdata_gui_message(const char* message, va_list args)
         SETSYMBOL(atoms + 1, gensym(text));
         pd_this->pd_inter->gui_callback(INTER->callback_target, "cyclone_editor_append", 2, atoms);
     }
-    else if (hash == gui_message_hash_table[12]) { // coll_check_open
+    else if (hash == gui_message_hash_table[13]) { // coll_check_open
         unsigned long long ptr = va_arg(args, unsigned long long);
         int open = va_arg(args, int);
         t_atom atoms[2];
@@ -2304,13 +2303,13 @@ void plugdata_gui_message(const char* message, va_list args)
         SETFLOAT(atoms + 1, open);
         pd_this->pd_inter->gui_callback(INTER->callback_target, "coll_check_open", 2, atoms);
     }
-    else if (hash == gui_message_hash_table[13]) { // editor_close
+    else if (hash == gui_message_hash_table[14]) { // editor_close
         unsigned long long ptr = va_arg(args, unsigned long long);
         t_atom atom;
         SETPOINTER(&atom, ptr);
         pd_this->pd_inter->gui_callback(INTER->callback_target, "cyclone_editor_close", 1, &atom);
     }
-    else if (hash == gui_message_hash_table[14]) { // pdtk_textwindow_open
+    else if (hash == gui_message_hash_table[15]) { // pdtk_textwindow_open
         unsigned long long ptr = va_arg(args, unsigned long long);
         const char* buf = va_arg(args, const char*);
         const char* sym = va_arg(args, const char*);
@@ -2320,20 +2319,20 @@ void plugdata_gui_message(const char* message, va_list args)
         SETSYMBOL(atoms + 1, gensym(sym));
         pd_this->pd_inter->gui_callback(INTER->callback_target, "pdtk_textwindow_open", 2, atoms);
     }
-    else if (hash == gui_message_hash_table[15]) { // pdtk_textwindow_doclose
+    else if (hash == gui_message_hash_table[16]) { // pdtk_textwindow_doclose
         unsigned long long ptr = va_arg(args, unsigned long long);
         t_atom atom;
         SETPOINTER(&atom, ptr);
         pd_this->pd_inter->gui_callback(INTER->callback_target, "pdtk_textwindow_doclose", 1, &atom);
     }
-    else if (hash == gui_message_hash_table[16]) { // pdtk_textwindow_clear
+    else if (hash == gui_message_hash_table[17]) { // pdtk_textwindow_clear
         unsigned long long ptr = va_arg(args, unsigned long long);
         t_atom atom;
         SETPOINTER(&atom, ptr);
         pd_this->pd_inter->gui_callback(INTER->callback_target, "pdtk_textwindow_clear", 1, &atom);
 
     }
-    else if (hash == gui_message_hash_table[17]) { // pdtk_textwindow_appendatoms
+    else if (hash == gui_message_hash_table[18]) { // pdtk_textwindow_appendatoms
         unsigned long long ptr = va_arg(args, unsigned long long);
         int argc = va_arg(args, int);
         t_atom* argv = va_arg(args, t_atom*);
@@ -2346,15 +2345,14 @@ void plugdata_gui_message(const char* message, va_list args)
         pd_this->pd_inter->gui_callback(INTER->callback_target, "pdtk_textwindow_appendatoms", argc + 1, atoms);
         
         FREEA(t_atom, atoms, argc + 1, 100);
-
     }
-    else if (hash == gui_message_hash_table[18]) { // pdtk_textwindow_raise
+    else if (hash == gui_message_hash_table[19]) { // pdtk_textwindow_raise
         unsigned long long ptr = va_arg(args, unsigned long long);
         t_atom atom;
         SETPOINTER(&atom, ptr);
         pd_this->pd_inter->gui_callback(INTER->callback_target, "pdtk_textwindow_raise", 1, &atom);
     }
-    else if (hash == gui_message_hash_table[19]) { // pdtk_textwindow_destroy
+    else if (hash == gui_message_hash_table[20]) { // pdtk_textwindow_destroy
         unsigned long long ptr = va_arg(args, unsigned long long);
         t_atom atom;
         SETPOINTER(&atom, ptr);
