@@ -115,7 +115,7 @@ static t_pdinstance *pdinstance_init(t_pdinstance *x)
     return (x);
 }
 
-static void class_addmethodtolist(t_class *c, t_methodentry **methodlist,
+static int class_addmethodtolist(t_class *c, t_methodentry **methodlist,
     int nmethod, t_gotfn fn, t_symbol *sel, unsigned char *args,
         t_pdinstance *pdinstance)
 {
@@ -145,18 +145,19 @@ static void class_addmethodtolist(t_class *c, t_methodentry **methodlist,
 
     if (c != pd_objectmaker && plugdata_object_probe_enabled() && sel->s_name[0] != PROBE_MANGLE_PREFIX && *args != A_CANT)
     {
-        c->c_nmethod++;
         char mangled[MAXPDSTRING];
         pd_snprintf(mangled, MAXPDSTRING, "%c%s", PROBE_MANGLE_PREFIX, sel->s_name);
         m->me_name = dogensym(mangled, 0, pdinstance);
 
-        /* Add A_GIMME wrapper under the real selector */
         unsigned char gimme_args[MAXPDARG+1] = {A_GIMME, A_NULL};
-        set_plugdata_object_probe_enabled(0); /* prevent recursion */
+        set_plugdata_object_probe_enabled(0);
         class_addmethodtolist(c, methodlist, nmethod + 1,
             (t_gotfn)probe_named_wrapper, sel, gimme_args, pdinstance);
         set_plugdata_object_probe_enabled(1);
+        return 2;
     }
+
+    return 1;
 }
 
 #ifdef PDINSTANCE
@@ -773,18 +774,19 @@ void class_doaddmethod(t_class *c, t_method fn, t_symbol *sel,
             pd_error(0, "%s_%s: only 5 arguments are typecheckable; use A_GIMME",
                 (c->c_name)?(c->c_name->s_name):"<anon>", sel?(sel->s_name):"<nomethod>");
         argvec[nargs] = 0;
+        int num_added = 1;
 #ifdef PDINSTANCE
         for (i = 0; i < pd_ninstances; i++)
         {
-            class_addmethodtolist(c, &c->c_methods[i], c->c_nmethod,
+            num_added = class_addmethodtolist(c, &c->c_methods[i], c->c_nmethod,
                 (t_gotfn)fn, sel?dogensym(sel->s_name, 0, pd_instances[i]):0,
                     argvec, pd_instances[i]);
         }
 #else
-        class_addmethodtolist(c, &c->c_methods, c->c_nmethod,
+        num_added = class_addmethodtolist(c, &c->c_methods, c->c_nmethod,
             (t_gotfn)fn, sel, argvec, &pd_maininstance);
 #endif
-        c->c_nmethod++;
+        c->c_nmethod += num_added;
     }
     goto done;
 phooey:
