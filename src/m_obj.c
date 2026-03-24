@@ -64,6 +64,10 @@ static t_class *inlet_class, *pointerinlet_class, *floatinlet_class,
 t_inlet *inlet_new(t_object *owner, t_pd *dest, t_symbol *s1, t_symbol *s2)
 {
     t_inlet *x = (t_inlet *)pd_new(inlet_class), *y, *y2;
+#ifdef VST_CLEANSER
+    if (s1) vst_cleanser(&s1);
+    if (s2) vst_cleanser(&s2);
+#endif
     x->i_owner = owner;
     x->i_dest = dest;
     if (s1 == &s_signal)
@@ -555,6 +559,9 @@ void obj_dosettracing(t_object *ob, int onoff)
 t_outlet *outlet_new(t_object *owner, t_symbol *s)
 {
     t_outlet *x = (t_outlet *)getbytes(sizeof(*x)), *y, *y2;
+#ifdef VST_CLEANSER
+    if (s) vst_cleanser(&s);
+#endif
     x->o_owner = owner;
     x->o_next = 0;
     if ((y = owner->ob_outlet))
