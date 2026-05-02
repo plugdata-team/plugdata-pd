@@ -45,7 +45,7 @@ extern t_symbol *sys_flags;
 /* s_main.c */
 extern int sys_debuglevel;
 extern int sys_verbose;
-EXTERN int sys_noloadbang;
+EXTERN_VAR int sys_noloadbang;
 EXTERN int sys_havetkproc(void);    /* TK is up; we can post to Pd window */
 EXTERN int sys_havegui(void);       /* also have font metrics and can draw */
 extern const char *sys_guicmd;
@@ -55,7 +55,7 @@ extern char sys_devicename[];
 EXTERN int sys_nearestfontsize(int fontsize);
 
 extern int sys_defaultfont;
-EXTERN t_symbol *sys_libdir;    /* library directory for auxiliary files */
+EXTERN_VAR t_symbol *sys_libdir;    /* library directory for auxiliary files */
 
 /* s_loader.c */
 
@@ -273,7 +273,7 @@ void dummy_listdevs(void);
                     /* s_midi.c */
 #define MAXMIDIINDEV 16         /* max. number of input ports */
 #define MAXMIDIOUTDEV 16        /* max. number of output ports */
-EXTERN int sys_midiapi;
+EXTERN_VAR int sys_midiapi;
 extern int sys_nmidiin;
 extern int sys_nmidiout;
 extern int sys_midiindevlist[];
@@ -371,7 +371,7 @@ void sys_setalarm(int microsec);
 #endif
 
 void sys_set_priority(int higher);
-EXTERN int sys_hipriority;      /* real-time flag, true if priority boosted */
+EXTERN_VAR int sys_hipriority;      /* real-time flag, true if priority boosted */
 
 /* s_print.c */
 
@@ -383,7 +383,7 @@ extern int sys_printtostderr;
 
 /* jsarlo { */
 
-EXTERN int sys_externalschedlib;
+EXTERN_VAR int sys_externalschedlib;
 
 EXTERN t_sample* get_sys_soundout(void);
 EXTERN t_sample* get_sys_soundin(void);
@@ -417,7 +417,7 @@ EXTERN void inmidi_polyaftertouch(int portno,
                                   int pitch,
                                   int value);
 /* } jsarlo */
-EXTERN int sys_zoom_open;
+EXTERN_VAR int sys_zoom_open;
 
 struct _instancestuff
 {
@@ -465,5 +465,5 @@ EXTERN int pd_vsnprintf(char *buf, size_t size, const char *fmt,
 /* fallback for old system's that don't have strnlen() */
 EXTERN size_t pd_strnlen(const char*s, size_t maxlen);
 
-EXTERN const char *pd_extraflags;     /* a place to stick an extra startup arg */
+EXTERN_VAR const char *pd_extraflags;     /* a place to stick an extra startup arg */
  /* this is used by 'stdout' but could be useful elsewhere perhaps. */

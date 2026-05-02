@@ -83,8 +83,6 @@ static inline void probe_named_wrapper(t_pd *x, t_symbol *s, int argc, t_atom *a
     plugdata_forward_message(0, x, s, argc, argv);
 }
 
-static t_symbol *dogensym(const char *s, t_symbol *oldsym, t_pdinstance *pdinstance);
-
 static inline void plugdata_fwd_bang(t_class *c, t_method fn)
 {
     CLASS_SETMETHOD(c, PROBE_IDX_BANG, fn);
