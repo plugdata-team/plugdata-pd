@@ -40,20 +40,27 @@ extern "C" {
 #endif /* _MSC_VER */
 
     /* the external storage class is "extern" in UNIX; in MSW it's ugly. */
-#ifndef EXTERN
 #ifdef _WIN32
 #ifdef PD_INTERNAL
+#ifndef EXTERN
 #define EXTERN __declspec(dllexport) extern
-#define EXTERN_VAR __declspec(dllexport) extern
+#endif
 #else
+#ifndef EXTERN
 #define EXTERN __declspec(dllimport) extern
-#define EXTERN_VAR __declspec(dllimport) extern
+#endif
 #endif /* PD_INTERNAL */
+#ifndef EXTERN_VAR
+#define EXTERN_VAR EXTERN
+#endif
 #else
+#ifndef EXTERN
 #define EXTERN __attribute__((used)) extern
+#endif
+#ifndef EXTERN_VAR
 #define EXTERN_VAR extern
+#endif
 #endif /* _WIN32 */
-#endif /* EXTERN */
 
     /* On most c compilers, you can just say "struct foo;" to declare a
     structure whose elements are defined elsewhere.  On very old MSVC versions,
