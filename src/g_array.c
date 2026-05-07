@@ -1134,12 +1134,12 @@ static void garray_yticks(t_garray *x,
 
 static void garray_xlabel(t_garray *x, t_symbol *s, int argc, t_atom *argv)
 {
-    typedmess(&x->x_glist->gl_pd, s, argc, argv);
+    typedmess(&x->x_glist->gl_pd, gensym("xlabel"), argc, argv);
 }
 
 static void garray_ylabel(t_garray *x, t_symbol *s, int argc, t_atom *argv)
 {
-    typedmess(&x->x_glist->gl_pd, s, argc, argv);
+    typedmess(&x->x_glist->gl_pd, gensym("ylabel"), argc, argv);
 }
 
 static void garray_style(t_garray *x, t_floatarg fstyle)

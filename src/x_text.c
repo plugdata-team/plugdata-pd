@@ -830,18 +830,13 @@ static void text_get_float(t_text_get *x, t_floatarg f)
         if (x->x_f1 < 0)    /* negative start field for whole line */
         {
                 /* tell us what terminated the line (semi or comma) */
-            outlet_float(x->x_out2, (end < n && vec[end].a_type == A_COMMA));
-            
-            /* we can't assume anything about the size or memory of binbuf after outlet_float */
-            vec = binbuf_getvec(b);
-            
-            if(outc + start < binbuf_getnatom(b)) {
-                ALLOCA(t_atom, outv, outc, TEXT_NGETBYTE);
-                for (k = 0; k < outc; k++)
-                    outv[k] = vec[start+k];
-                outlet_list(x->x_out1, 0, outc, outv);
-                FREEA(t_atom, outv, outc, TEXT_NGETBYTE);
-            }
+            int iscomma = (end < n && vec[end].a_type == A_COMMA);
+            ALLOCA(t_atom, outv, outc, TEXT_NGETBYTE);
+            for (k = 0; k < outc; k++)
+                outv[k] = vec[start+k];
+            outlet_float(x->x_out2, iscomma);
+            outlet_list(x->x_out1, 0, outc, outv);
+            FREEA(t_atom, outv, outc, TEXT_NGETBYTE);
         }
         else if (startfield + nfield > outc)
             pd_error(x, "text get: field request (%d %d) out of range",
