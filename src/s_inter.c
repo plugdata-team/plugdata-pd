@@ -2229,8 +2229,13 @@ void plugdata_gui_message(const char* message, va_list args)
     }
     // These are tcl/tk functions ELSE defines for spawning a file browser
     else if (hash == gui_message_hash_table[9]) { // panel_save
-        char const* snd = va_arg(args, char const*);
-        char const* path = va_arg(args, char const*);
+        char snd_buf[MAXPDSTRING], path_buf[MAXPDSTRING];
+        char const* snd = snd_buf;
+        char const* path = path_buf;
+        if (sscanf(message, "panel_save %999s {%999[^}]}", snd_buf, path_buf) < 2 || snd_buf[0] == '%') {
+            snd = va_arg(args, char const*);
+            path = va_arg(args, char const*);
+        }
                 
         t_atom atoms[3];
         SETFLOAT(atoms, 0);
@@ -2240,14 +2245,19 @@ void plugdata_gui_message(const char* message, va_list args)
         pd_this->pd_inter->gui_callback(INTER->callback_target, "elsepanel", 3, atoms);
     }
     else if (hash == gui_message_hash_table[10]) { // panel_open
-        char const* snd = va_arg(args, char const*);
-        char const* path = va_arg(args, char const*);
+        char snd_buf[MAXPDSTRING], path_buf[MAXPDSTRING];
+        char const* snd = snd_buf;
+        char const* path = path_buf;
+        if (sscanf(message, "panel_open %999s {%999[^}]}", snd_buf, path_buf) < 2 || snd_buf[0] == '%') {
+            snd = va_arg(args, char const*);
+            path = va_arg(args, char const*);
+        }
         
         t_atom atoms[3];
         SETFLOAT(atoms, 1);
         SETSYMBOL(atoms + 1, gensym(snd));
         SETSYMBOL(atoms + 2, gensym(path));
-        
+
         pd_this->pd_inter->gui_callback(INTER->callback_target, "elsepanel", 3, atoms);
     }
     else if (hash == gui_message_hash_table[11]) { // editor_open
