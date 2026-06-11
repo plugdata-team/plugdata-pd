@@ -470,7 +470,7 @@ void canvas_disconnect(t_canvas *x,
             {
                 char tag[128];
                 sprintf(tag, "l%p", oc);
-                pdgui_vmess(0, "rcr", "pdtk_canvas_delete", x, tag);
+                pdgui_vmess("pdtk_canvas_delete", "cs", x, tag);
             }
             obj_disconnect(t.tr_ob, t.tr_outno, t.tr_ob2, t.tr_inno);
             break;
@@ -2555,8 +2555,8 @@ void canvas_doclick(t_canvas *x, int xpix, int ypix, int mod, int doit)
                         x->gl_editor->e_ywas = y2;
                         pdgui_vmess("::pdtk_canvas::cords_to_foreground",
                             "ci", x, 0);
-                        pdgui_vmess(0, "rcr iik iiii",
-                            "pdtk_canvas_create_line", x, "x",
+                        pdgui_vmess("pdtk_canvas_create_line", "crr iik iiii",
+                            x, "x", "-",
                             0, x->gl_zoom, THISGUI->i_foregroundcolor,
                             x->gl_editor->e_xwas, x->gl_editor->e_ywas,
                             xpix, ypix);
@@ -2782,8 +2782,8 @@ static int tryconnect(t_canvas*x, t_object *src, int nout,
                              ((x22-x21-iow) * nin)/(ninlets-1) : 0)
                 + iom;
             ly2 = y21;
-            pdgui_vmess(0, "rcr ii k iiii",
-                "pdtk_canvas_create_patchcord", glist_getcanvas(x), tag,
+            pdgui_vmess("pdtk_canvas_create_patchcord", "crr ii k iiii",
+                glist_getcanvas(x), tag, "-",
                     0, (obj_issignaloutlet(src, nout) ? 2 : 1) * x->gl_zoom,
                         THISGUI->i_foregroundcolor,
                             lx1,ly1, lx2,ly2);
@@ -2811,7 +2811,7 @@ void canvas_doconnect(t_canvas *x, int xpos, int ypos, int mod, int doit)
 #endif
     if (doit) {
         pdgui_vmess("::pdtk_canvas::cords_to_foreground", "ci", x, 1);
-        pdgui_vmess(0, "rcr", "pdtk_canvas_delete", x, "x");
+        pdgui_vmess("pdtk_canvas_delete", "cs", x, "x");
     }
     else
         pdgui_vmess(0, "crs iiii",
@@ -3056,7 +3056,7 @@ static void canvas_doregion(t_canvas *x, int xpos, int ypos, int doit)
             loy = x->gl_editor->e_ywas, hiy = ypos;
         else hiy = x->gl_editor->e_ywas, loy = ypos;
         canvas_selectinrect(x, lox, loy, hix, hiy);
-        pdgui_vmess(0, "rcr", "pdtk_canvas_delete", x, "x");
+        pdgui_vmess("pdtk_canvas_delete", "cs", x, "x");
         x->gl_editor->e_onmotion = MA_NONE;
     }
     else
@@ -4023,7 +4023,7 @@ static void glist_donewloadbangs(t_glist *x)
             if (pd_class(&sel->sel_what->g_pd) == canvas_class)
                 canvas_loadbang((t_canvas *)(&sel->sel_what->g_pd));
             else if (zgetfn(&sel->sel_what->g_pd, gensym("loadbang")))
-                vmess(&sel->sel_what->g_pd, gensym("loadbang"), "f", LB_LOAD);
+                vmess(&sel->sel_what->g_pd, gensym("loadbang"), "i", LB_LOAD);
     }
 }
 
@@ -4643,8 +4643,8 @@ void canvas_connect(t_canvas *x, t_symbol *s, int argc, t_atom *argv)
     {
         char tag[128];
         sprintf(tag, "l%p", oc);
-        pdgui_vmess(0, "rcr iik iiii",
-            "pdtk_canvas_create_patchcord", glist_getcanvas(x), tag,
+        pdgui_vmess("pdtk_canvas_create_patchcord", "crr iik iiii",
+            glist_getcanvas(x), tag, "-",
                 0, (obj_issignaloutlet(objsrc, outno) ? 2 : 1) * x->gl_zoom,
                     THISGUI->i_foregroundcolor,
                         0, 0, 0, 0);
@@ -5077,8 +5077,8 @@ void canvas_editmode(t_canvas *x, t_floatarg state)
             {
                 char tagR[128];
                 sprintf(tagR, "%sR", rtext_gettag(y));
-                pdgui_vmess(0, "rcr",
-                    "pdtk_canvas_delete", glist_getcanvas(x), tagR);
+                pdgui_vmess("pdtk_canvas_delete", "cs",
+                    glist_getcanvas(x), tagR);
             }
             canvas_setcursor(x, CURSOR_RUNMODE_NOTHING);
         }

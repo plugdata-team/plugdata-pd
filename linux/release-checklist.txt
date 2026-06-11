@@ -69,7 +69,7 @@ mv -i ~/pure-data_master_macOS.zip ~/pd/dist/pd-$VERSION.macos.zip
 update version string in ../src/m_pd.h ../configure.ac ../src/pd.rc
 copyright date in ../README.txt
 release notes:
-    nedit-client  ../doc/1.manual/resources/chapter5.htm
+    nedit-client  ../doc/1.manual/5.current.status.htm
 git commit -a
 git tag $VERSION && git tag |tail  !!! you can only push any given tag once !!
 git push origin --tags

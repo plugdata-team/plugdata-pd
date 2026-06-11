@@ -11,7 +11,7 @@ extern "C" {
 
 #define PD_MAJOR_VERSION 0
 #define PD_MINOR_VERSION 56
-#define PD_BUGFIX_VERSION 2
+#define PD_BUGFIX_VERSION 3
 #define PD_TEST_VERSION ""
 
 #define PD_PLUGDATA_VERSION "0.9.4"
