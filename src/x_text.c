@@ -212,19 +212,17 @@ static void textbuf_write(t_textbuf *x, t_symbol *s, int argc, t_atom *argv)
 
 static void textbuf_free(t_textbuf *x)
 {
+    t_pd *x2;
     if (x->b_binbuf)
         binbuf_free(x->b_binbuf);
     if (x->b_guiconnect)
     {
-        pdgui_vmess("pdtk_textwindow_destroy", "^", x);
+        pdgui_vmess("destroy", "^", x);
         guiconnect_notarget(x->b_guiconnect, 1000);
     }
-    
-    /* just in case we're still bound to #A from loading... */
-     if(gensym("#A")->s_thing == &x->b_ob.te_g.g_pd)
-     {
-         pd_unbind(&x->b_ob.te_g.g_pd, gensym("#A"));
-     }
+        /* just in case we're still bound to #A from loading... */
+    while ((x2 = pd_findbyclass(gensym("#A"), text_define_class)))
+        pd_unbind(x2, gensym("#A"));
 }
 
     /* random helper function to find the nth line in a text buffer */

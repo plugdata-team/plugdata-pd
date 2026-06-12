@@ -55,24 +55,6 @@ t_pd *pd_new(t_class *c)
 
 typedef void (*t_freemethod)(t_pd *);
 
-void pd_free(t_pd *x)
-{
-    clear_weak_references(x);
-
-    t_class *c = *x;
-    if (c->c_freemethod) (*(t_freemethod)(c->c_freemethod))(x);
-    if (c->c_patchable)
-    {
-        while (((t_object *)x)->ob_outlet)
-            outlet_free(((t_object *)x)->ob_outlet);
-        while (((t_object *)x)->ob_inlet)
-            inlet_free(((t_object *)x)->ob_inlet);
-        if (((t_object *)x)->ob_binbuf)
-            binbuf_free(((t_object *)x)->ob_binbuf);
-    }
-    if (c->c_size) t_freebytes(x, c->c_size);
-}
-
 void gobj_save(t_gobj *x, t_binbuf *b)
 {
     t_class *c = x->g_pd;
@@ -152,6 +134,32 @@ static void bindlist_anything(t_bindlist *x, t_symbol *s,
     }
     
     unregister_weak_reference(x, &bindlist_reference);
+}
+
+void pd_free(t_pd *x)
+{
+    clear_weak_references(x);
+
+    /* abstraction canvases (via canvas_popabstraction), [clone],
+    [scalar define] etc. bind to #A while loading saved state but are
+    never explicitly unbound; if x is freed while still bound, the stale
+    pointer would crash the next pd_findbyclass(gensym("#A"), ...) */
+    t_symbol* a = gensym("#A");
+    if (a->s_thing && (a->s_thing == x || *a->s_thing == bindlist_class))
+        pd_unbind(x, a);
+
+    t_class *c = *x;
+    if (c->c_freemethod) (*(t_freemethod)(c->c_freemethod))(x);
+    if (c->c_patchable)
+    {
+        while (((t_object *)x)->ob_outlet)
+            outlet_free(((t_object *)x)->ob_outlet);
+        while (((t_object *)x)->ob_inlet)
+            inlet_free(((t_object *)x)->ob_inlet);
+        if (((t_object *)x)->ob_binbuf)
+            binbuf_free(((t_object *)x)->ob_binbuf);
+    }
+    if (c->c_size) t_freebytes(x, c->c_size);
 }
 
 void m_pd_setup(void)
