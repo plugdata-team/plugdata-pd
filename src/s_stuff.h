@@ -150,9 +150,9 @@ typedef struct _audiosettings
 #if defined(_WIN32)
 #define DEFAULTADVANCE 80
 #elif defined(__APPLE__)
-#define DEFAULTADVANCE 5    /* this is in addition to their own delay */
+#define DEFAULTADVANCE 10
 #else
-#define DEFAULTADVANCE 25
+#define DEFAULTADVANCE 20
 #endif
 
 typedef void (*t_audiocallback)(void);
@@ -161,6 +161,7 @@ extern int sys_schedadvance;
 
 int sys_send_dacs(void);
 void sys_reportidle(void);
+void sys_reportxrun(int nsamples);
 void sys_listdevs(void);
 EXTERN void sys_set_audio_settings(t_audiosettings *as);
 EXTERN void sys_get_audio_settings(t_audiosettings *as);
@@ -417,7 +418,6 @@ EXTERN void inmidi_polyaftertouch(int portno,
                                   int pitch,
                                   int value);
 /* } jsarlo */
-EXTERN_VAR int sys_zoom_open;
 
 struct _instancestuff
 {

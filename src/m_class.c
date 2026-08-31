@@ -22,8 +22,46 @@
 #include "m_class_probe.h"
 #include "m_private_utils.h"
 
-static PERTHREAD t_symbol *class_loadsym;     /* name under which an extern is invoked */
-static PERTHREAD t_symbol *class_prefixsym;   /* plugdata variable for setting a prefix to load many objects under */
+void push_loadsym(t_symbol*s);
+t_symbol*pop_loadsym(void);
+
+typedef struct _symbolstack
+{
+    t_symbol *s_loadsymbol;
+    t_symbol *s_prefixsymbol;
+    struct _symbolstack *s_previous;
+} t_symbolstack;
+
+static PERTHREAD t_symbolstack *class_loadsymbol = 0;  /* name extern is invoked as */
+static PERTHREAD t_symbol *class_prefixsymbol;   /* plugdata variable for setting a prefix to load many objects under */
+
+void set_class_prefix(t_symbol* dir)
+{
+    class_prefixsymbol = dir;
+}
+
+void push_loadsym(t_symbol*s) {
+    t_symbolstack*stack = (t_symbolstack*)getbytes(sizeof(t_symbolstack));
+    if(!stack) return;
+    stack->s_loadsymbol = s;
+    stack->s_previous = class_loadsymbol;
+    class_loadsymbol = stack;
+}
+
+t_symbol*pop_loadsym(void) {
+    t_symbol*s = 0;
+    t_symbolstack*stack = class_loadsymbol;
+    if(!stack) return 0;
+    s = stack->s_loadsymbol;
+    class_loadsymbol = stack->s_previous;
+    freebytes(stack, sizeof(*stack));
+    return s;
+}
+
+t_symbol*peek_loadsym(void) {
+    return class_loadsymbol?class_loadsymbol->s_loadsymbol:0;
+}
+
 static void pd_defaultfloat(t_pd *x, t_float f);
 static void pd_defaultlist(t_pd *x, t_symbol *s, int argc, t_atom *argv);
 t_pd pd_objectmaker;    /* factory for creating "object" boxes */
@@ -196,15 +234,22 @@ t_pdinstance *pdinstance_new(void)
     pd_instances[pd_ninstances] = x;
     for (c = class_list; c; c = c->c_next)
     {
+            /* method entries */
         c->c_methods = (t_methodentry **)t_resizebytes(c->c_methods,
             pd_ninstances * sizeof(*c->c_methods),
-            (pd_ninstances + 1) * sizeof(*c->c_methods));
+                (pd_ninstances + 1) * sizeof(*c->c_methods));
         c->c_methods[pd_ninstances] = t_getbytes(0);
         for (i = 0; i < c->c_nmethod; i++)
             class_addmethodtolist(c, &c->c_methods[pd_ninstances], i,
                 c->c_methods[0][i].me_fun,
                 dogensym(c->c_methods[0][i].me_name->s_name, 0, x),
                     c->c_methods[0][i].me_arg, x);
+            /* instance data */
+        c->c_data = (t_class_data *)t_resizebytes(c->c_data,
+            pd_ninstances * sizeof(*c->c_data),
+                (pd_ninstances + 1) * sizeof(*c->c_data));
+        c->c_data[pd_ninstances].data = 0;
+        c->c_data[pd_ninstances].freefn = 0;
     }
     pd_ninstances++;
     pdinstance_renumber();
@@ -234,17 +279,24 @@ void pdinstance_free(t_pdinstance *x)
         pd_free((t_pd *)x->pd_templatelist);
     for (c = class_list; c; c = c->c_next)
     {
-        if(c->c_methods[instanceno])
+        if (c->c_methods[instanceno])
             freebytes(c->c_methods[instanceno],
-                      c->c_nmethod * sizeof(**c->c_methods));
-        c->c_methods[instanceno] = NULL;
+                c->c_nmethod * sizeof(**c->c_methods));
+        if (c->c_data[instanceno].freefn)
+            c->c_data[instanceno].freefn(c->c_data[instanceno].data);
         for (i = instanceno; i < pd_ninstances-1; i++)
+        {
             c->c_methods[i] = c->c_methods[i+1];
+            c->c_data[i] = c->c_data[i+1];
+        }
         c->c_methods = (t_methodentry **)t_resizebytes(c->c_methods,
             pd_ninstances * sizeof(*c->c_methods),
-            (pd_ninstances - 1) * sizeof(*c->c_methods));
+                (pd_ninstances - 1) * sizeof(*c->c_methods));
+        c->c_data = (t_class_data *)t_resizebytes(c->c_data,
+            pd_ninstances * sizeof(*c->c_data),
+                (pd_ninstances - 1) * sizeof(*c->c_data));
     }
-    for (i =0; i < SYMTABHASHSIZE; i++)
+    for (i = 0; i < SYMTABHASHSIZE; i++)
     {
         while ((s = x->pd_symhash[i]))
         {
@@ -517,7 +569,8 @@ t_class *class_donew(t_symbol *s, t_newmethod newmethod, t_method freemethod,
     if (pd_objectmaker && newmethod)
     {
         // don't add gem objects into global namespace
-        if(class_prefixsym != gensym("Gem")) {
+        t_symbol *class_loadsym = peek_loadsym();
+        if(class_prefixsymbol != gensym("Gem")) {
             /* add a "new" method by the name specified by the object */
             class_addmethod(pd_objectmaker, (t_method)newmethod, s,
                             vec[0], vec[1], vec[2], vec[3], vec[4], vec[5]);
@@ -549,9 +602,9 @@ t_class *class_donew(t_symbol *s, t_newmethod newmethod, t_method freemethod,
         }
         
         // plugdata modification: it's very useful for us to just set loadstring to "else" when loading all else objects
-        if (s && class_prefixsym)
+        if (s && class_prefixsymbol)
         {
-            const char *loadstring = class_prefixsym->s_name;
+            const char *loadstring = class_prefixsymbol->s_name;
             size_t size = strlen(s->s_name) + strlen(loadstring) + 2;
             char* full_path = t_getbytes(size);
             snprintf(full_path, size, "%s/%s", loadstring, s->s_name);
@@ -594,10 +647,19 @@ t_class *class_donew(t_symbol *s, t_newmethod newmethod, t_method freemethod,
         pd_ninstances * sizeof(*c->c_methods));
     for (i = 0; i < pd_ninstances; i++)
         c->c_methods[i] = t_getbytes(0);
+    c->c_data = (t_class_data *)t_getbytes(
+        pd_ninstances * sizeof(*c->c_data));
+    for (i = 0; i < pd_ninstances; i++)
+    {
+        c->c_data[i].data = 0;
+        c->c_data[i].freefn = 0;
+    }
     c->c_next = class_list;
     class_list = c;
 #else
     c->c_methods = t_getbytes(0);
+    c->c_data.data = 0;
+    c->c_data.freefn = 0;
 #endif
 #if 0       /* enable this if you want to see a list of all classes */
     post("class: %s", c->c_name->s_name);
@@ -654,8 +716,21 @@ void class_free(t_class *c)
         prev->c_next = c->c_next;
     }
 #endif
+        /* call per-instance free function. */
+#ifdef PDINSTANCE
+    for (i = 0; i < pd_ninstances; i++)
+    {
+        if (c->c_data[i].freefn)
+            c->c_data[i].freefn(c->c_data[i].data);
+    }
+#else
+    if (c->c_data.freefn)
+        c->c_data.freefn(c->c_data.data);
+#endif
+        /* call global free function */
     if (c->c_classfreefn)
         c->c_classfreefn(c);
+        /* free methods */
 #ifdef PDINSTANCE
     for (i = 0; i < pd_ninstances; i++)
     {
@@ -664,6 +739,7 @@ void class_free(t_class *c)
         c->c_methods[i] = NULL;
     }
     freebytes(c->c_methods, pd_ninstances * sizeof(*c->c_methods));
+    freebytes(c->c_data, pd_ninstances * sizeof(*c->c_data));
 #else
     freebytes(c->c_methods, c->c_nmethod * sizeof(*c->c_methods));
 #endif
@@ -673,6 +749,26 @@ void class_free(t_class *c)
 void class_setfreefn(t_class *c, t_classfreefn fn)
 {
     c->c_classfreefn = fn;
+}
+
+void class_setinstancedata(t_class *c, void *data, t_classdatafn freefn)
+{
+#ifdef PDINSTANCE
+    c->c_data[pd_this->pd_instanceno].data = data;
+    c->c_data[pd_this->pd_instanceno].freefn = freefn;
+#else
+    c->c_data.data = data;
+    c->c_data.freefn = freefn;
+#endif
+}
+
+void *class_getinstancedata(t_class *c)
+{
+#ifdef PDINSTANCE
+    return c->c_data[pd_this->pd_instanceno].data;
+#else
+    return c->c_data.data;
+#endif
 }
 
 #ifdef PDINSTANCE
@@ -1079,10 +1175,9 @@ void new_anything(void *dummy, t_symbol *s, int argc, t_atom *argv)
       return;
     }
     pd_this->pd_newest = 0;
-    class_loadsym = s;
-    
+
+    push_loadsym(s);
     pd_globallock_upgrade();
-    
     if (sys_load_lib(canvas_getcurrent(), s->s_name))
     {
         tryingalready++;
@@ -1090,18 +1185,8 @@ void new_anything(void *dummy, t_symbol *s, int argc, t_atom *argv)
         tryingalready--;
         return;
     }
-    class_loadsym = 0;
+    pop_loadsym();
     pd_globallock_downgrade();
-}
-
-void clear_class_loadsym()
-{
-    class_loadsym = 0;
-}
-
-void set_class_prefix(t_symbol* dir)
-{
-    class_prefixsym = dir;
 }
 
 /* This is externally available, but note that it might later disappear; the

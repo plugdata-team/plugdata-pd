@@ -719,13 +719,13 @@ void sys_gui_midipreferences(void) {
 #ifdef __APPLE__
     if (sched_get_using_audio() == SCHED_AUDIO_CALLBACK)
     {
-        pd_error(0, "Cannot load MIDI settings in 'callback' mode when audio is running.");
+        pd_error(0, "Cannot load MIDI settings in 'callback' mode when audio is running. "
+            "Please turn off DSP and rescan devices.");
         nindev = noutdev = nindevs = noutdevs = 0;
     }
     else
 #endif
     {
-        sys_reinit_midi();
         sys_get_midi_devs(indevlist, &nindevs, outdevlist, &noutdevs,
             MAXNDEV, DEVDESCSIZE);
         sys_get_midi_params(&nindev, midiindev, &noutdev, midioutdev);
@@ -758,6 +758,15 @@ void glob_midi_properties(t_pd *dummy, t_floatarg flongform)
         (void *)glob_midi_properties, "");
 }
 
+    /* rescan MIDI devices */
+void glob_rescanmidi(void *dummy)
+{
+    sys_reinit_midi();
+    sys_gui_midipreferences();
+        /* refresh midi dialog (if it's open) */
+    pdgui_vmess("::dialog_midi::refresh_ui", "");
+}
+
 #define MIDI_DIALOG_DEVS 9
 
     /* new values from dialog window */
@@ -773,11 +782,11 @@ void glob_midi_dialog(t_pd *dummy, t_symbol *s, int argc, t_atom *argv)
     {
         int dev = atom_getfloatarg(i, argc, argv);
         if(dev > 0)
-            newmidiindev[nindev++] = dev;
+            newmidiindev[nindev++] = dev - 1;
 
         dev = atom_getfloatarg(i+MIDI_DIALOG_DEVS, argc, argv);
         if(dev > 0)
-            newmidioutdev[noutdev++] = dev;
+            newmidioutdev[noutdev++] = dev - 1;
     }
 
     alsadevin = atom_getfloatarg(MIDI_DIALOG_DEVS + MIDI_DIALOG_DEVS + 0, argc, argv);

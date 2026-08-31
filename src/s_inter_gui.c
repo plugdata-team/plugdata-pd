@@ -412,6 +412,14 @@ void pdgui_vamess(const char* message, const char* format, va_list args_)
     }
     va_end(args);
 }
+
+void pdgui_lock(void);
+void pdgui_unlock(void);
+
+void pdgui_startmess(void)
+{
+    pdgui_lock();
+}
 void pdgui_endmess(void)
 {
     t_val v;
@@ -419,8 +427,8 @@ void pdgui_endmess(void)
     v.size = 1;
     v.value.p = ";\n";
     addmess(&v);
+    pdgui_unlock();
 }
-
 
 /* constructs a string that can be passed on to sys_gui() */
 /* TODO: shouldn't this have a pointer to t_pdinstance? */
