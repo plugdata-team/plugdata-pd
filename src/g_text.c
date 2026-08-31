@@ -1797,9 +1797,9 @@ void text_getfont(t_text *x, t_glist *thisglist,
         /* override if atom box has its own specified font size */
     if (x->te_type == T_ATOM && ((t_gatom *)x)->a_fontsize > 0)
         font = ((t_gatom *)x)->a_fontsize;
-    //*fwidthp = sys_zoomfontwidth(font, 1, 0);
-    //*fheightp = sys_zoomfontheight(font, 1, 0);
-    //*guifsize = sys_hostfontsize(font, 1);
+    *fwidthp = sys_zoomfontwidth(font, 1, 0);
+    *fheightp = sys_zoomfontheight(font, 1, 0);
+    *guifsize = sys_hostfontsize(font, 1);
 }
 
 void set_plugdata_object_probe_enabled(int);
