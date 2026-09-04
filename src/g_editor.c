@@ -760,15 +760,14 @@ typedef struct _undo_move
 
 void *canvas_undo_set_move(t_canvas *x, int selected)
 {
-    int x1, y1, x2, y2, indx;
+    int indx, i, nalloc;
     t_gobj *y;
     t_undo_move *buf =  (t_undo_move *)getbytes(sizeof(*buf));
-    buf->u_n = selected ? glist_selectionindex(x, 0, 1) : glist_getindex(x, 0);
-    buf->u_vec = (t_undo_move_elem *)getbytes(sizeof(*buf->u_vec) *
-        (selected ? glist_selectionindex(x, 0, 1) : glist_getindex(x, 0)));
+    nalloc = selected ? glist_selectionindex(x, 0, 1) : glist_getindex(x, 0);
+    buf->u_n = nalloc;
+    buf->u_vec = (t_undo_move_elem *)getbytes(sizeof(*buf->u_vec) * nalloc);
     if (selected)
     {
-        int i;
         for (y = x->gl_list, i = indx = 0; y; y = y->g_next, indx++)
             if (glist_isselected(x, y))
             {
@@ -776,22 +775,32 @@ void *canvas_undo_set_move(t_canvas *x, int selected)
                 if(!checked) continue;
 
                 buf->u_vec[i].e_index = indx;
-                buf->u_vec[i].e_xpix = x1;
-                buf->u_vec[i].e_ypix = y1;
+                buf->u_vec[i].e_xpix = checked->te_xpix;
+                buf->u_vec[i].e_ypix = checked->te_ypix;
                 i++;
             }
     }
     else
     {
-        for (y = x->gl_list, indx = 0; y; y = y->g_next, indx++)
+        for (y = x->gl_list, i = indx = 0; y; y = y->g_next, indx++)
         {
             t_object* checked = pd_checkobject(&y->g_pd);
             if(!checked) continue;
 
-            buf->u_vec[indx].e_index = indx;
-            buf->u_vec[indx].e_xpix = x1;
-            buf->u_vec[indx].e_ypix = y1;
+            buf->u_vec[i].e_index = indx;
+            buf->u_vec[i].e_xpix = checked->te_xpix;
+            buf->u_vec[i].e_ypix = checked->te_ypix;
+            i++;
         }
+    }
+        /* objects we skipped above (scalars and other non-patchable gobjs)
+        would otherwise leave zeroed entries at the end of the vector, which
+        undo would read as "move object 0 to (0, 0)" */
+    if (i != nalloc)
+    {
+        buf->u_vec = (t_undo_move_elem *)resizebytes(buf->u_vec,
+            sizeof(*buf->u_vec) * nalloc, sizeof(*buf->u_vec) * i);
+        buf->u_n = i;
     }
     THISED->canvas_undo_already_set_move = 1;
     return (buf);

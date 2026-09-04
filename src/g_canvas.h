@@ -509,6 +509,7 @@ void glist_clearrtexts(t_glist *x);
 
 /* -------------------- functions on canvases ------------------------ */
 EXTERN_VAR t_class *canvas_class;
+EXTERN_VAR t_class *text_class;
 
 EXTERN t_canvas *canvas_new(void *dummy, t_symbol *sel, int argc, t_atom *argv);
 EXTERN t_symbol *canvas_makebindsym(t_symbol *s);
