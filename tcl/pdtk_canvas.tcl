@@ -240,22 +240,22 @@ proc ::pdtk_canvas::pdtk_canvas_menuclose {mytoplevel reply_to_pd} {
 # TODO put these procs into the pdtk_canvas namespace
 proc pdtk_canvas_motion {tkcanvas x y mods} {
     set mytoplevel [winfo toplevel $tkcanvas]
-    pdsend "$mytoplevel motion [::pd_canvaszoom::canvasxy $tkcanvas $x $y] $mods"
+    pdsend "$mytoplevel motion [$tkcanvas canvasx $x] [$tkcanvas canvasy $y] $mods"
 }
 
 proc pdtk_canvas_mouse {tkcanvas x y b f} {
     set mytoplevel [winfo toplevel $tkcanvas]
-    pdsend "$mytoplevel mouse [::pd_canvaszoom::canvasxy $tkcanvas $x $y] $b $f"
+    pdsend "$mytoplevel mouse [$tkcanvas canvasx $x] [$tkcanvas canvasy $y] $b $f"
 }
 
 proc pdtk_canvas_mouseup {tkcanvas x y b {f 0}} {
     set mytoplevel [winfo toplevel $tkcanvas]
-    pdsend "$mytoplevel mouseup [::pd_canvaszoom::canvasxy $tkcanvas $x $y] $b $f"
+    pdsend "$mytoplevel mouseup [$tkcanvas canvasx $x] [$tkcanvas canvasy $y] $b $f"
 }
 
 proc pdtk_canvas_rightclick {tkcanvas x y b} {
     set mytoplevel [winfo toplevel $tkcanvas]
-    pdsend "$mytoplevel mouse [::pd_canvaszoom::canvasxy $tkcanvas $x $y] $b 8"
+    pdsend "$mytoplevel mouse [$tkcanvas canvasx $x] [$tkcanvas canvasy $y] $b 8"
 }
 
 # on X11, button 2 pastes from X11 clipboard, so simulate normal paste actions
@@ -302,6 +302,7 @@ proc ::pdtk_canvas::done_popup {mytoplevel action x y} {
 proc ::pdtk_canvas::pdtk_canvas_popup {mytoplevel xcanvas ycanvas hasproperties hasopen} {
     set toplevel [winfo toplevel $mytoplevel]
     set tkcanvas [tkcanvas_name $toplevel]
+
     set popup ${toplevel}.popup
     destroy $popup
     ::pdtk_canvas::create_popup ${popup} ${toplevel} ${xcanvas} ${ycanvas}
@@ -315,16 +316,21 @@ proc ::pdtk_canvas::pdtk_canvas_popup {mytoplevel xcanvas ycanvas hasproperties 
     } else {
         ${popup} entryconfigure [_ "Open"] -state disabled
     }
-    set tkcanvas [tkcanvas_name $mytoplevel]
+
     set zdepth [::pd_canvaszoom::getzdepth $tkcanvas]
     set scrollregion [$tkcanvas cget -scrollregion]
     # get the canvas location that is currently the top left corner in the window
-    set left_xview_pix [expr [lindex [$tkcanvas xview] 0] * [lindex $scrollregion 2]]
-    set top_yview_pix [expr [lindex [$tkcanvas yview] 0] * [lindex $scrollregion 3]]
+    foreach {scrollL scrollT scrollR scrollB} [$tkcanvas cget -scrollregion] {break}
+    foreach {viewL viewR} [$tkcanvas xview] {break}
+    foreach {viewT viewB} [$tkcanvas yview] {break}
+    set viewX [expr (${scrollR}-${scrollL})*${viewL}+${scrollL}]
+    set viewY [expr (${scrollB}-${scrollT})*${viewT}+${scrollT}]
+
     # take the mouse clicks in canvas coords, scale to zoom factor, add the root of the canvas
     # window, and subtract the area that is obscured by scrolling
-    set xpopup [expr int(($xcanvas * $zdepth) + [winfo rootx $tkcanvas] - $left_xview_pix)]
-    set ypopup [expr int(($ycanvas * $zdepth) + [winfo rooty $tkcanvas] - $top_yview_pix)]
+    set xpopup [expr int(($xcanvas * $zdepth) + [winfo rootx $tkcanvas] - $viewX)]
+    set ypopup [expr int(($ycanvas * $zdepth) + [winfo rooty $tkcanvas] - $viewY)]
+
     tk_popup ${popup} ${xpopup} ${ypopup} 0
 }
 
@@ -415,11 +421,10 @@ proc ::pdtk_canvas::do_getscroll {tkcanvas} {
         return
     }
     set mytoplevel [winfo toplevel $tkcanvas]
-    set zdepth [::pd_canvaszoom::getzdepth $tkcanvas]
-    set height [expr [winfo height $tkcanvas] / $zdepth]
-    set width [expr [winfo width $tkcanvas] / $zdepth]
+    set height [winfo height $tkcanvas]
+    set width [winfo width $tkcanvas]
 
-    set bbox [$tkcanvas bbox all]
+    set bbox [::pd_canvaszoom::canvas::$tkcanvas bbox all]
     if {$bbox eq "" || [llength $bbox] != 4} {return}
     set xupperleft [lindex $bbox 0]
     set yupperleft [lindex $bbox 1]
