@@ -21,10 +21,19 @@ behavior for "gobjs" appears at the end of this file.  */
 #define INLINE inline
 #endif
 
+#if defined(_MSC_VER)
+#define NOINLINE __declspec(noinline)
+#elif defined(__GNUC__)
+#define NOINLINE __attribute__((noinline))
+#else
+#define NOINLINE
+#endif
+
+#include "s_inter.h"
+
 void register_weak_reference(void* ptr, void* weak_reference);
 void unregister_weak_reference(void* ptr, void* weak_reference);
 int is_reference_valid(void* ptr);
-int plugdata_debugging_or_activity_enabled();
 void signal_makereusable(t_signal *sig);
 
 union inletunion
@@ -580,16 +589,72 @@ static void outlet_stackerror(t_outlet *x)
     pd_error(x->o_owner, "stack overflow");
 }
 
+static NOINLINE void outlet_bang_forwarding(t_outlet *x)
+{
+    t_outconnect *oc;
+    for (oc = x->o_connections; oc; oc = oc->oc_next) {
+        plugdata_forward_message(1, oc, &s_bang, 0, NULL);
+        pd_bang(oc->oc_to);
+    }
+}
+
+static NOINLINE void outlet_pointer_forwarding(t_outlet *x, t_gpointer *gp, t_gpointer *gpointer)
+{
+    t_outconnect *oc;
+    for (oc = x->o_connections; oc; oc = oc->oc_next) {
+        plugdata_forward_message(1, oc, &s_pointer, 0, gp);
+        pd_pointer(oc->oc_to, gpointer);
+    }
+}
+
+static NOINLINE void outlet_float_forwarding(t_outlet *x, t_float f)
+{
+    t_outconnect *oc;
+    t_atom value = { .a_type = A_FLOAT, .a_w.w_float = f};
+    for (oc = x->o_connections; oc; oc = oc->oc_next) {
+        plugdata_forward_message(1, oc, &s_float, 1, &value);
+        pd_float(oc->oc_to, f);
+    }
+}
+
+static NOINLINE void outlet_symbol_forwarding(t_outlet *x, t_symbol *s)
+{
+    t_outconnect *oc;
+    t_atom value = { .a_type = A_SYMBOL, .a_w.w_symbol = s};
+    for (oc = x->o_connections; oc; oc = oc->oc_next) {
+        plugdata_forward_message(1, oc, &s_symbol, 1, &value);
+        pd_symbol(oc->oc_to, s);
+    }
+}
+
+static NOINLINE void outlet_list_forwarding(t_outlet *x, t_symbol *s, int argc, t_atom *argv)
+{
+    t_outconnect *oc;
+    for (oc = x->o_connections; oc; oc = oc->oc_next) {
+        plugdata_forward_message(1, oc, &s_list, argc, argv);
+        pd_list(oc->oc_to, s, argc, argv);
+    }
+}
+
+static NOINLINE void outlet_anything_forwarding(t_outlet *x, t_symbol *s, int argc, t_atom *argv)
+{
+    t_outconnect *oc;
+    for (oc = x->o_connections; oc; oc = oc->oc_next) {
+        plugdata_forward_message(1, oc, s, argc, argv);
+        typedmess(oc->oc_to, s, argc, argv);
+    }
+}
+
 void outlet_bang(t_outlet *x)
 {
     t_outconnect *oc;
     if(!stackcount_add())
         outlet_stackerror(x);
+    else if (plugdata_debugging_or_activity_enabled_inline())
+        outlet_bang_forwarding(x);
     else
-        for (oc = x->o_connections; oc; oc = oc->oc_next) {
-            if(plugdata_debugging_or_activity_enabled()) plugdata_forward_message(1, oc, &s_bang, 0, NULL);
+        for (oc = x->o_connections; oc; oc = oc->oc_next)
             pd_bang(oc->oc_to);
-        }
     stackcount_release();
 }
 
@@ -602,10 +667,11 @@ void outlet_pointer(t_outlet *x, t_gpointer *gp)
     else
     {
         gpointer = *gp;
-        for (oc = x->o_connections; oc; oc = oc->oc_next) {
-            if(plugdata_debugging_or_activity_enabled()) plugdata_forward_message(1, oc, &s_pointer, 0, gp);
-            pd_pointer(oc->oc_to, &gpointer);
-        }
+        if (plugdata_debugging_or_activity_enabled_inline())
+            outlet_pointer_forwarding(x, gp, &gpointer);
+        else
+            for (oc = x->o_connections; oc; oc = oc->oc_next)
+                pd_pointer(oc->oc_to, &gpointer);
     }
     stackcount_release();
 }
@@ -615,14 +681,11 @@ void outlet_float(t_outlet *x, t_float f)
     t_outconnect *oc;
     if(!stackcount_add())
         outlet_stackerror(x);
+    else if (plugdata_debugging_or_activity_enabled_inline())
+        outlet_float_forwarding(x, f);
     else
-        for (oc = x->o_connections; oc; oc = oc->oc_next) {
-            if(plugdata_debugging_or_activity_enabled()) {
-                t_atom value = { .a_type = A_FLOAT, .a_w.w_float = f};
-                plugdata_forward_message(1, oc, &s_float, 1, &value);
-            }
+        for (oc = x->o_connections; oc; oc = oc->oc_next)
             pd_float(oc->oc_to, f);
-        }
     stackcount_release();
 }
 
@@ -631,14 +694,11 @@ void outlet_symbol(t_outlet *x, t_symbol *s)
     t_outconnect *oc;
     if(!stackcount_add())
         outlet_stackerror(x);
+    else if (plugdata_debugging_or_activity_enabled_inline())
+        outlet_symbol_forwarding(x, s);
     else
-        for (oc = x->o_connections; oc; oc = oc->oc_next) {
-            if(plugdata_debugging_or_activity_enabled()) {
-                t_atom value = { .a_type = A_SYMBOL, .a_w.w_symbol = s};
-                plugdata_forward_message(1, oc, &s_symbol, 1, &value);
-            }
+        for (oc = x->o_connections; oc; oc = oc->oc_next)
             pd_symbol(oc->oc_to, s);
-        }
     stackcount_release();
 }
 
@@ -647,11 +707,11 @@ void outlet_list(t_outlet *x, t_symbol *s, int argc, t_atom *argv)
     t_outconnect *oc;
     if(!stackcount_add())
         outlet_stackerror(x);
+    else if (plugdata_debugging_or_activity_enabled_inline())
+        outlet_list_forwarding(x, s, argc, argv);
     else
-        for (oc = x->o_connections; oc; oc = oc->oc_next) {
-            if(plugdata_debugging_or_activity_enabled()) plugdata_forward_message(1, oc, &s_list, argc, argv);
+        for (oc = x->o_connections; oc; oc = oc->oc_next)
             pd_list(oc->oc_to, s, argc, argv);
-        }
     stackcount_release();
 }
 
@@ -660,11 +720,11 @@ void outlet_anything(t_outlet *x, t_symbol *s, int argc, t_atom *argv)
     t_outconnect *oc;
     if(!stackcount_add())
         outlet_stackerror(x);
+    else if (plugdata_debugging_or_activity_enabled_inline())
+        outlet_anything_forwarding(x, s, argc, argv);
     else
-        for (oc = x->o_connections; oc; oc = oc->oc_next) {
-            if(plugdata_debugging_or_activity_enabled()) plugdata_forward_message(1, oc, s, argc, argv);
+        for (oc = x->o_connections; oc; oc = oc->oc_next)
             typedmess(oc->oc_to, s, argc, argv);
-        }
     stackcount_release();
 }
 
