@@ -1867,6 +1867,7 @@ void s_inter_newpdinstance(void)
 #if PDTHREADS
     pthread_mutex_init(&INTER->i_mutex, NULL);
     pthread_mutex_init(&INTER->i_messqueue_mutex, NULL);
+    pthread_mutex_init(&INTER->i_guimutex, NULL);
 #endif
 #ifdef _WIN32
     INTER->i_freq = 0;
