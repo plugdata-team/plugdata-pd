@@ -165,9 +165,14 @@ static void bindlist_anything(t_bindlist *x, t_symbol *s,
     BINDLIST_POP(vec, n);
 }
 
+static PERTHREAD t_pd *lastpopped;
+
 void pd_free(t_pd *x)
 {
     clear_weak_references(x);
+
+    if (lastpopped == x)
+        lastpopped = 0;
 
     /* abstraction canvases (via canvas_popabstraction), [clone],
     [scalar define] etc. bind to #A while loading saved state but are
@@ -353,7 +358,6 @@ typedef struct _gstack
 } t_gstack;
 
 static PERTHREAD t_gstack *gstack_head = 0;
-static PERTHREAD t_pd *lastpopped;
 static PERTHREAD t_symbol *pd_loadingabstraction;
 
 int pd_setloadingabstraction(t_symbol *sym)
