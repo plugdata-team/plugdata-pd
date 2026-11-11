@@ -2115,7 +2115,7 @@ uint32_t gui_message_hash(const char* str) {
     return hash;
 }
 
-#define NUM_GUI_HASHES 21
+#define NUM_GUI_HASHES 27
 uint32_t gui_message_hash_table[NUM_GUI_HASHES];
 
 
@@ -2143,7 +2143,13 @@ void prepare_hashes()
         "pdtk_textwindow_clear",
         "pdtk_textwindow_appendatoms",
         "pdtk_textwindow_raise",
-        "pdtk_textwindow_destroy"
+        "pdtk_textwindow_destroy",
+        "fonts__output_fonts",
+        "else_editor_open",
+        "else_editor_append",
+        "else_editor_close",
+        "if",
+        "wm"
     };
     
     for(int i = 0; i < NUM_GUI_HASHES; i++)
@@ -2154,6 +2160,18 @@ void prepare_hashes()
     hashes_prepared = true;
 }
 
+
+// ELSE's editor window is named ".<hex>", and its elsefile binds itself to "ELSEFILE.<hex>",
+// where the Tk side sends edits. Look the elsefile up there instead of reading the hex as a
+// pointer: ELSE prints it as an unsigned long, which is only 32 bits on 64-bit Windows.
+static t_pd* else_editor_find(char const* window)
+{
+    char name[80];
+    if (window[0] != '.')
+        return NULL;
+    snprintf(name, sizeof(name), "ELSEFILE%s", window);
+    return gensym(name)->s_thing;
+}
 
 void plugdata_gui_message(const char* message, va_list args)
 {
@@ -2327,11 +2345,13 @@ void plugdata_gui_message(const char* message, va_list args)
     }
     else if (hash == gui_message_hash_table[13]) { // coll_check_open
         unsigned long long ptr = va_arg(args, unsigned long long);
+        unsigned long long filehandle = va_arg(args, unsigned long long);
         int open = va_arg(args, int);
-        t_atom atoms[2];
+        t_atom atoms[3];
         SETPOINTER(atoms, ptr);
-        SETFLOAT(atoms + 1, open);
-        pd_this->pd_inter->gui_callback(INTER->callback_target, "coll_check_open", 2, atoms);
+        SETPOINTER(atoms + 1, filehandle);
+        SETFLOAT(atoms + 2, open);
+        pd_this->pd_inter->gui_callback(INTER->callback_target, "coll_check_open", 3, atoms);
     }
     else if (hash == gui_message_hash_table[14]) { // editor_close
         unsigned long long ptr = va_arg(args, unsigned long long);
@@ -2387,6 +2407,96 @@ void plugdata_gui_message(const char* message, va_list args)
         t_atom atom;
         SETPOINTER(&atom, ptr);
         pd_this->pd_inter->gui_callback(INTER->callback_target, "pdtk_textwindow_destroy", 1, &atom);
+    }
+    else if (hash == gui_message_hash_table[21]) { // fonts__output_fonts
+        char const* owner = va_arg(args, char const*);
+        t_atom atom;
+        SETSYMBOL(&atom, gensym(owner));
+        pd_this->pd_inter->gui_callback(INTER->callback_target, "fonts__output_fonts", 1, &atom);
+    }
+    // ELSE's elsefile text editor: these arrive as finished Tk commands, without varargs
+    else if (hash == gui_message_hash_table[22]) { // else_editor_open .<hex> 600x340 {title} sendable ...
+        char window[64], title[MAXPDSTRING];
+        int width, height, sendable = 1;
+        char const* lbrace = strchr(message, '{');
+        char const* rbrace = lbrace;
+        t_pd* editor;
+        if (sscanf(message, "else_editor_open %63s %dx%d", window, &width, &height) < 3 || !lbrace || !(editor = else_editor_find(window)))
+            return;
+        for (int depth = 0; *rbrace; rbrace++) {
+            if (*rbrace == '{') depth++;
+            else if (*rbrace == '}' && !--depth) break;
+        }
+        if (!*rbrace) return;
+        sscanf(rbrace + 1, "%d", &sendable);
+        snprintf(title, sizeof(title), "%.*s", (int)(rbrace - lbrace - 1), lbrace + 1);
+
+        t_atom atoms[5];
+        SETPOINTER(atoms, (t_gpointer*)editor);
+        SETFLOAT(atoms + 1, width);
+        SETFLOAT(atoms + 2, height);
+        SETSYMBOL(atoms + 3, gensym(title));
+        SETFLOAT(atoms + 4, sendable);
+        pd_this->pd_inter->gui_callback(INTER->callback_target, "else_editor_open", 5, atoms);
+    }
+    else if (hash == gui_message_hash_table[23]) { // else_editor_append .<hex> {text}, or "{" / "}" quoted
+        char window[64], text[MAXPDSTRING];
+        int start = 0;
+        t_pd* editor;
+        if (sscanf(message, "else_editor_append %63s %n", window, &start) < 1 || !start || !(editor = else_editor_find(window)))
+            return;
+        char const* quoted = message + start;
+        int len = (int)strlen(quoted);
+        if (len >= 2 && *quoted == '"' && quoted[len - 1] == '"') {
+            quoted++;
+            len -= 2;
+        } else if (len >= 1 && *quoted == '{') {
+            quoted++;
+            len--;
+            if (len && quoted[len - 1] == '}') len--; // missing when ELSE truncated the line
+        }
+        snprintf(text, sizeof(text), "%.*s", len, quoted);
+
+        t_atom atoms[2];
+        SETPOINTER(atoms, (t_gpointer*)editor);
+        SETSYMBOL(atoms + 1, gensym(text));
+        pd_this->pd_inter->gui_callback(INTER->callback_target, "else_editor_append", 2, atoms);
+    }
+    else if (hash == gui_message_hash_table[24]) { // else_editor_close .<hex> ask
+        char window[64];
+        t_pd* editor;
+        if (sscanf(message, "else_editor_close %63s", window) == 1 && (editor = else_editor_find(window))) {
+            t_atom atom;
+            SETPOINTER(&atom, (t_gpointer*)editor);
+            pd_this->pd_inter->gui_callback(INTER->callback_target, "else_editor_close", 1, &atom);
+        }
+    }
+    else if (hash == gui_message_hash_table[25]) { // if {[winfo exists .<hex>]} ..., from ELSE objects with an editor
+        char window[64], if_open[MAXPDSTRING], if_closed[MAXPDSTRING];
+        t_pd* editor;
+        if (sscanf(message, "if {[winfo exists %63[^]]", window) != 1 || !(editor = else_editor_find(window)))
+            return;
+
+        t_atom atoms[3];
+        SETPOINTER(atoms, (t_gpointer*)editor);
+        // the object asks for one of two replies, depending on whether the window exists
+        if (sscanf(message, "if {[winfo exists %*[^]]]} {pdsend \"%999[^\"]\"} else {pdsend \"%999[^\"]\"}", if_open, if_closed) == 2) {
+            SETSYMBOL(atoms + 1, gensym(if_open));
+            SETSYMBOL(atoms + 2, gensym(if_closed));
+            pd_this->pd_inter->gui_callback(INTER->callback_target, "else_editor_check_open", 3, atoms);
+        }
+        else if (strstr(message, ".text delete 1.0 end")) {
+            pd_this->pd_inter->gui_callback(INTER->callback_target, "else_editor_clear", 1, atoms);
+        }
+    }
+    else if (hash == gui_message_hash_table[26]) { // wm deiconify .<hex>; raise .<hex>; ..., from ELSE objects with an editor
+        char window[64];
+        t_pd* editor;
+        if (sscanf(message, "wm deiconify %63[^;]", window) == 1 && (editor = else_editor_find(window))) {
+            t_atom atom;
+            SETPOINTER(&atom, (t_gpointer*)editor);
+            pd_this->pd_inter->gui_callback(INTER->callback_target, "else_editor_raise", 1, &atom);
+        }
     }
 }
 
