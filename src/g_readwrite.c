@@ -13,7 +13,9 @@ file format as in the dialog window for data.
 
 #include "m_pd.h"
 #include "g_canvas.h"
+#include "m_private_utils.h"
 #include <string.h>
+#include <stdlib.h>
 #include <errno.h>
 
 /* object to assist in saving state by abstractions */
@@ -730,11 +732,21 @@ void canvas_savetemplatesto(t_canvas *x, t_binbuf *b, int wholething)
 
 /* ------ routines to save and restore canvases (patches) recursively. ----*/
 
+    /* order the object table in canvas_saveto() by address */
+static int canvas_saveto_compare(const void *a, const void *b)
+{
+    uintptr_t p = (uintptr_t)*(t_gobj *const *)a;
+    uintptr_t q = (uintptr_t)*(t_gobj *const *)b;
+    return ((p > q) - (p < q));
+}
+
     /* save to a binbuf, called recursively; cf. canvas_savetofile() which
     saves the document, and is only called on root canvases. */
 void canvas_saveto(t_canvas *x, t_binbuf *b)
 {
-    t_gobj *y;
+    struct _saveindex { t_gobj *si_obj; int si_index; } *index;
+    t_gobj *y, *src;
+    int nobj = 0, srcno = 0, i;
     t_linetraverser t;
     t_outconnect *oc;
 
@@ -770,11 +782,31 @@ void canvas_saveto(t_canvas *x, t_binbuf *b)
     for (y = x->gl_list; y; y = y->g_next)
         gobj_save(y, b);
 
+    /* Construct a table of object indices before iterating connections, so we don't have to walk the linked list for each object per connection. Reduces complexity from quadratic to logarithmic. */
+    for (y = x->gl_list; y; y = y->g_next)
+        nobj++;
+    ALLOCA(struct _saveindex, index, nobj, 256);
+    for (y = x->gl_list, i = 0; y; y = y->g_next, i++)
+        index[i].si_obj = y, index[i].si_index = i;
+    qsort(index, nobj, sizeof(*index), canvas_saveto_compare);
+
+    src = x->gl_list;
     linetraverser_start(&t, x);
     while ((oc = linetraverser_next_nosize(&t)))
     {
-        int srcno = canvas_getindex(x, &t.tr_ob->ob_g);
-        int sinkno = canvas_getindex(x, &t.tr_ob2->ob_g);
+        t_gobj *sink = &t.tr_ob2->ob_g;
+        int sinkno = nobj, lo = 0, hi = nobj;
+        for (; src != &t.tr_ob->ob_g; src = src->g_next)
+            srcno++;
+        while (lo < hi)
+        {
+            int mid = lo + (hi - lo) / 2;
+            if ((uintptr_t)index[mid].si_obj < (uintptr_t)sink)
+                lo = mid + 1;
+            else hi = mid;
+        }
+        if (lo < nobj && index[lo].si_obj == sink)
+            sinkno = index[lo].si_index;
         if(t.outconnect_path_info == gensym("empty"))
         {
             binbuf_addv(b, "ssiiii;", gensym("#X"), gensym("connect"),
@@ -785,6 +817,7 @@ void canvas_saveto(t_canvas *x, t_binbuf *b)
                 srcno, t.tr_outno, sinkno, t.tr_inno, t.outconnect_path_info);
         }
     }
+    FREEA(struct _saveindex, index, nobj, 256);
 
         /* unless everything is the default (as in ordinary subpatches)
         print out a "coords" message to set up the coordinate systems */
