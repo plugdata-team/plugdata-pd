@@ -177,6 +177,8 @@ struct _instanceinter
     pd_gui_callback gui_callback;
     pd_message_callback message_callback;
     void *callback_target;
+    pd_trace_callback trace_callback; // set by register_trace_trigger(), called by plugdata_forward_message()
+    void *trace_target;               // passed back as trace_callback's first argument; NULL when there is none
     
     void *lock;
     void(*lock_fn)(void*);
@@ -197,6 +199,19 @@ void register_gui_triggers(t_pdinstance* instance, void* target, pd_gui_callback
     instance->pd_inter->gui_callback = gui_callback;
     instance->pd_inter->message_callback = message_callback;
     instance->pd_inter->callback_target = target;
+}
+
+// Like register_gui_triggers(), for the trace callback
+void register_trace_trigger(t_pdinstance* instance, void* target, pd_trace_callback trace_callback)
+{
+
+#if !PDINSTANCE
+    instance = &pd_maininstance; // single-instance build: only the main instance exists
+#endif
+
+    // A NULL target removes the callback: plugdata_forward_message() only calls it while trace_target is set
+    instance->pd_inter->trace_callback = trace_callback;
+    instance->pd_inter->trace_target = target;
 }
 
 int is_reference_valid(void* ptr)
@@ -2504,6 +2519,11 @@ void plugdata_forward_message(int type, void* x, t_symbol *s, int argc, t_atom *
 {
     if(EXPECT_LIKELY(INTER->callback_target)) {
         INTER->message_callback(INTER->callback_target, type, (void*)x, s, argc, argv);
+    }
+    // Also hand the message to the trace callback, if one is set and debugging is on. Unlikely: plugdata only
+    // registers one while it traces messages
+    if(EXPECT_UNLIKELY(INTER->trace_target) && plugdata_debugging_enabled()) {
+        INTER->trace_callback(INTER->trace_target, type, (void*)x, s, argc, argv); // same arguments as message_callback
     }
 }
 

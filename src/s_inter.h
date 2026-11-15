@@ -4,8 +4,13 @@
 
 typedef void (*pd_gui_callback)(void*, char const*, int, t_atom*);
 typedef void (*pd_message_callback)(void*, int, void*, t_symbol*, int, t_atom*);
+/* Same arguments as pd_message_callback: target, type, object or connection, selector, argc, argv */
+typedef void (*pd_trace_callback)(void*, int, void*, t_symbol*, int, t_atom*);
 
 void register_gui_triggers(t_pdinstance* instance, void* target, pd_gui_callback gui_callback, pd_message_callback message_callback);
+/* Sets a second callback that gets every message plugdata_forward_message() forwards while debugging is on,
+   in the order Pd sends them. A NULL target removes it. Call it with Pd's lock held, like Pd calls the callback */
+void register_trace_trigger(t_pdinstance* instance, void* target, pd_trace_callback trace_callback);
 
 void setup_lock(const void* lock, void(*lock_func)(void*), void(*unlock_func)(void*));
 
