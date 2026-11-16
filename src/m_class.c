@@ -1183,6 +1183,7 @@ void new_anything(void *dummy, t_symbol *s, int argc, t_atom *argv)
         tryingalready++;
         typedmess(dummy, s, argc, argv);
         tryingalready--;
+        pop_loadsym();
         return;
     }
     pop_loadsym();
