@@ -46,9 +46,14 @@ struct _instanceugen
     int u_phase;
     int u_loud;
     struct _dspcontext *u_context;
+    struct _dspprofiler *u_profiler;    /* plugdata: only set while profiling */
 };
 
 #define THIS (pd_this->pd_ugen)
+
+    /* plugdata: the DSP profiler keeps its state in THIS */
+#define DSP_PROFILER_IMPLEMENTATION
+#include "d_profiler.h"
 
 void d_ugen_newpdinstance(void)
 {
@@ -60,6 +65,7 @@ void d_ugen_newpdinstance(void)
 
 void d_ugen_freepdinstance(void)
 {
+    dsp_profiler_free();
     freebytes(THIS, sizeof(*THIS));
 }
 
@@ -425,7 +431,9 @@ void dsp_tick(void)
     if (THIS->u_dspchain)
     {
         t_int *ip;
-        for (ip = THIS->u_dspchain; ip; ) ip = (*(t_perfroutine)(*ip))(ip);
+        if (THIS->u_profiler)
+            dsp_tick_profiled();
+        else for (ip = THIS->u_dspchain; ip; ) ip = (*(t_perfroutine)(*ip))(ip);
         THIS->u_phase++;
     }
 }
@@ -728,6 +736,8 @@ void ugen_stop(void)
             THIS->u_dspchainsize * sizeof (t_int));
         THIS->u_dspchain = 0;
     }
+    if (THIS->u_profiler)
+        dsp_profiler_clear();
     signal_cleanup();
 
 }
@@ -904,6 +914,7 @@ static void ugen_doit(t_dspcontext *dc, t_ugenbox *u)
         ((class == voutlet_class) &&  !(dc->dc_reblock || dc->dc_switched)));
     t_signal **insig, **outsig, **sig, *s1, *s2, *s3;
     t_ugenbox *u2;
+    int chainonset = THIS->u_dspchainsize - 1;
 
         /* if CLASS_MULTICHANNEL isn't set, check that all input signals
         are one-channel, and if not, just return without doing anything. */
@@ -998,6 +1009,8 @@ static void ugen_doit(t_dspcontext *dc, t_ugenbox *u)
         routine must fill in "borrowed" signal outputs in case it's either
         a subcanvas or a signal inlet. */
     mess1(&u->u_obj->ob_pd, gensym("dsp"), insig);
+    if (THIS->u_profiler)
+        dsp_profiler_record(u->u_obj, chainonset, THIS->u_dspchainsize - 1);
 
     for (sig = outsig, uout = u->u_out, i = u->u_nout; i--; sig++, uout++)
     {

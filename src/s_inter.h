@@ -17,27 +17,27 @@ void plugdata_forward_message(int type, void *x, t_symbol *s, int argc, t_atom *
 
 int plugdata_debugging_enabled();
 int plugdata_activity_enabled();
-int plugdata_debugging_or_activity_enabled();
 
+/* Debugging makes Pd report messages to plugdata. Activity is reported only while debugging is on */
 void set_plugdata_debugging_enabled(int enabled_debugging);
 void set_plugdata_activity_enabled(int enabled_activity);
 
 #ifndef __cplusplus
 #include <stdatomic.h>
 
-/* The flags behind plugdata_activity_enabled() and plugdata_debugging_or_activity_enabled(), for code that
+/* The flags behind plugdata_debugging_enabled() and plugdata_activity_enabled(), for code that
    checks them on every message (outlets, inlets). Reading them inline avoids a function call per check,
    which cost ~25% of message throughput when called for every connection */
+extern atomic_bool plugdata_debugging_flag;
 extern atomic_bool plugdata_activity_flag;
-extern atomic_bool plugdata_debug_or_activity_flag;
+
+static inline int plugdata_debugging_enabled_inline(void)
+{
+    return atomic_load_explicit(&plugdata_debugging_flag, memory_order_relaxed);
+}
 
 static inline int plugdata_activity_enabled_inline(void)
 {
     return atomic_load_explicit(&plugdata_activity_flag, memory_order_relaxed);
-}
-
-static inline int plugdata_debugging_or_activity_enabled_inline(void)
-{
-    return atomic_load_explicit(&plugdata_debug_or_activity_flag, memory_order_relaxed);
 }
 #endif

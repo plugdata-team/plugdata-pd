@@ -589,9 +589,18 @@ static void outlet_stackerror(t_outlet *x)
     pd_error(x->o_owner, "stack overflow");
 }
 
+    /* plugdata: tells Detective Mode that an event (a clock, a click, MIDI...)
+    starts a new chain of messages at this outlet */
+static INLINE void outlet_forward_chainstart(t_outlet *x)
+{
+    if (stackcount == 1 && x->o_connections)
+        plugdata_forward_message(1, x, gensym("_chain"), 0, NULL);
+}
+
 static NOINLINE void outlet_bang_forwarding(t_outlet *x)
 {
     t_outconnect *oc;
+    outlet_forward_chainstart(x);
     for (oc = x->o_connections; oc; oc = oc->oc_next) {
         plugdata_forward_message(1, oc, &s_bang, 0, NULL);
         pd_bang(oc->oc_to);
@@ -601,6 +610,7 @@ static NOINLINE void outlet_bang_forwarding(t_outlet *x)
 static NOINLINE void outlet_pointer_forwarding(t_outlet *x, t_gpointer *gp, t_gpointer *gpointer)
 {
     t_outconnect *oc;
+    outlet_forward_chainstart(x);
     for (oc = x->o_connections; oc; oc = oc->oc_next) {
         plugdata_forward_message(1, oc, &s_pointer, 0, gp);
         pd_pointer(oc->oc_to, gpointer);
@@ -611,6 +621,7 @@ static NOINLINE void outlet_float_forwarding(t_outlet *x, t_float f)
 {
     t_outconnect *oc;
     t_atom value = { .a_type = A_FLOAT, .a_w.w_float = f};
+    outlet_forward_chainstart(x);
     for (oc = x->o_connections; oc; oc = oc->oc_next) {
         plugdata_forward_message(1, oc, &s_float, 1, &value);
         pd_float(oc->oc_to, f);
@@ -621,6 +632,7 @@ static NOINLINE void outlet_symbol_forwarding(t_outlet *x, t_symbol *s)
 {
     t_outconnect *oc;
     t_atom value = { .a_type = A_SYMBOL, .a_w.w_symbol = s};
+    outlet_forward_chainstart(x);
     for (oc = x->o_connections; oc; oc = oc->oc_next) {
         plugdata_forward_message(1, oc, &s_symbol, 1, &value);
         pd_symbol(oc->oc_to, s);
@@ -630,6 +642,7 @@ static NOINLINE void outlet_symbol_forwarding(t_outlet *x, t_symbol *s)
 static NOINLINE void outlet_list_forwarding(t_outlet *x, t_symbol *s, int argc, t_atom *argv)
 {
     t_outconnect *oc;
+    outlet_forward_chainstart(x);
     for (oc = x->o_connections; oc; oc = oc->oc_next) {
         plugdata_forward_message(1, oc, &s_list, argc, argv);
         pd_list(oc->oc_to, s, argc, argv);
@@ -639,6 +652,7 @@ static NOINLINE void outlet_list_forwarding(t_outlet *x, t_symbol *s, int argc, 
 static NOINLINE void outlet_anything_forwarding(t_outlet *x, t_symbol *s, int argc, t_atom *argv)
 {
     t_outconnect *oc;
+    outlet_forward_chainstart(x);
     for (oc = x->o_connections; oc; oc = oc->oc_next) {
         plugdata_forward_message(1, oc, s, argc, argv);
         typedmess(oc->oc_to, s, argc, argv);
@@ -650,7 +664,7 @@ void outlet_bang(t_outlet *x)
     t_outconnect *oc;
     if(!stackcount_add())
         outlet_stackerror(x);
-    else if (plugdata_debugging_or_activity_enabled_inline())
+    else if (plugdata_debugging_enabled_inline())
         outlet_bang_forwarding(x);
     else
         for (oc = x->o_connections; oc; oc = oc->oc_next)
@@ -667,7 +681,7 @@ void outlet_pointer(t_outlet *x, t_gpointer *gp)
     else
     {
         gpointer = *gp;
-        if (plugdata_debugging_or_activity_enabled_inline())
+        if (plugdata_debugging_enabled_inline())
             outlet_pointer_forwarding(x, gp, &gpointer);
         else
             for (oc = x->o_connections; oc; oc = oc->oc_next)
@@ -681,7 +695,7 @@ void outlet_float(t_outlet *x, t_float f)
     t_outconnect *oc;
     if(!stackcount_add())
         outlet_stackerror(x);
-    else if (plugdata_debugging_or_activity_enabled_inline())
+    else if (plugdata_debugging_enabled_inline())
         outlet_float_forwarding(x, f);
     else
         for (oc = x->o_connections; oc; oc = oc->oc_next)
@@ -694,7 +708,7 @@ void outlet_symbol(t_outlet *x, t_symbol *s)
     t_outconnect *oc;
     if(!stackcount_add())
         outlet_stackerror(x);
-    else if (plugdata_debugging_or_activity_enabled_inline())
+    else if (plugdata_debugging_enabled_inline())
         outlet_symbol_forwarding(x, s);
     else
         for (oc = x->o_connections; oc; oc = oc->oc_next)
@@ -707,7 +721,7 @@ void outlet_list(t_outlet *x, t_symbol *s, int argc, t_atom *argv)
     t_outconnect *oc;
     if(!stackcount_add())
         outlet_stackerror(x);
-    else if (plugdata_debugging_or_activity_enabled_inline())
+    else if (plugdata_debugging_enabled_inline())
         outlet_list_forwarding(x, s, argc, argv);
     else
         for (oc = x->o_connections; oc; oc = oc->oc_next)
@@ -720,7 +734,7 @@ void outlet_anything(t_outlet *x, t_symbol *s, int argc, t_atom *argv)
     t_outconnect *oc;
     if(!stackcount_add())
         outlet_stackerror(x);
-    else if (plugdata_debugging_or_activity_enabled_inline())
+    else if (plugdata_debugging_enabled_inline())
         outlet_anything_forwarding(x, s, argc, argv);
     else
         for (oc = x->o_connections; oc; oc = oc->oc_next)

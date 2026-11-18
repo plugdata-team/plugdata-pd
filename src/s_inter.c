@@ -2509,26 +2509,21 @@ void plugdata_forward_message(int type, void* x, t_symbol *s, int argc, t_atom *
 
 
 static atomic_bool enable_probe = 0;
-static atomic_bool enable_debugging = 0;
-atomic_bool plugdata_activity_flag = 0;
-atomic_bool plugdata_debug_or_activity_flag = 0;
+static atomic_bool activity_requested = 0;
+atomic_bool plugdata_debugging_flag = 0;
+atomic_bool plugdata_activity_flag = 0; /* activity is only reported while debugging is on */
 
 int plugdata_object_probe_enabled() {
     return atomic_load_explicit(&enable_probe, memory_order_relaxed);
 }
 
 int plugdata_debugging_enabled() {
-    return atomic_load_explicit(&enable_debugging, memory_order_relaxed);
+    return atomic_load_explicit(&plugdata_debugging_flag, memory_order_relaxed);
 }
 
 int plugdata_activity_enabled() {
     // Use memory_order_relaxed for best performance, since all that matters is that this flag gets picked up "at some point"
     return atomic_load_explicit(&plugdata_activity_flag, memory_order_relaxed);
-}
-
-int plugdata_debugging_or_activity_enabled()
-{
-    return atomic_load_explicit(&plugdata_debug_or_activity_flag, memory_order_relaxed);
 }
 
 void set_plugdata_object_probe_enabled(int enabled_probe)
@@ -2538,12 +2533,12 @@ void set_plugdata_object_probe_enabled(int enabled_probe)
 
 void set_plugdata_debugging_enabled(int enabled_debugging)
 {
-    atomic_store_explicit(&enable_debugging, enabled_debugging, memory_order_relaxed);
-    atomic_store_explicit(&plugdata_debug_or_activity_flag, enabled_debugging || atomic_load_explicit(&plugdata_activity_flag, memory_order_relaxed), memory_order_relaxed);
+    atomic_store_explicit(&plugdata_debugging_flag, enabled_debugging, memory_order_relaxed);
+    atomic_store_explicit(&plugdata_activity_flag, enabled_debugging && atomic_load_explicit(&activity_requested, memory_order_relaxed), memory_order_relaxed);
 }
 
 void set_plugdata_activity_enabled(int enabled_activity)
 {
-     atomic_store_explicit(&plugdata_activity_flag, enabled_activity, memory_order_relaxed);
-     atomic_store_explicit(&plugdata_debug_or_activity_flag, enabled_activity || atomic_load_explicit(&enable_debugging, memory_order_relaxed), memory_order_relaxed);
+    atomic_store_explicit(&activity_requested, enabled_activity, memory_order_relaxed);
+    atomic_store_explicit(&plugdata_activity_flag, enabled_activity && atomic_load_explicit(&plugdata_debugging_flag, memory_order_relaxed), memory_order_relaxed);
 }
