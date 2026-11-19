@@ -127,8 +127,8 @@ char* pdgui_strnescape(char *dst, size_t dstlen, const char *src, size_t srclen)
 static void dopost(const char *s)
 {
     if (STUFF->st_printhook)
-        (*STUFF->st_printhook)(s);
-    else if (sys_printtostderr || !sys_havetkproc())
+        (*STUFF->st_printhook)(NULL, s);
+    else if (sys_printtostderr || !sys_havegui())
     {
 #ifdef _WIN32
         fwprintf(stderr, PD_FWPRINTF_NARROW_FORMATTER, s);
@@ -152,7 +152,7 @@ static void doerror(const void *object, const char *s)
     if (STUFF->st_printhook)
     {
         pd_snprintf(upbuf, MAXPDSTRING-1, "error: %s", s);
-        (*STUFF->st_printhook)(upbuf);
+        (*STUFF->st_printhook)(object, upbuf);
     }
     else if (sys_printtostderr || !sys_havetkproc())
     {
@@ -180,7 +180,7 @@ static void dologpost(const void *object, const int level, const char *s)
     if (STUFF->st_printhook)
     {
         pd_snprintf(upbuf, MAXPDSTRING-1, "verbose(%d): %s", level, s);
-        (*STUFF->st_printhook)(upbuf);
+        (*STUFF->st_printhook)(object, upbuf);
     }
     else if (sys_printtostderr || !sys_havetkproc())
     {
@@ -294,7 +294,7 @@ void postfloat(t_float f)
 void endpost(void)
 {
     if (STUFF->st_printhook)
-        (*STUFF->st_printhook)("\n");
+        (*STUFF->st_printhook)(NULL, "\n");
     else if (sys_printtostderr)
         fprintf(stderr, "\n");
     else post("");

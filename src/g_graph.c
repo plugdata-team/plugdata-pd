@@ -81,6 +81,10 @@ void glist_delete(t_glist *x, t_gobj *y)
             /* JMZ: send a closebang to the canvas */
         canvas_closebang((t_canvas *)y);
     }
+    if(pd_this->pd_newest == &y->g_pd)
+    {
+        pd_this->pd_newest = NULL;
+    }
 
     wasdeleting = canvas_setdeleting(canvas, 1);
     if (x->gl_editor)
@@ -213,10 +217,12 @@ void glist_grab(t_glist *x, t_gobj *y, t_glistmotionfn motionfn,
     x2->gl_editor->e_ywas = ypos;
 }
 
+
 t_canvas *glist_getcanvas(t_glist *x)
 {
-    while (x->gl_owner && !x->gl_isclone && !x->gl_havewindow && x->gl_isgraph)
-            x = x->gl_owner;
+    while (x->gl_owner && !x->gl_isclone && !x->gl_havewindow && x->gl_isgraph) {
+        x = x->gl_owner;
+    }
     return((t_canvas *)x);
 }
 

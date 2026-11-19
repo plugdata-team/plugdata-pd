@@ -239,6 +239,19 @@ void glob_setfilename(void *dummy, t_symbol *filesym, t_symbol *dirsym)
     THISGUI->i_newdirectory = dirsym;
 }
 
+int glob_hasforcedfilename()
+{
+    return THISGUI->i_forcenewpath;
+}
+
+void glob_forcefilename(t_symbol *filesym, t_symbol *dirsym)
+{
+    THISGUI->i_forcenewpath = 1;
+    THISGUI->i_forcenewfilename = filesym;
+    THISGUI->i_forcenewdirectory = dirsym;
+}
+
+
 void glob_menunew(void *dummy, t_symbol *filesym, t_symbol *dirsym)
 {
     glob_setfilename(dummy, filesym, dirsym);
@@ -387,6 +400,7 @@ void linetraverser_start(t_linetraverser *t, t_canvas *x)
     t->tr_x = x;
     t->tr_nextoc = 0;
     t->tr_nextoutno = t->tr_nout = 0;
+    t->outconnect_path_info = gensym("empty");
 }
 
 t_outconnect *linetraverser_next(t_linetraverser *t)
@@ -417,6 +431,7 @@ t_outconnect *linetraverser_next(t_linetraverser *t)
         rval = obj_starttraverseoutlet(t->tr_ob, &t->tr_outlet, outno);
         t->tr_outno = outno;
     }
+    
     t->tr_nextoc = obj_nexttraverseoutlet(rval, &t->tr_ob2,
         &t->tr_inlet, &t->tr_inno);
     t->tr_nin = obj_ninlets(t->tr_ob2);
@@ -441,7 +456,47 @@ t_outconnect *linetraverser_next(t_linetraverser *t)
         t->tr_x21 = t->tr_y21 = t->tr_x22 = t->tr_y22 = 0;
         t->tr_lx1 = t->tr_ly1 = t->tr_lx2 = t->tr_ly2 = 0;
     }
+    
+    t->outconnect_path_info = outconnect_get_path_data(rval);
+    
+    return (rval);
+}
 
+t_outconnect *linetraverser_next_nosize(t_linetraverser *t)
+{
+    t_outconnect *rval = t->tr_nextoc;
+    int outno;
+    while (!rval)
+    {
+        outno = t->tr_nextoutno;
+        while (outno == t->tr_nout)
+        {
+            t_gobj *y;
+            t_object *ob = 0;
+            if (!t->tr_ob) y = t->tr_x->gl_list;
+            else y = t->tr_ob->ob_g.g_next;
+            for (; y; y = y->g_next)
+                if ((ob = pd_checkobject(&y->g_pd))) break;
+            if (!ob) return (0);
+            t->tr_ob = ob;
+            t->tr_nout = obj_noutlets(ob);
+            outno = 0;
+            t->tr_x11 = t->tr_y11 = t->tr_x12 = t->tr_y12 = 0;
+        }
+        t->tr_nextoutno = outno + 1;
+        rval = obj_starttraverseoutlet(t->tr_ob, &t->tr_outlet, outno);
+        t->tr_outno = outno;
+    }
+    
+    t->tr_nextoc = obj_nexttraverseoutlet(rval, &t->tr_ob2,
+        &t->tr_inlet, &t->tr_inno);
+    t->tr_nin = obj_ninlets(t->tr_ob2);
+    if (!t->tr_nin) bug("drawline");
+    t->tr_x21 = t->tr_y21 = t->tr_x22 = t->tr_y22 = 0;
+    t->tr_lx1 = t->tr_ly1 = t->tr_lx2 = t->tr_ly2 = 0;
+    
+    t->outconnect_path_info = outconnect_get_path_data(rval);
+    
     return (rval);
 }
 
@@ -951,7 +1006,8 @@ void glist_menu_open(t_glist *x)
 
 int glist_isvisible(t_glist *x)
 {
-    return ((!x->gl_loading) && glist_getcanvas(x)->gl_mapped);
+    /* change for plugdata: consider every canvas visible if it has gl_havewindow set*/
+    return ((!x->gl_loading) && glist_getcanvas(x)->gl_havewindow);
 }
 
 int glist_istoplevel(t_glist *x)
@@ -1021,48 +1077,18 @@ void canvas_free(t_canvas *x)
 
 static void canvas_drawlines(t_canvas *x)
 {
-    t_linetraverser t;
-    t_outconnect *oc;
-    {
-        char tag[128];
-        linetraverser_start(&t, x);
-        while ((oc = linetraverser_next(&t)))
-        {
-            sprintf(tag, "l%p", oc);
-            pdgui_vmess("pdtk_canvas_create_patchcord", "crrr ik iiii",
-                glist_getcanvas(x), tag, "-", "-",
-                    outlet_getsymbol(t.tr_outlet) == &s_signal ? 2 : 1,
-                    THISGUI->i_foregroundcolor,
-                    t.tr_lx1, t.tr_ly1, t.tr_lx2, t.tr_ly2);
-        }
-    }
+    // NO-OP for plugdata
 }
+
 void canvas_fixlinesfor(t_canvas *x, t_text *text)
 {
-    t_linetraverser t;
-    t_outconnect *oc;
-
-    linetraverser_start(&t, x);
-    while ((oc = linetraverser_next(&t)))
-    {
-        if (t.tr_ob == text || t.tr_ob2 == text)
-        {
-            char tag[128];
-            sprintf(tag, "l%p", oc);
-            pdgui_vmess(0, "crs iiii",
-                glist_getcanvas(x), "coords", tag,
-                t.tr_lx1,t.tr_ly1, t.tr_lx2,t.tr_ly2);
-        }
-    }
+    // NO-OP for plugdata
 }
+
 
 static void _canvas_delete_line(t_canvas*x, t_outconnect *oc)
 {
-    char tag[128];
-    if (!glist_isvisible(x))
-        return;
-    sprintf(tag, "l%p", oc);
-    pdgui_vmess("pdtk_canvas_delete", "cs", glist_getcanvas(x), tag);
+    // NO-OP for plugdata
 }
 
     /* kill all lines for the object */
@@ -1071,7 +1097,7 @@ void canvas_deletelinesfor(t_canvas *x, t_text *text)
     t_linetraverser t;
     t_outconnect *oc;
     linetraverser_start(&t, x);
-    while ((oc = linetraverser_next(&t)))
+    while ((oc = linetraverser_next_nosize(&t)))
     {
         if (t.tr_ob == text || t.tr_ob2 == text)
         {
@@ -1088,7 +1114,7 @@ void canvas_deletelinesforio(t_canvas *x, t_text *text,
     t_linetraverser t;
     t_outconnect *oc;
     linetraverser_start(&t, x);
-    while ((oc = linetraverser_next(&t)))
+    while ((oc = linetraverser_next_nosize(&t)))
     {
         if ((t.tr_ob == text && t.tr_outlet == outp) ||
             (t.tr_ob2 == text && t.tr_inlet == inp))
@@ -1354,7 +1380,7 @@ static void *subcanvas_new(t_symbol *s)
     return (x);
 }
 
-static void canvas_click(t_canvas *x,
+void canvas_click(t_canvas *x,
     t_floatarg xpos, t_floatarg ypos,
         t_floatarg shift, t_floatarg ctrl, t_floatarg alt)
 {
@@ -1437,7 +1463,7 @@ t_dspcontext *ugen_start_graph(int toplevel, t_signal **sp,
     int ninlets, int noutlets);
 void ugen_add(t_dspcontext *dc, t_object *x);
 void ugen_connect(t_dspcontext *dc, t_object *x1, int outno,
-    t_object *x2, int inno);
+    t_object *x2, int inno, t_outconnect* oc_original);
 void ugen_done_graph(t_dspcontext *dc);
 
     /* schedule one canvas for DSP.  This is called below for all "root"
@@ -1478,9 +1504,9 @@ void canvas_dodsp(t_canvas *x, int toplevel, t_signal **sp)
 
         /* ... and all dsp interconnections */
     linetraverser_start(&t, x);
-    while ((oc = linetraverser_next(&t)))
+    while ((oc = linetraverser_next_nosize(&t)))
         if (obj_issignaloutlet(t.tr_ob, t.tr_outno))
-            ugen_connect(dc, t.tr_ob, t.tr_outno, t.tr_ob2, t.tr_inno);
+            ugen_connect(dc, t.tr_ob, t.tr_outno, t.tr_ob2, t.tr_inno, oc);
 
         /* finally, sort them and add them to the DSP chain */
     ugen_done_graph(dc);
@@ -2164,8 +2190,7 @@ void g_canvas_setup(void)
 
 /* -------------- connect method used in reading files ------------------ */
     class_addmethod(canvas_class, (t_method)canvas_connect,
-        gensym("connect"), A_FLOAT, A_FLOAT, A_FLOAT, A_FLOAT, A_NULL);
-
+        gensym("connect"), A_GIMME, A_NULL);
 
 /* -------------- IEMGUI: button, toggle, slider, etc.  ------------ */
     class_addmethod(canvas_class, (t_method)canvas_bng, gensym("bng"),
@@ -2270,6 +2295,7 @@ void g_canvas_newpdinstance(void)
     THISGUI->i_newargc = 0;
     THISGUI->i_newargv = 0;
     THISGUI->i_reloadingabstraction = 0;
+    THISGUI->i_forcenewpath = 0;
     THISGUI->i_dspstate = 0;
     THISGUI->i_dollarzero = 1000;
     THISGUI->i_foregroundcolor = 0x000000;
@@ -2333,6 +2359,13 @@ t_pd *glob_evalfile(t_pd *ignore, t_symbol *name, t_symbol *dir)
     patch is open, but don't want more than one copy. */
 void glob_open(t_pd *ignore, t_symbol *name, t_symbol *dir, t_floatarg f)
 {
+    /* plugdata handles the "pd open" message on the message thread instead
+       this way, the "open" message can never come in from the audio thread,
+       mitigating risk of calling class_new or class_addmethod concurrently
+     */
+    return;
+    
+    
     t_glist *gl;
     if (f != 0)
         for (gl = pd_getcanvaslist(); gl; gl = gl->gl_next)

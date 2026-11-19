@@ -9,6 +9,7 @@
 #include <math.h>
 #include "m_private_utils.h"
 #include "s_stuff.h"
+#include <math.h>
 #ifdef _WIN32
 #include <windows.h>
 #include <sys/timeb.h>
@@ -397,6 +398,33 @@ void sched_tick(void)
     pd_this->pd_systime = next_sys_time;
     messqueue_dispatch();
     dsp_tick();
+    sched_counter++;
+}
+
+void sched_tick_nodsp(void)
+{
+    double next_sys_time = pd_this->pd_systime + SYSTIMEPERTICK;
+    int countdown = 5000;
+    while (pd_this->pd_clock_setlist &&
+        pd_this->pd_clock_setlist->c_settime < next_sys_time)
+    {
+        t_clock *c = pd_this->pd_clock_setlist;
+        pd_this->pd_systime = c->c_settime;
+        clock_unset(pd_this->pd_clock_setlist);
+        outlet_setstacklim();
+        (*c->c_fn)(c->c_owner);
+        if (!countdown--)
+        {
+            countdown = 5000;
+            (void)sys_pollgui();
+        }
+            /* ignore SYS_QUIT_REOPEN and SYS_QUIT_CLOSE! */
+        if (sys_quit == SYS_QUIT_QUIT)
+            return;
+    }
+    pd_this->pd_systime = next_sys_time;
+        /* deliver pd_queue_mess() messages from helper threads, like sched_tick() */
+    messqueue_dispatch();
     sched_counter++;
 }
 
