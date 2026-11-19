@@ -90,8 +90,54 @@ t_int *zero_perf8(t_int *w)
     return (w+3);
 }
 
+/* TEMPORARY CI diagnostic (plugdata-testing run 44371471633, macOS VST3 heap-buffer-overflow in
+   zero_perf8): report any zeroing range that doesn't fit a live signal buffer when it is added to the
+   DSP chain, together with the object being scheduled, so the culprit shows up before the audio
+   thread runs the entry. Remove once the cause is found. */
+#ifndef _MSC_VER
+#  if defined(__has_feature)
+#    if __has_feature(address_sanitizer)
+#      define ZEROCHECK_STACKTRACE 1
+#    endif
+#  endif
+#  if defined(__SANITIZE_ADDRESS__)
+#    define ZEROCHECK_STACKTRACE 1
+#  endif
+#endif
+#ifdef ZEROCHECK_STACKTRACE
+void __sanitizer_print_stack_trace(void);
+#endif
+static t_object *zerocheck_object;
+static int zerocheck_length = -1;
+static int zerocheck_reports;
+
+static void zerocheck(t_sample *out, int n)
+{
+    t_signal *s;
+    if (n <= 0 || zerocheck_reports >= 20)
+        return;
+    for (s = THIS->u_signals; s; s = s->s_nextused)
+        if (!s->s_isborrowed && !s->s_isscalar && s->s_vec &&
+            out >= s->s_vec && out + n <= s->s_vec + s->s_nalloc)
+                return;
+    zerocheck_reports++;
+    fprintf(stderr, "ZEROCHECK dsp_add_zero(%p, %d) does not fit a signal buffer; scheduling %s, context length %d\n",
+        (void *)out, n, zerocheck_object ? class_getname(pd_class(&zerocheck_object->ob_pd)) : "(no object)",
+        zerocheck_length);
+    for (s = THIS->u_signals; s; s = s->s_nextused)
+        if (s->s_vec && out >= s->s_vec && out < s->s_vec + (s->s_nalloc > 0 ? s->s_nalloc : 1))
+            fprintf(stderr, "ZEROCHECK   inside signal %p: vec %p length %d nchans %d nalloc %d borrowed %d scalar %d\n",
+                (void *)s, (void *)s->s_vec, s->s_length, s->s_nchans, s->s_nalloc,
+                s->s_isborrowed, s->s_isscalar);
+#ifdef ZEROCHECK_STACKTRACE
+    __sanitizer_print_stack_trace();
+#endif
+    fprintf(stderr, "ZEROCHECK end\n");
+}
+
 void dsp_add_zero(t_sample *out, int n)
 {
+    zerocheck(out, n);
     if (n&7)
         dsp_add(zero_perform, 2, out, (t_int)n);
     else
@@ -997,6 +1043,8 @@ static void ugen_doit(t_dspcontext *dc, t_ugenbox *u)
         /* now call the DSP scheduling routine for the ugen.  This
         routine must fill in "borrowed" signal outputs in case it's either
         a subcanvas or a signal inlet. */
+    zerocheck_object = u->u_obj;
+    zerocheck_length = DC_LENGTH(dc);
     mess1(&u->u_obj->ob_pd, gensym("dsp"), insig);
 
     for (sig = outsig, uout = u->u_out, i = u->u_nout; i--; sig++, uout++)
@@ -1020,6 +1068,7 @@ static void ugen_doit(t_dspcontext *dc, t_ugenbox *u)
         if (!(*sig)->s_refcount)
             signal_makereusable(*sig);
     }
+    zerocheck_object = 0;
     if (THIS->u_loud)
     {
         if (u->u_nin + u->u_nout == 0) post("put %s %d",
