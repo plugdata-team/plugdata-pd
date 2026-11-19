@@ -197,6 +197,24 @@ static void fftwplans_free(void *z)
     freebytes(x, sizeof(*x));
 }
 
+    /* plugdata: plan the common sizes when a multi-instance Pd instance is
+    created, so that the audio thread rarely has to */
+void fftw_instance_setup(void)
+{
+#ifdef PDINSTANCE
+    int i;
+    sys_lock();
+    for (i = 0; i < 12; i++)
+    {
+        cfftw_getplan(1 << i, 1);
+        cfftw_getplan(1 << i, 0);
+        rfftw_getplan(1 << i, 1);
+        rfftw_getplan(1 << i, 0);
+    }
+    sys_unlock();
+#endif
+}
+
 static int mayer_refcount = 0;
 
 void mayer_init(void)

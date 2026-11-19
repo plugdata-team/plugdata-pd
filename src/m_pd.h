@@ -8,11 +8,14 @@
 extern "C" {
 #endif
 
+
 #define PD_MAJOR_VERSION 0
 #define PD_MINOR_VERSION 57
 #define PD_BUGFIX_VERSION 0
 #define PD_TEST_VERSION ""
 
+#define PD_PLUGDATA_VERSION "0.9.4"
+#define PD_FLAVOR "plugdata"
 /* compile-time version check:
    #if PD_VERSION_CODE < PD_VERSION(0, 56, 0)
       // put legacy code for Pd<<0.56 in here
@@ -37,17 +40,27 @@ extern "C" {
 #endif /* _MSC_VER */
 
     /* the external storage class is "extern" in UNIX; in MSW it's ugly. */
-#ifndef EXTERN
 #ifdef _WIN32
 #ifdef PD_INTERNAL
+#ifndef EXTERN
 #define EXTERN __declspec(dllexport) extern
+#endif
 #else
+#ifndef EXTERN
 #define EXTERN __declspec(dllimport) extern
+#endif
 #endif /* PD_INTERNAL */
+#ifndef EXTERN_VAR
+#define EXTERN_VAR EXTERN
+#endif
 #else
-#define EXTERN extern
+#ifndef EXTERN
+#define EXTERN __attribute__((used)) extern
+#endif
+#ifndef EXTERN_VAR
+#define EXTERN_VAR extern
+#endif
 #endif /* _WIN32 */
-#endif /* EXTERN */
 
     /* On most c compilers, you can just say "struct foo;" to declare a
     structure whose elements are defined elsewhere.  On very old MSVC versions,
@@ -126,7 +139,7 @@ typedef unsigned __int64  uint64_t;
 /* for FILE, needed by sys_fopen() and sys_fclose() only */
 #include <stdio.h>
 
-EXTERN int pd_compatibilitylevel;   /* e.g., 43 for pd 0.43 compatibility */
+EXTERN_VAR int pd_compatibilitylevel;   /* e.g., 43 for pd 0.43 compatibility */
 
 #define DEFAULTSRATE 48000      /* default audio sample rate */
 #define MAXPDSTRING 1000        /* use this for anything you want */
@@ -323,8 +336,8 @@ typedef void (*t_gotfn)(void *x, ...);
 #endif
 
 /* ---------------- pre-defined objects and symbols --------------*/
-EXTERN t_pd pd_objectmaker;     /* factory for creating "object" boxes */
-EXTERN t_pd pd_canvasmaker;     /* factory for creating canvases */
+EXTERN_VAR t_pd pd_objectmaker;     /* factory for creating "object" boxes */
+EXTERN_VAR t_pd pd_canvasmaker;     /* factory for creating canvases */
 
 /* --------- prototypes from the central message system ----------- */
 EXTERN void pd_typedmess(t_pd *x, t_symbol *s, int argc, t_atom *argv);
@@ -481,10 +494,13 @@ EXTERN t_symbol *outlet_getsymbol(t_outlet *x);
 EXTERN void outlet_free(t_outlet *x);
 EXTERN t_object *pd_checkobject(t_pd *x);
 
-
+EXTERN t_symbol* outconnect_get_path_data(t_outconnect* oc);
+EXTERN void outconnect_set_path_data(t_outconnect* oc, t_symbol* newsym);
 /* -------------------- canvases -------------- */
 
 EXTERN void glob_setfilename(void *dummy, t_symbol *name, t_symbol *dir);
+EXTERN void glob_forcefilename(t_symbol *name, t_symbol *dir);
+EXTERN int glob_hasforcedfilename();
 
 EXTERN void canvas_setargs(int argc, const t_atom *argv);
 EXTERN void canvas_getargs(int *argcp, t_atom **argvp);
@@ -493,8 +509,8 @@ EXTERN t_glist *canvas_getcurrent(void);
 EXTERN void canvas_makefilename(const t_glist *c, const char *file,
     char *result, int resultsize);
 EXTERN t_symbol *canvas_getdir(const t_glist *x);
-EXTERN char sys_font[]; /* default typeface set in s_main.c */
-EXTERN char sys_fontweight[]; /* default font weight set in s_main.c */
+EXTERN_VAR char sys_font[]; /* default typeface set in s_main.c */
+EXTERN_VAR char sys_fontweight[]; /* default font weight set in s_main.c */
 /* in the following functions, 'zoom' argument is not used */
 EXTERN int sys_hostfontsize(int fontsize, int zoom);
 EXTERN int sys_zoomfontwidth(int fontsize, int zoom, int worstcase);
@@ -599,9 +615,16 @@ EXTERN void class_setdrawcommand(t_class *c);
 EXTERN int class_isdrawcommand(const t_class *c);
 EXTERN void class_set_extern_dir(t_symbol *s);
 EXTERN void class_domainsignalin(t_class *c, int onset);
+
+#ifdef __cplusplus
+#define CLASS_MAINSIGNALIN(c, type, field) \
+    class_domainsignalin(c, offsetof(type, field))
+#else
 #define CLASS_MAINSIGNALIN(c, type, field) \
     PD_STATIC_ASSERT(sizeof(((type *)NULL)->field) == sizeof(t_float), "field must be t_float!"); \
     class_domainsignalin(c, offsetof(type, field))
+#endif
+
 
          /* prototype for functions to save Pd's to a binbuf */
 typedef void (*t_savefn)(t_gobj *x, t_binbuf *b);
@@ -679,7 +702,7 @@ EXTERN int open_via_path(const char *dir, const char *name, const char *ext,
     char *dirresult, char **nameresult, unsigned int size, int bin);
 EXTERN int sched_geteventno(void);
 EXTERN double sys_getrealtime(void);
-EXTERN int (*sys_idlehook)(void);   /* hook to add idle time computation */
+EXTERN_VAR int (*sys_idlehook)(void);   /* hook to add idle time computation */
 
 /* Win32's open()/fopen() do not handle UTF-8 filenames so we need
  * these internal versions that handle UTF-8 filenames the same across
@@ -778,10 +801,15 @@ EXTERN void mayer_ifft(int n, t_sample *real, t_sample *imag);
 EXTERN void mayer_realfft(int n, t_sample *real);
 EXTERN void mayer_realifft(int n, t_sample *real);
 
+// Connection DSP manipulation for plugdata
+EXTERN t_signal* outconnect_get_signal(t_outconnect* oc);
+EXTERN void outconnect_set_signal(t_outconnect* oc, t_signal* signal);
+EXTERN void outconnect_unset_signal(t_outconnect* oc);
+
 EXTERN int canvas_suspend_dsp(void);
 EXTERN void canvas_resume_dsp(int oldstate);
 EXTERN void canvas_update_dsp(void);
-EXTERN int canvas_dspstate;
+EXTERN_VAR int canvas_dspstate;
 
 /*   up/downsampling */
 typedef struct _resample
@@ -829,7 +857,7 @@ EXTERN t_float qrsqrt(t_float);
 EXTERN_STRUCT _garray;
 #define t_garray struct _garray
 
-EXTERN t_class *garray_class;
+EXTERN_VAR t_class *garray_class;
 PD_DEPRECATED EXTERN int garray_getfloatarray(t_garray *x, int *size, t_float **vec); /* use garray_getfloatwords() */
 EXTERN int garray_getfloatwords(t_garray *x, int *size, t_word **vec);
 EXTERN void garray_redraw(t_garray *x);
@@ -841,7 +869,7 @@ EXTERN void garray_usedindsp(t_garray *x);
 EXTERN void garray_setsaveit(t_garray *x, int saveit);
 EXTERN t_glist *garray_getglist(t_garray *x);
 EXTERN t_array *garray_getarray(t_garray *x);
-EXTERN t_class *scalar_class;
+EXTERN_VAR t_class *scalar_class;
 
 EXTERN t_float *value_get(t_symbol *s);
 EXTERN void value_release(t_symbol *s);
@@ -1059,11 +1087,8 @@ struct _pdinstance
     t_symbol  pd_s_y;
     t_symbol  pd_s_;
 #endif
-#if PDTHREADS
-    int pd_islocked;
-#endif
 };
-EXTERN t_pdinstance pd_maininstance;
+EXTERN_VAR t_pdinstance pd_maininstance;
 
 /* m_pd.c */
 #ifdef PDINSTANCE
@@ -1094,10 +1119,13 @@ extern PERTHREAD t_pdinstance *pd_this; /* not EXTERN! */
 #define pd_this pd_getinstance()
 #endif /* PD_INTERNAL */
 #else
-EXTERN PERTHREAD t_pdinstance *pd_this;
+EXTERN_VAR PERTHREAD t_pdinstance *pd_this;
 #endif /* _WIN32 */
-EXTERN t_pdinstance **pd_instances;
-EXTERN int pd_ninstances;
+EXTERN_VAR t_pdinstance **pd_instances;
+EXTERN_VAR int pd_ninstances;
+EXTERN t_pdinstance* pd_get_instance();
+EXTERN void pd_set_instance(t_pdinstance*);
+#define pd_this pd_get_instance()
 #else
 #define pd_this (&pd_maininstance)
 #endif /* PDINSTANCE */
@@ -1116,7 +1144,7 @@ EXTERN int pd_ninstances;
 #define s_y         (pd_this->pd_s_y)
 #define s_          (pd_this->pd_s_)
 #else
-EXTERN t_symbol s_pointer, s_float, s_symbol, s_bang, s_list, s_anything,
+EXTERN_VAR t_symbol s_pointer, s_float, s_symbol, s_bang, s_list, s_anything,
   s_signal, s__N, s__X, s_x, s_y, s_;
 #endif
 
@@ -1149,6 +1177,8 @@ EXTERN void text_notifybyname(t_symbol *s);      /* notify it was modified */
 EXTERN void pd_undo_set_objectstate(t_canvas*canvas, t_pd*x, t_symbol*s,
                                     int undo_argc, t_atom*undo_argv,
                                     int redo_argc, t_atom*redo_argv);
+
+EXTERN void plugdata_forward_message(int type, void *x, t_symbol *s, int argc, t_atom *argv);
 
 #if defined(_LANGUAGE_C_PLUS_PLUS) || defined(__cplusplus)
 }

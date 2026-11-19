@@ -184,7 +184,7 @@ static void canvas_howputnew(t_canvas *x, int *connectp,
 {
     float dx = 5.5;
     int xpix, ypix, indx = 0, nobj = 0, n2, x1, x2, y1, y2;
-    int connectme = (x->gl_editor->e_selection &&
+    int connectme = (x->gl_editor && x->gl_editor->e_selection &&
         !x->gl_editor->e_selection->sel_next && !sys_noautopatch);
     glist_nograb(x);
     if (connectme)
@@ -265,7 +265,7 @@ void canvas_obj(t_glist *gl, t_symbol *s, int argc, t_atom *argv)
         pd_vmess(&gl->gl_pd, gensym("editmode"), "i", 1);
         canvas_objtext(gl, xpix, ypix, 0, 1, b);
         if (connectme)
-            canvas_connect(gl, indx, 0, nobj, 0);
+            canvas_connect_expandargs(gl, indx, 0, nobj, 0, gensym("empty"));
         else canvas_startmotion(glist_getcanvas(gl));
         if (!canvas_undo_get(glist_getcanvas(gl))->u_doing)
             canvas_undo_add(glist_getcanvas(gl), UNDO_CREATE, "create",
@@ -292,7 +292,7 @@ void canvas_iemguis(t_glist *gl, t_symbol *guiobjname)
 
     canvas_objtext(gl, xpix, ypix, 0, 1, b);
     if(connectme)
-        canvas_connect(gl, indx, 0, nobj, 0);
+        canvas_connect_expandargs(gl, indx, 0, nobj, 0, gensym("empty"));
     else canvas_startmotion(glist_getcanvas(gl));
     canvas_undo_add(glist_getcanvas(gl), UNDO_CREATE, "create",
         (void *)canvas_undo_set_create(glist_getcanvas(gl)));
@@ -570,7 +570,7 @@ void canvas_msg(t_glist *gl, t_symbol *s, int argc, t_atom *argv)
         glist_select(gl, &x->m_text.te_g);
         gobj_activate(&x->m_text.te_g, gl, 1);
         if (connectme)
-            canvas_connect(gl, indx, 0, nobj, 0);
+            canvas_connect_expandargs(gl, indx, 0, nobj, 0, gensym("empty"));
         else canvas_startmotion(glist_getcanvas(gl));
         canvas_undo_add(glist_getcanvas(gl), UNDO_CREATE, "create",
             (void *)canvas_undo_set_create(glist_getcanvas(gl)));
@@ -1228,7 +1228,7 @@ void canvas_atom(t_glist *gl, t_atomtype type,
         glist_noselect(gl);
         glist_select(gl, &x->a_text.te_g);
         if (connectme)
-            canvas_connect(gl, indx, 0, nobj, 0);
+            canvas_connect_expandargs(gl, indx, 0, nobj, 0, gensym("empty"));
         else canvas_startmotion(glist_getcanvas(gl));
         canvas_undo_add(glist_getcanvas(gl), UNDO_CREATE, "create",
             (void *)canvas_undo_set_create(glist_getcanvas(gl)));
@@ -1810,6 +1810,8 @@ void text_getfont(t_text *x, t_glist *thisglist,
     *guifsize = sys_hostfontsize(font, 1);
 }
 
+void set_plugdata_object_probe_enabled(int);
+
 void g_text_setup(void)
 {
     text_class = class_new(gensym("text"), 0, 0, sizeof(t_text),
@@ -1824,6 +1826,7 @@ void g_text_setup(void)
     class_addlist(message_class, message_list);
     class_addanything(message_class, message_list);
 
+    set_plugdata_object_probe_enabled(1); // Only listen for methods
     class_addmethod(message_class, (t_method)message_click, gensym("click"),
         A_FLOAT, A_FLOAT, A_FLOAT, A_FLOAT, A_FLOAT, 0);
     class_addmethod(message_class, (t_method)message_set, gensym("set"),
@@ -1840,6 +1843,7 @@ void g_text_setup(void)
         gensym("adddollar"), A_FLOAT, 0);
     class_addmethod(message_class, (t_method)message_adddollsym,
         gensym("adddollsym"), A_SYMBOL, 0);
+    set_plugdata_object_probe_enabled(0);
 
     messresponder_class = class_new(gensym("messresponder"), 0, 0,
         sizeof(t_text), CLASS_PD, 0);
@@ -1849,6 +1853,7 @@ void g_text_setup(void)
     class_addlist(messresponder_class, messresponder_list);
     class_addanything(messresponder_class, messresponder_anything);
 
+    set_plugdata_object_probe_enabled(1);
     gatom_class = class_new(gensym("gatom"), 0, (t_method)gatom_free,
         sizeof(t_gatom), CLASS_NOINLET | CLASS_PATCHABLE, 0);
     class_addbang(gatom_class, gatom_bang);
@@ -1862,4 +1867,6 @@ void g_text_setup(void)
     class_setwidget(gatom_class, &gatom_widgetbehavior);
     class_setpropertiesfn(gatom_class, gatom_properties);
     class_sethelpsymbol(gatom_class, gensym("gui-boxes"));
+    set_plugdata_object_probe_enabled(0);
+
 }

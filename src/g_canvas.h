@@ -274,6 +274,7 @@ typedef struct _linetraverser
     int tr_lx1, tr_ly1, tr_lx2, tr_ly2;
     t_outconnect *tr_nextoc;
     int tr_nextoutno;
+    t_symbol* outconnect_path_info;
 } t_linetraverser;
 
 struct _instancecanvas  /* per-instance stuff for canvases */
@@ -284,6 +285,9 @@ struct _instancecanvas  /* per-instance stuff for canvases */
     t_symbol *i_newdirectory;               /* its directory */
     int i_newargc;                          /* creation args for new canvas */
     t_atom *i_newargv;
+    int i_forcenewpath;
+    t_symbol *i_forcenewfilename;
+    t_symbol *i_forcenewdirectory;
     t_glist *i_reloadingabstraction;        /* abstrction we're reloading */
     int i_dspstate;                         /* whether DSP is running */
     int i_dollarzero;                       /* counter for $0 */
@@ -390,7 +394,7 @@ struct _parentwidgetbehavior
 EXTERN void canvas_setcursor(t_glist *x, unsigned int cursornum);
 
 extern t_canvas *canvas_whichfind;  /* last canvas we did a find in */
-extern t_class *vinlet_class, *voutlet_class;
+EXTERN_VAR t_class *vinlet_class, *voutlet_class;
 extern int glist_valid;         /* incremented when pointers might be stale */
 
 #define PLOTSTYLE_POINTS 0     /* plotting styles for arrays */
@@ -472,7 +476,7 @@ EXTERN void text_drawborder(t_text *x, t_glist *glist, const char *tag,
 EXTERN void text_eraseborder(t_text *x, t_glist *glist, const char *tag);
 EXTERN int text_xpix(t_text *x, t_glist *glist);
 EXTERN int text_ypix(t_text *x, t_glist *glist);
-extern const t_widgetbehavior text_widgetbehavior;
+EXTERN_VAR const t_widgetbehavior text_widgetbehavior;
 
 /* -------------------- functions on rtexts ------------------------- */
 #define RTEXT_DOWN 1
@@ -506,7 +510,8 @@ t_rtext *rtext_findhit(t_glist *gl, int xpix, int ypix,
 void glist_clearrtexts(t_glist *x);
 
 /* -------------------- functions on canvases ------------------------ */
-EXTERN t_class *canvas_class;
+EXTERN_VAR t_class *canvas_class;
+EXTERN_VAR t_class *text_class;
 
 EXTERN t_canvas *canvas_new(void *dummy, t_symbol *sel, int argc, t_atom *argv);
 EXTERN t_symbol *canvas_makebindsym(t_symbol *s);
@@ -562,7 +567,9 @@ EXTERN void canvas_noundo(t_canvas *x);
 EXTERN int canvas_getindex(t_canvas *x, t_gobj *y);
 
 EXTERN void canvas_connect(t_canvas *x,
-    t_floatarg fwhoout, t_floatarg foutno, t_floatarg fwhoin, t_floatarg finno);
+                           t_symbol *s, int argc, t_atom *argv);
+EXTERN void canvas_connect_expandargs(t_canvas *x, t_floatarg fwhoout, t_floatarg foutno, t_floatarg fwhoin, t_floatarg finno, t_symbol* path_data);
+
 EXTERN void canvas_disconnect(t_canvas *x,
     t_float index1, t_float outno, t_float index2, t_float inno);
 EXTERN int canvas_isconnected (t_canvas *x,
@@ -590,6 +597,7 @@ EXTERN t_symbol *canvas_getsymbol_realized(t_canvas *canvas, const t_atom *a);
 
 EXTERN void linetraverser_start(t_linetraverser *t, t_canvas *x);
 EXTERN t_outconnect *linetraverser_next(t_linetraverser *t);
+EXTERN t_outconnect *linetraverser_next_nosize(t_linetraverser *t);
 EXTERN void linetraverser_skipobject(t_linetraverser *t);
 
 /* --------- functions on garrays (graphical arrays) -------------------- */
@@ -700,7 +708,7 @@ EXTERN t_symbol *iemgui_dollar2raute(t_symbol *s);
 EXTERN t_symbol *iemgui_put_in_braces(t_symbol *s);
 
 /*-------------  g_clone.c ------------- */
-EXTERN t_class *clone_class;
+EXTERN_VAR t_class *clone_class;
 
 /*-------------  d_ugen.c ------------- */
 EXTERN void signal_setborrowed(t_signal *sig, t_signal *sig2);

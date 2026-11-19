@@ -6,6 +6,31 @@
 #include "m_imp.h"
 #include "m_private_utils.h"
 #include "g_canvas.h"   /* just for LB_LOAD */
+#include <string.h>
+
+extern void clear_weak_references(void* ptr);
+
+
+#if PDINSTANCE
+PERTHREAD t_pdinstance *pd_this_instance;
+
+t_pdinstance* pd_get_instance()
+{
+    return pd_this_instance;
+};
+
+void pd_set_instance(t_pdinstance* instance)
+{
+    pd_this_instance = instance;
+}
+#else
+
+t_pdinstance* pd_get_instance()
+{
+    return pd_this;
+};
+
+#endif
 
 #include <string.h>
 
@@ -25,6 +50,7 @@ t_pd *pd_new(t_class *c)
         ((t_object *)x)->ob_inlet = 0;
         ((t_object *)x)->ob_outlet = 0;
     }
+
     return (x);
 }
 
@@ -35,6 +61,7 @@ static PERTHREAD t_pd *lastpopped;
 void pd_free(t_pd *x)
 {
     t_class *c = *x;
+    clear_weak_references(x);
     if (lastpopped == x)
         lastpopped = 0;
     if (c->c_freemethod) (*(t_freemethod)(c->c_freemethod))(x);
@@ -143,6 +170,11 @@ static void bindlist_list(t_bindlist *x, t_symbol *s,
     BINDLIST_POP(vec, n);
 }
 
+
+void register_weak_reference(void* ptr, void* weak_reference);
+void unregister_weak_reference(void* ptr, void* weak_reference);
+int is_reference_valid(void* ptr);
+
 static void bindlist_anything(t_bindlist *x, t_symbol *s,
     int argc, t_atom *argv)
 {
@@ -153,6 +185,7 @@ static void bindlist_anything(t_bindlist *x, t_symbol *s,
         pd_typedmess(vec[i], s, argc, argv);
     BINDLIST_POP(vec, n);
 }
+
 
 void m_pd_setup(void)
 {
@@ -308,7 +341,6 @@ t_pd *pd_findbyclassname(t_symbol *s, const t_symbol *classname)
 
 /* stack for maintaining bindings for the #X symbol during nestable loads.
 */
-
 typedef struct _gstack
 {
     t_pd *g_what;
@@ -342,7 +374,8 @@ void pd_pushsym(t_pd *x)
 
 void pd_popsym(t_pd *x)
 {
-    if (!gstack_head || s__X.s_thing != x) bug("gstack_pop");
+    if (!gstack_head || s__X.s_thing != x)
+        bug("gstack_pop");
     else
     {
         t_gstack *headwas = gstack_head;
@@ -365,6 +398,7 @@ void pd_doloadbang(void)
     lastpopped = 0;
 }
 
+
 void pd_bang(t_pd *x)
 {
     (*(*x)->c_bangmethod)(x);
@@ -372,10 +406,13 @@ void pd_bang(t_pd *x)
 
 void pd_float(t_pd *x, t_float f)
 {
-    if (x == &pd_objectmaker)
+	if (x == &pd_objectmaker) {
         ((t_floatmethodr)(*(*x)->c_floatmethod))(x, f);
-    else
-        (*(*x)->c_floatmethod)(x, f);
+		return;
+	}
+
+    
+    (*(*x)->c_floatmethod)(x, f);
 }
 
 void pd_pointer(t_pd *x, t_gpointer *gp)

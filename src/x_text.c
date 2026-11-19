@@ -102,7 +102,7 @@ static void textbuf_open(t_textbuf *x)
         char textid[128];
         sprintf(textid, ".x%lx.text", x);
         pdgui_vmess("wm", "r^", "deiconify", x);
-        pdgui_vmess("raise", "^", x);
+        pdgui_vmess("pdtk_textwindow_raise", "^", x);
         pdgui_vmess("focus", "s", textid);
     }
     else

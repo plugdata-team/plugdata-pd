@@ -6,6 +6,7 @@
 
 #include "m_pd.h"
 #include "s_stuff.h"
+#include "s_inter.h"
 #include <stdarg.h>
 #include <string.h>
 
@@ -434,20 +435,10 @@ void pdgui_endmess(void)
 void pdgui_vmess(const char* message, const char* format, ...)
 {
     va_list args;
-    if (!sys_havetkproc())
-        return;
-    if(!format)
-    {
-        if (message) {
-            pdgui_startmess();
-            sys_vgui("%s", message);
-            pdgui_endmess();
-        }
-        return;
-    }
-    pdgui_startmess();
     va_start(args, format);
-    pdgui_vamess(message, format, args);
+
+    plugdata_gui_message(message, args);
+
+    // Clean up both va_lists
     va_end(args);
-    pdgui_endmess();
 }

@@ -142,12 +142,15 @@ void glob_init(void)
     class_addmethod(glob_pdobject, (t_method)glob_exit, gensym("exit"), A_DEFFLOAT, 0);
     class_addmethod(glob_pdobject, (t_method)glob_verifyquit,
         gensym("verifyquit"), A_DEFFLOAT, 0);
-    class_addmethod(glob_pdobject, (t_method)glob_foo,
-        gensym("foo"), A_GIMME, 0);
-    class_addmethod(glob_pdobject, (t_method)glob_dsp,
-        gensym("dsp"), A_GIMME, 0);
-    class_addmethod(glob_pdobject, (t_method)glob_key,
-        gensym("key"), A_GIMME, 0);
+    class_addmethod(glob_pdobject, (t_method)nullfn,
+        gensym("pluginmode"), A_NULL, 0);
+    class_addmethod(glob_pdobject, (t_method)nullfn,
+        gensym("limit"), A_NULL, 0);
+    class_addmethod(glob_pdobject, (t_method)nullfn,
+        gensym("oversample"), A_NULL, 0);
+    class_addmethod(glob_pdobject, (t_method)glob_foo, gensym("foo"), A_GIMME, 0);
+    class_addmethod(glob_pdobject, (t_method)glob_dsp, gensym("dsp"), A_GIMME, 0);
+    class_addmethod(glob_pdobject, (t_method)glob_key, gensym("key"), A_GIMME, 0);
     class_addmethod(glob_pdobject, (t_method)glob_audiostatus,
         gensym("audiostatus"), 0);
     class_addmethod(glob_pdobject, (t_method)glob_finderror,
@@ -211,8 +214,8 @@ void glob_init(void)
         gensym("colors"), A_SYMBOL, A_SYMBOL, A_SYMBOL, A_DEFSYMBOL, 0);
     class_addmethod(glob_pdobject, (t_method)glob_rescanaudio,
         gensym("rescan-audio"), 0);
-    class_addmethod(glob_pdobject, (t_method)glob_rescanmidi,
-        gensym("rescan-midi"), 0);
+    //class_addmethod(glob_pdobject, (t_method)glob_rescanmidi,
+    //    gensym("rescan-midi"), 0);
     class_addanything(glob_pdobject, max_default);
     pd_bind(&glob_pdobject, gensym("pd"));
 }

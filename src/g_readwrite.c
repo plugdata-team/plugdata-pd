@@ -699,7 +699,7 @@ static void canvas_collecttemplatesfor(t_canvas *x, int *ntemplatesp,
 t_binbuf *template_get_creation_binbuf(t_template *x);
 
     /* save the templates needed by a canvas to a binbuf. */
-static void canvas_savetemplatesto(t_canvas *x, t_binbuf *b, int wholething)
+void canvas_savetemplatesto(t_canvas *x, t_binbuf *b, int wholething)
 {
     t_symbol **templatevec = getbytes(0);
     int i, ntemplates = 0;
@@ -741,7 +741,7 @@ static int canvas_saveto_compare(const void *a, const void *b)
 
     /* save to a binbuf, called recursively; cf. canvas_savetofile() which
     saves the document, and is only called on root canvases. */
-static void canvas_saveto(t_canvas *x, t_binbuf *b)
+void canvas_saveto(t_canvas *x, t_binbuf *b)
 {
     struct _saveindex { t_gobj *si_obj; int si_index; } *index;
     t_gobj *y, *src;
@@ -795,7 +795,7 @@ static void canvas_saveto(t_canvas *x, t_binbuf *b)
 
     src = x->gl_list;
     linetraverser_start(&t, x);
-    while ((oc = linetraverser_next(&t)))
+    while ((oc = linetraverser_next_nosize(&t)))
     {
         t_gobj *sink = &t.tr_ob2->ob_g;
         int sinkno = nobj, lo = 0, hi = nobj;
@@ -810,8 +810,15 @@ static void canvas_saveto(t_canvas *x, t_binbuf *b)
         }
         if (lo < nobj && index[lo].si_obj == sink)
             sinkno = index[lo].si_index;
-        binbuf_addv(b, "ssiiii;", gensym("#X"), gensym("connect"),
-            srcno, t.tr_outno, sinkno, t.tr_inno);
+        if(t.outconnect_path_info == gensym("empty"))
+        {
+            binbuf_addv(b, "ssiiii;", gensym("#X"), gensym("connect"),
+                srcno, t.tr_outno, sinkno, t.tr_inno);
+        }
+        else {
+            binbuf_addv(b, "ssiiiis;", gensym("#X"), gensym("connect"),
+                srcno, t.tr_outno, sinkno, t.tr_inno, t.outconnect_path_info);
+        }
     }
     freebytes(index, nobj * sizeof(*index));
 

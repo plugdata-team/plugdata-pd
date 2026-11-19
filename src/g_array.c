@@ -94,6 +94,7 @@ void array_resize_and_redraw(t_array *array, t_glist *glist, int n)
     array_resize(array, n);
     if (vis)
         gobj_vis(&a2->a_gp.gp_un.gp_scalar->sc_gobj, glist, 1);
+    plugdata_forward_message(0, glist, gensym("redraw"), 0, NULL);
 }
 
 void word_free(t_word *wp, t_template *template);
@@ -627,6 +628,7 @@ void array_redraw(t_array *a, t_glist *glist)
     while (a->a_gp.gp_stub->gs_which == GP_ARRAY)
         a = a->a_gp.gp_stub->gs_un.gs_array;
     scalar_redraw(a->a_gp.gp_un.gp_scalar, glist);
+    plugdata_forward_message(0, glist, gensym("redraw"), 0, NULL);
 }
 
     /* routine to get screen coordinates of a point in an array */
@@ -847,6 +849,8 @@ static void garray_doredraw(t_gobj *client, t_glist *glist)
 
 void garray_redraw(t_garray *x)
 {
+    plugdata_forward_message(0, x->x_glist, gensym("redraw"), 0, NULL);
+    
     if (glist_isvisible(x->x_glist))
         sys_queuegui(&x->x_gobj, x->x_glist, garray_doredraw);
     /* jsarlo { */
@@ -1127,12 +1131,12 @@ static void garray_yticks(t_garray *x,
 
 static void garray_xlabel(t_garray *x, t_symbol *s, int argc, t_atom *argv)
 {
-    typedmess(&x->x_glist->gl_pd, s, argc, argv);
+    typedmess(&x->x_glist->gl_pd, gensym("xlabel"), argc, argv);
 }
 
 static void garray_ylabel(t_garray *x, t_symbol *s, int argc, t_atom *argv)
 {
-    typedmess(&x->x_glist->gl_pd, s, argc, argv);
+    typedmess(&x->x_glist->gl_pd, gensym("ylabel"), argc, argv);
 }
 
 static void garray_style(t_garray *x, t_floatarg fstyle)

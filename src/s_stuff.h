@@ -49,7 +49,7 @@ extern t_symbol *sys_flags;
 /* s_main.c */
 extern int sys_debuglevel;
 extern int sys_verbose;
-EXTERN int sys_noloadbang;
+EXTERN_VAR int sys_noloadbang;
 EXTERN int sys_havetkproc(void);    /* TK is up; we can post to Pd window */
 EXTERN int sys_havegui(void);       /* also have font metrics and can draw */
 extern const char *sys_guicmd;
@@ -59,7 +59,7 @@ extern char sys_devicename[];
 EXTERN int sys_nearestfontsize(int fontsize);
 
 extern int sys_defaultfont;
-EXTERN t_symbol *sys_libdir;    /* library directory for auxiliary files */
+EXTERN_VAR t_symbol *sys_libdir;    /* library directory for auxiliary files */
 
 /* s_loader.c */
 
@@ -278,7 +278,7 @@ void dummy_listdevs(void);
                     /* s_midi.c */
 #define MAXMIDIINDEV 16         /* max. number of input ports */
 #define MAXMIDIOUTDEV 16        /* max. number of output ports */
-EXTERN int sys_midiapi;
+EXTERN_VAR int sys_midiapi;
 extern int sys_nmidiin;
 extern int sys_nmidiout;
 extern int sys_midiindevlist[];
@@ -376,11 +376,11 @@ void sys_setalarm(int microsec);
 #endif
 
 void sys_set_priority(int higher);
-EXTERN int sys_hipriority;      /* real-time flag, true if priority boosted */
+EXTERN_VAR int sys_hipriority;      /* real-time flag, true if priority boosted */
 
 /* s_print.c */
 
-typedef void (*t_printhook)(const char *s);
+typedef void (*t_printhook)(void*, const char *s);
 
 /* set this to override printing; used as default for STUFF->st_printhook */
 extern t_printhook sys_printhook;
@@ -388,7 +388,7 @@ extern int sys_printtostderr;
 
 /* jsarlo { */
 
-EXTERN int sys_externalschedlib;
+EXTERN_VAR int sys_externalschedlib;
 
 EXTERN t_sample* get_sys_soundout(void);
 EXTERN t_sample* get_sys_soundin(void);
@@ -402,6 +402,7 @@ EXTERN int* get_sys_schedadvance(void);
 
 EXTERN void sys_initmidiqueue(void);
 EXTERN void sched_tick(void);
+EXTERN void sched_tick_nodsp(void);
 EXTERN void sys_pollmidiqueue(void);
 EXTERN void sys_setchsr(int chin, int chout, int sr);
 
@@ -431,6 +432,7 @@ struct _instancestuff
     t_namelist *st_temppath;    /* temp search paths ie. -path on commandline */
     int st_schedblocksize;      /* audio block size for scheduler */
     int st_blocksize;           /* audio I/O block size in sample frames */
+    int st_setblocksize;        /* plugdata signal vector block size */
     t_float st_dacsr;           /* I/O sample rate */
     int st_inchannels;
     int st_outchannels;
@@ -467,7 +469,7 @@ EXTERN int pd_vsnprintf(char *buf, size_t size, const char *fmt,
 /* fallback for old system's that don't have strnlen() */
 EXTERN size_t pd_strnlen(const char*s, size_t maxlen);
 
-EXTERN const char *pd_extraflags;     /* a place to stick an extra startup arg */
+EXTERN_VAR const char *pd_extraflags;     /* a place to stick an extra startup arg */
  /* this is used by 'stdout' but could be useful elsewhere perhaps. */
 
 #endif /* INCLUDED_S_STUFF_H_ */
