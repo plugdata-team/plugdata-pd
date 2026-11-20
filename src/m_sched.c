@@ -422,6 +422,8 @@ void sched_tick_nodsp(void)
             return;
     }
     pd_this->pd_systime = next_sys_time;
+        /* deliver pd_queue_mess() messages from helper threads, like sched_tick() */
+    messqueue_dispatch();
     sched_counter++;
 }
 
