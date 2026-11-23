@@ -30,6 +30,7 @@ behavior for "gobjs" appears at the end of this file.  */
 #endif
 
 #include "s_inter.h"
+#include "m_stack_guard.h"
 
 void register_weak_reference(void* ptr, void* weak_reference);
 void unregister_weak_reference(void* ptr, void* weak_reference);
@@ -373,7 +374,7 @@ t_class *backtracer_class;
 
 static PERTHREAD int stackcount = 0; /* iteration counter */
 static PERTHREAD int overflow = 0;
-#define STACKITER 600 /* maximum iterations allowed */
+#define STACKITER 1000 /* maximum iterations allowed */
 
 static PERTHREAD int outlet_eventno;
 
@@ -384,7 +385,7 @@ static PERTHREAD int outlet_eventno;
 static INLINE int stackcount_add(void)
 {
         /* set overflow flag to prevent any further messaging */
-    if (++stackcount >= STACKITER)
+    if (++stackcount >= STACKITER || stack_guard_exhausted(stackcount))
         overflow = 1;
     return !overflow;
 }
