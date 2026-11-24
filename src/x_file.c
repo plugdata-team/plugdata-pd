@@ -589,6 +589,8 @@ static int file_handle_getdefine(t_file_handle*x) {
             x->x_fhptr=&y->x_fh;
             return 1;
         }
+            /* don't keep pointing into a [file define] that is gone */
+        x->x_fhptr = &x->x_fh;
         return 0;
     }
     x->x_fhptr = &x->x_fh;
@@ -599,6 +601,10 @@ static void file_handle_close(t_file_handle*x) {
     if (x->x_fd>=0)
         sys_close(x->x_fd);
     x->x_fd = -1;
+}
+static void file_handle_closemsg(t_file_handle*x) {
+    file_handle_getdefine(x);
+    file_handle_close(x);
 }
 static int file_handle_checkopen(t_file_handle*x, const char*cmd) {
     if(x->x_fcname) {
@@ -745,12 +751,12 @@ static void file_handle_seek(t_file_handle*x, t_symbol*s, int argc, t_atom*argv)
 }
 static void file_handle_open(t_file_handle*x, t_symbol*file, t_symbol*smode) {
     int mode = O_RDONLY;
-    if (x->x_fd>=0) {
-        pd_error(x, "'open' without prior 'close'");
-        return;
-    }
     if(!file_handle_getdefine(x)) {
         pd_error(x, "file handle: couldn't find file-define '%s'", x->x_fcname->s_name);
+        return;
+    }
+    if (x->x_fd>=0) {
+        pd_error(x, "'open' without prior 'close'");
         return;
     }
     if(smode && smode!=&s_) {
@@ -1913,7 +1919,7 @@ void x_file_setup(void)
     file_handle_class = file_class_new("file handle", file_handle_new, file_handle_free, 0, MODE|VERBOSE);
     class_addmethod(file_handle_class, (t_method)file_handle_open,
         gensym("open"), A_SYMBOL, A_DEFSYM, 0);
-    class_addmethod(file_handle_class, (t_method)file_handle_close,
+    class_addmethod(file_handle_class, (t_method)file_handle_closemsg,
         gensym("close"), 0);
     class_addmethod(file_handle_class, (t_method)file_handle_seek,
         gensym("seek"), A_GIMME, 0);
