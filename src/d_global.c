@@ -257,7 +257,7 @@ static void *sigcatch_new(t_symbol *s, t_floatarg fnchans)
     if ((x->x_nchans = fnchans) < 1)
         x->x_nchans = 1;
     x->x_prevnchans = x->x_nchans;
-    x->x_vec = (t_sample *)getbytes(x->x_length * sizeof(t_sample));
+    x->x_vec = (t_sample *)getbytes(x->x_length * x->x_nchans * sizeof(t_sample));
     outlet_new(&x->x_obj, &s_signal);
     return (x);
 }

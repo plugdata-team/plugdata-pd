@@ -154,37 +154,21 @@ static void snake_in_tilde_free(t_snake_in *x)
 
 static void snake_in_tilde_dsp(t_snake_in *x, t_signal **sp)
 {
-    int i, nchans = 0, length = sp[0]->s_length;
+    int i, offset, nchans = 0, length = sp[0]->s_length;
     for (i = 0; i < x->x_nin; i++)
         nchans += sp[i]->s_nchans;
 
-    signal_setmultiout(&sp[x->x_nin], nchans);
-
-    if (nchans == x->x_nin)
-    {
-            /* This is an optimized version for the (common) case where all
-            inputs only have a single channel. Since single-channel signals
-            never alias multi-channel signals, we do not have to make a
-            temporary copy. */
-        t_sample *out = sp[x->x_nin]->s_vec;
-        for (i = 0; i < x->x_nin; i++)
-            dsp_add_copy(sp[i]->s_vec, out + i * length, length);
-        if (x->x_copysize)
-        {
-            freebytes(x->x_copybuf, x->x_copysize * sizeof(t_sample));
-            x->x_copybuf = 0;
-            x->x_copysize = 0;
-        }
-    }
-    else
+    if (nchans != x->x_nin)
     {
             /* We must copy the input signals to a temporary buffer because of
             potential signal aliasing! Consider the following scenario:
             'in1' w/ 2 channels, 'in2' w/ 5 channels and 'out' w/ 7 channels.
             'in2' and 'out' may fall into the same size category and therefore
             may alias each other. If we just copied 'in1' directly to 'out',
-            we would accidentally overwrite 'in2' before we get to read it! */
-        int offset, copysize = nchans * length;
+            we would accidentally overwrite 'in2' before we get to read it!
+            Do this before signal_setmultiout(), which may give an input's
+            signal to the output and change its channel count. */
+        int copysize = nchans * length;
         x->x_copybuf = (t_sample *)resizebytes(x->x_copybuf,
             x->x_copysize * sizeof(t_sample), copysize * sizeof(t_sample));
         x->x_copysize = copysize;
@@ -192,8 +176,27 @@ static void snake_in_tilde_dsp(t_snake_in *x, t_signal **sp)
         for (offset = 0, i = 0; i < x->x_nin; offset += sp[i]->s_nchans, i++)
             dsp_add_copy(sp[i]->s_vec, x->x_copybuf + offset * length,
                 sp[i]->s_nchans * length);
+    }
+    else if (x->x_copysize)
+    {
+        freebytes(x->x_copybuf, x->x_copysize * sizeof(t_sample));
+        x->x_copybuf = 0;
+        x->x_copysize = 0;
+    }
 
-        dsp_add_copy(x->x_copybuf, sp[x->x_nin]->s_vec, copysize);
+    signal_setmultiout(&sp[x->x_nin], nchans);
+
+    if (x->x_copysize)
+        dsp_add_copy(x->x_copybuf, sp[x->x_nin]->s_vec, x->x_copysize);
+    else
+    {
+            /* This is an optimized version for the (common) case where all
+            inputs only have a single channel. Since single-channel signals
+            never alias multi-channel signals, we do not have to make a
+            temporary copy. */
+        for (i = 0; i < x->x_nin; i++)
+            dsp_add_copy(sp[i]->s_vec, sp[x->x_nin]->s_vec + i * length,
+                length);
     }
 }
 

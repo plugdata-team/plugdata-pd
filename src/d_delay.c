@@ -99,7 +99,7 @@ static void *sigdelwrite_new(t_symbol *s, t_floatarg msec, t_floatarg nchans)
     x->x_cspace.c_vec = getbytes(XTRASAMPS * sizeof(t_sample));
     x->x_sortno = 0;
     x->x_vecsize = 0;
-    x->x_nchans = nchans > 0 ? nchans : 1;
+    x->x_nchans = nchans >= 1 ? nchans : 1;
     x->x_sr = 0;
     x->x_f = 0;
     return (x);
@@ -114,7 +114,7 @@ static void sigdelwrite_clear (t_sigdelwrite *x) /* added by Orm Finnendahl */
 
 static void sigdelwrite_channels(t_sigdelwrite *x, t_floatarg nchans)
 {
-    x->x_nchans = nchans > 0 ? nchans : 1;
+    x->x_nchans = nchans >= 1 ? nchans : 1;
     canvas_update_dsp();
 }
 
