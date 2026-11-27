@@ -37,6 +37,7 @@ struct _instanceugen
 {
     t_int *u_dspchain;         /* DSP chain */
     int u_dspchainsize;        /* number of elements in DSP chain */
+    int u_dspchainalloc;       /* number of elements allocated */
     t_signal *u_signals;       /* list of signals used by DSP chain */
     int u_sortno;              /* number of DSP sortings so far */
         /* list of signals which can be reused, sorted by buffer size */
@@ -55,6 +56,7 @@ void d_ugen_newpdinstance(void)
     THIS = getbytes(sizeof(*THIS));
     THIS->u_dspchain = 0;
     THIS->u_dspchainsize = 0;
+    THIS->u_dspchainalloc = 0;
     THIS->u_signals = 0;
 }
 
@@ -382,13 +384,24 @@ static t_int dsp_done(t_int *w)
     return (0);
 }
 
+    /* grow geometrically: resizing for every addition is quadratic */
+static void dsp_growchain(int newsize)
+{
+    if (newsize > THIS->u_dspchainalloc)
+    {
+        int alloc = 2 * newsize;
+        THIS->u_dspchain = t_resizebytes(THIS->u_dspchain,
+            THIS->u_dspchainalloc * sizeof (t_int), alloc * sizeof (t_int));
+        THIS->u_dspchainalloc = alloc;
+    }
+}
+
 void dsp_add(t_perfroutine f, int n, ...)
 {
     int newsize = THIS->u_dspchainsize + n+1, i;
     va_list ap;
 
-    THIS->u_dspchain = t_resizebytes(THIS->u_dspchain,
-        THIS->u_dspchainsize * sizeof (t_int), newsize * sizeof (t_int));
+    dsp_growchain(newsize);
     THIS->u_dspchain[THIS->u_dspchainsize-1] = (t_int)f;
     if (THIS->u_loud)
         post("add to chain: %lx",
@@ -411,8 +424,7 @@ void dsp_addv(t_perfroutine f, int n, t_int *vec)
 {
     int newsize = THIS->u_dspchainsize + n+1, i;
 
-    THIS->u_dspchain = t_resizebytes(THIS->u_dspchain,
-        THIS->u_dspchainsize * sizeof (t_int), newsize * sizeof (t_int));
+    dsp_growchain(newsize);
     THIS->u_dspchain[THIS->u_dspchainsize-1] = (t_int)f;
     for (i = 0; i < n; i++)
         THIS->u_dspchain[THIS->u_dspchainsize + i] = vec[i];
@@ -725,8 +737,9 @@ void ugen_stop(void)
     if (THIS->u_dspchain)
     {
         freebytes(THIS->u_dspchain,
-            THIS->u_dspchainsize * sizeof (t_int));
+            THIS->u_dspchainalloc * sizeof (t_int));
         THIS->u_dspchain = 0;
+        THIS->u_dspchainalloc = 0;
     }
     signal_cleanup();
 
@@ -739,7 +752,7 @@ void ugen_start(void)
     /*  THIS->u_loud = 1;  -- enable this for volumes of debugging output */
     THIS->u_dspchain = (t_int *)getbytes(sizeof(*THIS->u_dspchain));
     THIS->u_dspchain[0] = (t_int)dsp_done;
-    THIS->u_dspchainsize = 1;
+    THIS->u_dspchainsize = THIS->u_dspchainalloc = 1;
     if (THIS->u_context) bug("ugen_start");
 }
 
