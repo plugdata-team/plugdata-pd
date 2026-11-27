@@ -1174,6 +1174,8 @@ static void *pd_tilde_new(t_symbol *s, int argc, t_atom *argv)
 "... [-scheddir <>]");
     }
 
+    if (ninsig < 0) ninsig = 0;
+    if (noutsig < 0) noutsig = 0;
     x->x_clock = clock_new(x, (t_method)pd_tilde_tick);
     x->x_insig = (t_pdsample **)t_getbytes(ninsig * sizeof(*x->x_insig));
     x->x_outsig = (t_pdsample **)t_getbytes(noutsig * sizeof(*x->x_outsig));
