@@ -202,11 +202,8 @@ static void *ctlin_new(t_symbol *s, int argc, t_atom *argv)
     x->x_channel = channel;
     x->x_ctlno = ctlno;
     x->x_outlet1 = outlet_new(&x->x_obj, &s_float);
-    if (!channel)
-    {
-        if (x->x_ctlno < 0) x->x_outlet2 = outlet_new(&x->x_obj, &s_float);
-        x->x_outlet3 = outlet_new(&x->x_obj, &s_float);
-    }
+    if (x->x_ctlno < 0) x->x_outlet2 = outlet_new(&x->x_obj, &s_float);
+    if (!channel) x->x_outlet3 = outlet_new(&x->x_obj, &s_float);
     pd_bind(&x->x_obj.ob_pd, pd_this->pd_midi->m_ctlin_sym);
     return (x);
 }
